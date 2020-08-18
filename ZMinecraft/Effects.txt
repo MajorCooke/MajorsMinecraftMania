@@ -1,0 +1,58 @@
+//==============================================================================
+// 
+// Status Effects
+// 
+//==============================================================================
+
+Class MCStatusEffect : Powerup
+{
+	int Strength;
+	Property Strength: Strength;
+	Default
+	{
+		MCStatusEffect.Strength 1;
+	}
+	
+	override void DoEffect()
+	{
+		if (bDESTROYED)	return;
+		if (!Owner)	{	EndEffect();	return;	}
+		
+		Super.DoEffect();
+		DoStatus();
+	}
+	
+	// Used for checking if the actor can have this effect.
+	virtual bool CheckCompatible()	{	return true;	}
+	
+	// 
+	virtual void DoStatus()		{	}
+}
+
+Class PoisonEffect : MCStatusEffect
+{
+}
+
+Class SlowEffect : MCStatusEffect
+{
+}
+
+Class WeaknessEffect : MCStatusEffect
+{
+}
+
+Class WitherEffect : MCStatusEffect
+{
+}
+
+Class StrengthEffect : MCStatusEffect
+{
+}
+
+Class RegenerationEffect : MCStatusEffect
+{
+}
+
+Class SpeedEffect : MCStatusEffect
+{
+}

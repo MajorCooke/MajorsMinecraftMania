@@ -1,0 +1,143 @@
+/*
+
+Minecraft/Spider/Death
+Minecraft/Spider/Idle
+Minecraft/Spider/Step
+
+-Legend-	X		Y		Z		Roll	Pitch	Angle
+
+Head:		0.6		0.0		2.0			
+Leg:		0.0		~.8		1.9		0.0		35		(Starts at 30, +40 each)
+
+- Gibs -
+Leg:		0.0		~2.2	1.9		
+Head:		1.4		0.0		2.0
+
+- Both -
+Back:		-1.8	0.0		2.0
+Thorax:		0.0		0.0		2.0
+
+Frames
+	A: Normal Spider
+	B: Cave Spider
+
+*/
+
+
+		
+		
+Class MCSpider : MinecraftEnemy
+{
+	enum ELimbs
+	{
+		Head = 0,
+		Back,
+		Thorax,
+		LegL1,
+		LegL2,
+		LegL3,
+		LegL4,
+		LegR1,
+		LegR2,
+		LegR3,
+		LegR4,
+		LimbCount
+	};
+	enum EType
+	{
+		S_Normal = 0,
+		S_Cave
+	};
+	
+	int Type;
+	Property Type: Type;
+	
+	Default
+	{
+		MCSpider.Type S_Normal;
+		Radius 1.6;
+		Height 2.8;
+		+NONSHOOTABLE // The limbs themselves will be shootable.
+		ActiveSound "Minecraft/Spider/Idle";
+		PainSound "Minecraft/Spider/Idle";
+		DeathSound "Minecraft/Spider/Death";
+		Tag "Spider";
+		Obituary "%o's became a living host for spider breeding.";
+	}
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = 	MCBodyPart(Spawn('MCSpiderHead', pos));
+		Limb[Back] = 	MCBodyPart(Spawn('MCSpiderBack', pos));
+		Limb[Thorax] =	MCBodyPart(Spawn('MCSpiderThorax', pos));
+		Limb[LegL1] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegL2] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegL3] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegL4] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegR1] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegR2] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegR3] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		Limb[LegR4] =	MCBodyPart(Spawn('MCSpiderLeg', pos));
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Limb[i].Master = self;
+				Limb[i].Owner = self;
+				Limb[i].Scale = Scale;
+				Limb[i].Frame = Type;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((		 0.6,	 0.0, 2.0));
+		Limb[Back].SetPosOffsets((		-1.8,	 0.0, 2.0));
+		Limb[Thorax].SetPosOffsets((	 0.0,	 1.2, 2.0));
+		Limb[LegL1].SetPosOffsets((		 0.0,	-0.8, 1.9));
+		Limb[LegL2].SetPosOffsets((		 0.0, 	-0.8, 1.9));
+		Limb[LegL3].SetPosOffsets((		 0.0,	-0.8, 1.9));
+		Limb[LegL4].SetPosOffsets((		 0.0,	-0.8, 1.9));
+		Limb[LegR1].SetPosOffsets((		 0.0,	 0.8, 1.9));
+		Limb[LegR2].SetPosOffsets((		 0.0,  	 0.8, 1.9));
+		Limb[LegR3].SetPosOffsets((		 0.0, 	 0.8, 1.9));
+		Limb[LegR4].SetPosOffsets((		 0.0, 	 0.8, 1.9));
+		
+		for (int i = LegL1; i < LegL1 + 4; i++)
+		{
+			Limb[i  ].SetAngles( 30 + (i * 40), 35, 0);
+			Limb[i+4].SetAngles(-30 - (i * 40), 35, 0);
+		}
+		
+		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+	}
+
+}
+
+Class MCCaveSpider : MCSpider
+{
+	Default
+	{
+		MCSpider.Type S_Cave;
+		Tag "Cave Spider";
+		Obituary "%o couldn't fight off the swarming Cave Spiders.";
+	}
+}
+
+Class MCSpiderBack : MCBodyPart
+{
+}
+Class MCSpiderHead : MCBodyPartHead
+{
+}
+Class MCSpiderLeg : MCBodyPartLeg
+{
+}
+Class MCSpiderThorax : MCBodyPart
+{
+}
+Class MCSpiderHeadGib : MCBodyPartGib
+{
+}
+Class MCSpiderLegGib : MCBodyPartGib
+{
+}

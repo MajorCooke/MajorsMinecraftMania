@@ -1,0 +1,39 @@
+[enu default]
+
+MCM_RELEASE_VERSION = "V0.1";
+MCM_RELEASE_DATE = "Month Day, Year";
+
+MCM_OPTIONS_TITLE = "Minecraft Options";
+
+MCM_DIFFICULTY_TEXT = "Difficulty";
+MCM_DIFFICULTY_SUB = "Adjusts the difficulty of the monsters, unrelated to Doom's skills.\n See Readme for more info.";
+
+MCM_PEACEFUL_TEXT = "Peaceful Mode";
+MCM_PEACEFUL_SUB = "Pacifies or despawns monsters based on Peaceful Behavior.";
+
+MCM_PEACEACTION_TEXT = "Peaceful Behavior";
+MCM_PEACEACTION_SUB = "Adjusts peaceful mode monster behaviors.\nMonsters not despawning are docile.";
+
+MCM_PACKMUL_TEXT = "Pack Multiplier";
+MCM_PACKMUL_SUB = "Multiplies the number of monsters spawned in a pack.";
+
+MCM_DROPITEMS_TEXT = "Monsters Drop Items";
+MCM_DROPITEMS_SUB = "Monsters killed by players can drop resources (health/armor/ammo).";
+
+MCM_ITEMTIMER_TEXT = "Item Timer";
+MCM_ITEMTIMER_SUB = "Minutes to wait before items disappear (0 = no limit)";
+
+MCM_SHORTGIBS_TEXT = "Short Gib Lives";
+MCM_SHORTGIBS_SUB = "Gibs begin vanishing the moment they stop moving.";
+
+MCM_ENVIRODAMAGE_TEXT = "Environment Damage";
+MCM_ENVIRODAMAGE_SUB = "Monsters take sector/falling/drowning damage";
+
+MCM_FALLDAMAGE_TEXT = "Fall Damage";
+MCM_FALLDAMAGE_SUB = "Monsters take fall damage";
+
+MCM_DROWNINGDAMAGE_TEXT = "Drowning";
+MCM_DROWNINGDAMAGE_SUB = "Monsters can drown";
+
+MCM_SECTORDAMAGE_TEXT = "Toxic/Lava Damage";
+MCM_SECTORDAMAGE_SUB = "Monsters take damage from slime/lava floors.";

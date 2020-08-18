@@ -1,0 +1,647 @@
+// I was lazy with the model sprite naming... So everything's just ASDF. =P
+
+//==============================================================================
+// Misc.
+//==============================================================================
+
+Model MCArrowProjectile
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Misc/Arrow.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSword
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Misc/Sword.obj"
+	Scale 1.0 1.0 1.2
+	// Built in with stonesword.png.
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/IronSword.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/GoldSword.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCBow
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/BowNormal.obj"
+	FrameIndex ASDF A 0 0
+	Model 0 "Models/Misc/BowFancy.obj"
+	FrameIndex ASDF B 0 0
+}
+
+//==============================================================================
+//==============================================================================
+// Monsters
+//==============================================================================
+//==============================================================================
+
+// Note: Some legs have inverted Y axis in order to save on additional models
+// being used, since the texture would otherwise be incorrect. Their behavior
+// is otherwise unchanged.
+
+// The only reason there are gib variants is because they look weird rolling in
+// the air and clipping horribly through the ground. The gib variants look much
+// better and are centered versions that had to be exported separately.
+
+//==============================================================================
+// Creeper
+//==============================================================================
+
+Model MCCreeperHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/Head.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/HeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperBody
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperLegFront
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/LegFront.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperLegBack
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/LegBack.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperLegGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/LegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+//==============================================================================
+//	Zombie
+//==============================================================================
+
+Model MCZombieHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Head.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/HeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieBody
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieBodyGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieArmRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Arm.obj"
+	Scale 1.0 1.0 1.2
+	//PitchOffset 90
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieArmLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Arm.obj"
+	Scale 1.0 -1.0 1.2
+	//PitchOffset 90
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieArmRightGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/ArmGib.obj"
+	Scale 1.0 1.0 1.2
+	//PitchOffset 90
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieArmLeftGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/ArmGib.obj"
+	Scale 1.0 -1.0 1.2
+	//PitchOffset 90
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieLegRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Leg.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieLegLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Leg.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieLegRightGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/LegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieLegLeftGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/LegGib.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model TestLegR
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Leg.obj"
+	AngleOffset 45
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model TestLegL
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Leg.obj"
+	AngleOffset 45
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+//==============================================================================
+//	Skeleton
+//==============================================================================
+
+Model MCSkeletonArmRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Arm.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonArmLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Arm.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonArmGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/ArmGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonBody
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Head.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/HeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonLegRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Leg.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonLegLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Leg.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+Model MCSkeletonLegGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/LegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
+//------------------------------------------------------------------------------
+// Stray edition. The only difference is the extra coverings and different head.
+// These go over the skeleton's positions, and the arms stick out a little more.
+//------------------------------------------------------------------------------
+
+Model MCSkeletonStrayArmRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayArm.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayArmLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayArm.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayArmGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayArmGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayBody
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayBody.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayHead.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayHeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+// These legs are the only one that don't have inverted textures so we don't
+// need any here.
+Model MCSkeletonStrayLeg
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayLeg.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCSkeletonStrayLegGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/StrayLegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+//==============================================================================
+//	Enderman
+//==============================================================================
+
+Model MCEndermanArmRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Arm.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanArmLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Arm.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanArmGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/ArmGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanBody
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCEndermanHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Enderman/Head.obj"
+	FrameIndex ASDF A 0 0
+	Model 0 "Models/Enderman/HeadAngry.obj" // Not worth making an extra actor.
+	FrameIndex ASDF B 0 0
+}
+
+Model MCEndermanHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/HeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanLegRight
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Leg.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanLegLeft
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Leg.obj"
+	Scale 1.0 -1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+Model MCEndermanLegGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/LegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+//==============================================================================
+//	Spider
+//==============================================================================
+
+Model MCSpiderBack
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Back.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Head.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/HeadGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderLeg
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Leg.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderLegGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/LegGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderThorax
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Thorax.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}

@@ -1,0 +1,210 @@
+/*
+
+
+
+--- All ---
+Sword:				0.0		-1.0	2.7
+Bow:				0.0		-1.0	2.7		Angles	-90	-45	20
+Bow (Gib):			0.0		-0.9	2.7		Angles	-90	-45	20
+
+Head:				0.0		0.0		4.8
+Arm:				0.0		1.2		4.4
+Leg:				0.0		0.4		1.2
+
+(Gib) Body:			0.0		0.0		3.6
+Gib Head:			0.0		0.0		5.6
+Gib Leg:			0.0		0.4		1.2
+
+--- Skeleton ---
+
+Gib Arm:			0.0		~1.0	3.5
+
+--- Stray ---
+
+Gib Head:			0.0		0.0		5.6
+Gib Arm (Cloth):	0.0		~1.2	3.6
+Gib Leg Cloth:		0.0		~0.4	1.2
+
+$limit Minecraft/Skeleton/Death 0
+$limit Minecraft/Skeleton/Hurt 0
+$limit Minecraft/Skeleton/Idle 0
+$limit Minecraft/Skeleton/Step 0
+
+$limit Minecraft/Stray/Death 0
+$limit Minecraft/Stray/Hurt 0
+$limit Minecraft/Stray/Idle 0
+$limit Minecraft/Stray/Step 0
+
+$limit Minecraft/WitherSkeleton/Death 0
+$limit Minecraft/WitherSkeleton/Hurt 0
+$limit Minecraft/WitherSkeleton/Idle 0
+$limit Minecraft/WitherSkeleton/Step 0
+*/
+
+
+Class MCSkeleton : MCUndead
+{
+	mixin NormalLimbCount;
+
+	enum ETypes
+	{
+		S_Normal = 0,
+		S_Stray,
+		S_Wither
+	};
+	
+	meta ETypes Type;
+	
+	Property Type: Type;
+	
+	Default
+	{
+		Tag "Skeleton";
+		MCSkeleton.Type S_Normal;
+		ActiveSound "Minecraft/Skeleton/Idle";
+		PainSound "Minecraft/Skeleton/Hurt";
+		DeathSound "Minecraft/Skeleton/Death";
+		Obituary "%o was used for target practice by a Skeleton.";
+		+NOBLOOD
+		
+		DamageFactor "Drowning", 0.0;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = MCBodyPart(Spawn('MCSkeletonHead', pos));
+		Limb[Body] = MCBodyPart(Spawn('MCSkeletonBody', pos));
+		Limb[ArmR] = MCBodyPart(Spawn('MCSkeletonArmRight', pos));
+		Limb[ArmL] = MCBodyPart(Spawn('MCSkeletonArmLeft', pos));
+		Limb[LegR] = MCBodyPart(Spawn('MCSkeletonLegRight', pos));
+		Limb[LegL] = MCBodyPart(Spawn('MCSkeletonLegLeft', pos));
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Limb[i].Master = self;
+				Limb[i].Owner = self;
+				Limb[i].Scale = Scale;
+				Limb[i].Frame = Type;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
+		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
+		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
+		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
+		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
+		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		
+		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+	}
+}
+
+Class MCStraySkeleton : MCSkeleton
+{
+	Default
+	{
+		MCSkeleton.Type S_Stray;
+		ActiveSound "Minecraft/Stray/Idle";
+		PainSound "Minecraft/Stray/Hurt";
+		DeathSound "Minecraft/Stray/Death";
+		
+		Tag "Stray";
+		Obituary "%o was doomed to become one with the cold lost Stray packs.";
+	}
+}
+
+Class MCWitherSkeleton : MCSkeleton
+{
+	Default
+	{
+		
+		MCSkeleton.Type S_Wither;
+		Scale 7;
+		ActiveSound "Minecraft/WitherSkeleton/Idle";
+		PainSound "Minecraft/WitherSkeleton/Hurt";
+		DeathSound "Minecraft/WitherSkeleton/Death";
+		
+		DamageFactor "Slime", 0.0;
+		DamageFactor "Wither", 0.0;
+		DamageFactor "Fire", 0.0;
+		
+		Tag "Wither Skeleton";
+		Obituary "%o 's flesh withered away thanks to a Wither Skeleton.";
+	}
+}
+
+Class MCSkeletonArmRight : MCBodyPartArm
+{
+}
+
+Class MCSkeletonArmLeft : MCBodyPartArm
+{
+}
+
+Class MCSkeletonBody : MCBodyPartBody
+{
+}
+
+Class MCSkeletonHead : MCBodyPartHead
+{
+}
+
+Class MCSkeletonLegRight : MCBodyPartLeg
+{
+}
+
+Class MCSkeletonLegLeft : MCBodyPartLeg
+{
+}
+
+Class MCSkeletonArmGib : MCBodyPartGib
+{
+}
+
+Class MCSkeletonHeadGib : MCBodyPartGib
+{
+}
+
+Class MCSkeletonLegGib : MCBodyPartGib
+{
+}
+
+//------------------------------------------------------------------------------
+// Stray edition. The only difference is the extra coverings and different head.
+// These go over the skeleton's positions, and the arms stick out a little more.
+//------------------------------------------------------------------------------
+
+Class MCSkeletonStrayArmRight : MCBodyPartArm
+{
+}
+
+Class MCSkeletonStrayArmLeft : MCBodyPartArm
+{
+}
+
+Class MCSkeletonStrayLeg : MCBodyPartLeg
+{
+}
+
+Class MCSkeletonStrayBody : MCBodyPartBody
+{
+}
+
+Class MCSkeletonStrayHead : MCBodyPartHead
+{
+}
+
+Class MCSkeletonStrayHeadGib : MCBodyPartGib
+{
+}
+
+Class MCSkeletonStrayArmGib : MCBodyPartGib
+{
+}
+
+Class MCSkeletonStrayLegGib : MCBodyPartGib
+{
+}

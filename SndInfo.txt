@@ -1,0 +1,335 @@
+//==============================================================================
+// General/Random
+//==============================================================================
+//Minecraft/	"Sounds/Minecraft
+Minecraft/Bow		"Sounds/Minecraft/bow.ogg"
+Minecraft/BowHit	"Sounds/Minecraft/bowhit1.ogg"
+Minecraft/FallBig	"Sounds/Minecraft/fallbig.ogg"
+Minecraft/FallSmall	"Sounds/Minecraft/fallsmall.ogg"
+Minecraft/Hit1		"Sounds/Minecraft/hit1.ogg"
+Minecraft/Hit2		"Sounds/Minecraft/hit2.ogg"
+Minecraft/Hit3		"Sounds/Minecraft/hit3.ogg"
+
+Minecraft/Explode1	"Sounds/Minecraft/random/explode1.ogg"
+Minecraft/Explode2	"Sounds/Minecraft/random/explode2.ogg"
+Minecraft/Explode3	"Sounds/Minecraft/random/explode3.ogg"
+Minecraft/Explode4	"Sounds/Minecraft/random/explode4.ogg"
+Minecraft/Fuse		"Sounds/Minecraft/random/fuse.ogg"
+Minecraft/Fizz		"Sounds/Minecraft/random/fizz.ogg"
+
+$random Minecraft/Explode
+{
+	Minecraft/Explode1
+	Minecraft/Explode2
+	Minecraft/Explode3
+	Minecraft/Explode4
+}
+$random Minecraft/Hit
+{
+	Minecraft/Hit1
+	Minecraft/Hit2
+	Minecraft/Hit3
+}
+
+$limit Minecraft/Hit 0
+$limit Minecraft/Explode 0
+
+
+Minecraft/Creeper/Hiss		"Sounds/Minecraft/random/fuse.ogg"
+$pitchset Minecraft/Creeper/Hiss 0.5;
+$limit Minecraft/Creeper/Hiss 0;
+
+//==============================================================================
+// Zombie
+//==============================================================================
+Minecraft/Zombie/Idle1	"Sounds/Minecraft/mob/Zombie/say1.ogg"
+Minecraft/Zombie/Idle2	"Sounds/Minecraft/mob/Zombie/say2.ogg"
+Minecraft/Zombie/Idle3	"Sounds/Minecraft/mob/Zombie/say3.ogg"
+
+Minecraft/Zombie/Pain1	"Sounds/Minecraft/mob/Zombie/hurt1.ogg"
+Minecraft/Zombie/Pain2	"Sounds/Minecraft/mob/Zombie/hurt2.ogg"
+
+Minecraft/Zombie/Step1	"Sounds/Minecraft/mob/Zombie/step1.ogg"
+Minecraft/Zombie/Step2	"Sounds/Minecraft/mob/Zombie/step2.ogg"
+Minecraft/Zombie/Step3	"Sounds/Minecraft/mob/Zombie/step3.ogg"
+Minecraft/Zombie/Step4	"Sounds/Minecraft/mob/Zombie/step4.ogg"
+Minecraft/Zombie/Step5	"Sounds/Minecraft/mob/Zombie/step5.ogg"
+
+Minecraft/Zombie/Death	"Sounds/Minecraft/mob/Zombie/death.ogg"
+
+$random Minecraft/Zombie/Idle
+{
+	Minecraft/Zombie/Idle1
+	Minecraft/Zombie/Idle2
+	Minecraft/Zombie/Idle3
+}
+
+$random Minecraft/Zombie/Pain
+{
+	Minecraft/Zombie/Pain1
+	Minecraft/Zombie/Pain2
+}
+$random Minecraft/Zombie/Step
+{
+	Minecraft/Zombie/Step1
+	Minecraft/Zombie/Step3
+	Minecraft/Zombie/Step3
+	Minecraft/Zombie/Step4
+	Minecraft/Zombie/Step5
+}
+
+$limit Minecraft/Zombie/Idle 0
+$limit Minecraft/Zombie/Pain 0
+$limit Minecraft/Zombie/Death 0
+$limit Minecraft/Zombie/Step 0
+
+//==============================================================================
+// Creeper
+//==============================================================================
+Minecraft/Creeper/Pain1	"Sounds/Minecraft/mob/creeper/say1.ogg"
+Minecraft/Creeper/Pain2	"Sounds/Minecraft/mob/creeper/say2.ogg"
+Minecraft/Creeper/Pain3	"Sounds/Minecraft/mob/creeper/say3.ogg"
+Minecraft/Creeper/Pain4	"Sounds/Minecraft/mob/creeper/say4.ogg"
+Minecraft/Creeper/Death	"Sounds/Minecraft/mob/creeper/death.ogg"
+
+$random Minecraft/Creeper/Pain
+{
+	Minecraft/Creeper/Pain1
+	Minecraft/Creeper/Pain2
+	Minecraft/Creeper/Pain3
+	Minecraft/Creeper/Pain4
+}
+$limit Minecraft/Creeper/Pain 0
+$limit Minecraft/Creeper/Death 0
+
+
+//==============================================================================
+// Skeletons
+//==============================================================================
+
+// Regular
+Minecraft/Skeleton/Death	"Sounds/Minecraft/mob/skeleton/death.ogg"
+Minecraft/Skeleton/Hurt1	"Sounds/Minecraft/mob/skeleton/hurt1.ogg"
+Minecraft/Skeleton/Hurt2	"Sounds/Minecraft/mob/skeleton/hurt2.ogg"
+Minecraft/Skeleton/Hurt3	"Sounds/Minecraft/mob/skeleton/hurt3.ogg"
+Minecraft/Skeleton/Hurt4	"Sounds/Minecraft/mob/skeleton/hurt4.ogg"
+Minecraft/Skeleton/Say1		"Sounds/Minecraft/mob/skeleton/say1.ogg"
+Minecraft/Skeleton/Say2		"Sounds/Minecraft/mob/skeleton/say2.ogg"
+Minecraft/Skeleton/Say3		"Sounds/Minecraft/mob/skeleton/say3.ogg"
+Minecraft/Skeleton/Step1	"Sounds/Minecraft/mob/skeleton/step1.ogg"
+Minecraft/Skeleton/Step2	"Sounds/Minecraft/mob/skeleton/step2.ogg"
+Minecraft/Skeleton/Step3	"Sounds/Minecraft/mob/skeleton/step3.ogg"
+Minecraft/Skeleton/Step4	"Sounds/Minecraft/mob/skeleton/step4.ogg"
+
+$random Minecraft/Skeleton/Hurt
+{
+	Minecraft/Skeleton/Hurt1
+	Minecraft/Skeleton/Hurt2
+	Minecraft/Skeleton/Hurt3
+	Minecraft/Skeleton/Hurt4
+}
+$random Minecraft/Skeleton/Idle
+{
+	Minecraft/Skeleton/Say1
+	Minecraft/Skeleton/Say2
+	Minecraft/Skeleton/Say3
+}
+$random Minecraft/Skeleton/Step
+{
+	Minecraft/Skeleton/Step1
+	Minecraft/Skeleton/Step2
+	Minecraft/Skeleton/Step3
+	Minecraft/Skeleton/Step4
+}
+
+$limit Minecraft/Skeleton/Death 0
+$limit Minecraft/Skeleton/Hurt 0
+$limit Minecraft/Skeleton/Idle 0
+$limit Minecraft/Skeleton/Step 0
+
+// Stray
+Minecraft/Stray/Death1	"Sounds/Minecraft/mob/Stray/death1.ogg"
+Minecraft/Stray/Death2	"Sounds/Minecraft/mob/Stray/death2.ogg"
+Minecraft/Stray/Hurt1	"Sounds/Minecraft/mob/Stray/hurt1.ogg"
+Minecraft/Stray/Hurt2	"Sounds/Minecraft/mob/Stray/hurt2.ogg"
+Minecraft/Stray/Hurt3	"Sounds/Minecraft/mob/Stray/hurt3.ogg"
+Minecraft/Stray/Hurt4	"Sounds/Minecraft/mob/Stray/hurt4.ogg"
+Minecraft/Stray/Idle1	"Sounds/Minecraft/mob/Stray/idle1.ogg"
+Minecraft/Stray/Idle2	"Sounds/Minecraft/mob/Stray/idle2.ogg"
+Minecraft/Stray/Idle3	"Sounds/Minecraft/mob/Stray/idle3.ogg"
+Minecraft/Stray/Idle4	"Sounds/Minecraft/mob/Stray/idle4.ogg"
+Minecraft/Stray/Step1	"Sounds/Minecraft/mob/Stray/step1.ogg"
+Minecraft/Stray/Step2	"Sounds/Minecraft/mob/Stray/step2.ogg"
+Minecraft/Stray/Step3	"Sounds/Minecraft/mob/Stray/step3.ogg"
+Minecraft/Stray/Step4	"Sounds/Minecraft/mob/Stray/step4.ogg"
+
+$random Minecraft/Stray/Death
+{
+	Minecraft/Stray/Death1
+	Minecraft/Stray/Death2
+}
+$random Minecraft/Stray/Hurt
+{
+	Minecraft/Stray/Hurt1
+	Minecraft/Stray/Hurt2
+	Minecraft/Stray/Hurt3
+	Minecraft/Stray/Hurt4
+}
+$random Minecraft/Stray/Idle
+{
+	Minecraft/Stray/Idle1
+	Minecraft/Stray/Idle2
+	Minecraft/Stray/Idle3
+	Minecraft/Stray/Idle4
+}
+$random Minecraft/Stray/Step
+{
+	Minecraft/Stray/Step1
+	Minecraft/Stray/Step2
+	Minecraft/Stray/Step3
+	Minecraft/Stray/Step4
+}
+
+
+$limit Minecraft/Stray/Death 0
+$limit Minecraft/Stray/Hurt 0
+$limit Minecraft/Stray/Idle 0
+$limit Minecraft/Stray/Step 0
+
+// Wither
+Minecraft/WitherSkeleton/Death1	"Sounds/Minecraft/mob/WitherSkeleton/death1.ogg"
+Minecraft/WitherSkeleton/Death2	"Sounds/Minecraft/mob/WitherSkeleton/death2.ogg"
+Minecraft/WitherSkeleton/Hurt1	"Sounds/Minecraft/mob/WitherSkeleton/hurt1.ogg"
+Minecraft/WitherSkeleton/Hurt2	"Sounds/Minecraft/mob/WitherSkeleton/hurt2.ogg"
+Minecraft/WitherSkeleton/Hurt3	"Sounds/Minecraft/mob/WitherSkeleton/hurt3.ogg"
+Minecraft/WitherSkeleton/Hurt4	"Sounds/Minecraft/mob/WitherSkeleton/hurt4.ogg"
+Minecraft/WitherSkeleton/Idle1	"Sounds/Minecraft/mob/WitherSkeleton/idle1.ogg"
+Minecraft/WitherSkeleton/Idle2	"Sounds/Minecraft/mob/WitherSkeleton/idle2.ogg"
+Minecraft/WitherSkeleton/Idle3	"Sounds/Minecraft/mob/WitherSkeleton/idle3.ogg"
+Minecraft/WitherSkeleton/Idle4	"Sounds/Minecraft/mob/WitherSkeleton/idle4.ogg"
+Minecraft/WitherSkeleton/Step1	"Sounds/Minecraft/mob/WitherSkeleton/step1.ogg"
+Minecraft/WitherSkeleton/Step2	"Sounds/Minecraft/mob/WitherSkeleton/step2.ogg"
+Minecraft/WitherSkeleton/Step3	"Sounds/Minecraft/mob/WitherSkeleton/step3.ogg"
+Minecraft/WitherSkeleton/Step4	"Sounds/Minecraft/mob/WitherSkeleton/step4.ogg"
+
+$random Minecraft/WitherSkeleton/Death
+{
+	Minecraft/WitherSkeleton/Death1
+	Minecraft/WitherSkeleton/Death2
+}
+$random Minecraft/WitherSkeleton/Hurt
+{
+	Minecraft/WitherSkeleton/Hurt1
+	Minecraft/WitherSkeleton/Hurt2
+	Minecraft/WitherSkeleton/Hurt3
+	Minecraft/WitherSkeleton/Hurt4
+}
+$random Minecraft/WitherSkeleton/Idle
+{
+	Minecraft/WitherSkeleton/Idle1
+	Minecraft/WitherSkeleton/Idle2
+	Minecraft/WitherSkeleton/Idle3
+	Minecraft/WitherSkeleton/Idle4
+}
+$random Minecraft/WitherSkeleton/Step
+{
+	Minecraft/WitherSkeleton/Step1
+	Minecraft/WitherSkeleton/Step2
+	Minecraft/WitherSkeleton/Step3
+	Minecraft/WitherSkeleton/Step4
+}
+
+$limit Minecraft/WitherSkeleton/Death 0
+$limit Minecraft/WitherSkeleton/Hurt 0
+$limit Minecraft/WitherSkeleton/Idle 0
+$limit Minecraft/WitherSkeleton/Step 0
+
+//==============================================================================
+// Spider
+//==============================================================================
+Minecraft/Spider/Death	"Sounds/Minecraft/mob/spider/death.ogg"
+Minecraft/Spider/Say1	"Sounds/Minecraft/mob/spider/say1.ogg"
+Minecraft/Spider/Say2	"Sounds/Minecraft/mob/spider/say2.ogg"
+Minecraft/Spider/Say3	"Sounds/Minecraft/mob/spider/say3.ogg"
+Minecraft/Spider/Say4	"Sounds/Minecraft/mob/spider/say4.ogg"
+Minecraft/Spider/Step1	"Sounds/Minecraft/mob/spider/step1.ogg"
+Minecraft/Spider/Step2	"Sounds/Minecraft/mob/spider/step2.ogg"
+Minecraft/Spider/Step3	"Sounds/Minecraft/mob/spider/step3.ogg"
+Minecraft/Spider/Step4	"Sounds/Minecraft/mob/spider/step4.ogg"
+
+$random Minecraft/Spider/Idle
+{
+	Minecraft/Spider/Say1
+	Minecraft/Spider/Say2
+	Minecraft/Spider/Say3
+	Minecraft/Spider/Say4
+}
+$random Minecraft/Spider/Step
+{
+	Minecraft/Spider/Step1
+	Minecraft/Spider/Step2
+	Minecraft/Spider/Step3
+	Minecraft/Spider/Step4
+}
+
+$limit Minecraft/Spider/Death 0
+$limit Minecraft/Spider/Idle 0
+$limit Minecraft/Spider/Step 0
+
+
+//==============================================================================
+// Enderman
+//==============================================================================
+Minecraft/Enderman/Hit1		"Sounds/Minecraft/mob/Enderman/hit1.ogg"
+Minecraft/Enderman/Hit2		"Sounds/Minecraft/mob/Enderman/hit2.ogg"
+Minecraft/Enderman/Hit3		"Sounds/Minecraft/mob/Enderman/hit3.ogg"
+Minecraft/Enderman/Hit4		"Sounds/Minecraft/mob/Enderman/hit4.ogg"
+Minecraft/Enderman/Idle1	"Sounds/Minecraft/mob/Enderman/idle1.ogg"
+Minecraft/Enderman/Idle2	"Sounds/Minecraft/mob/Enderman/idle2.ogg"
+Minecraft/Enderman/Idle3	"Sounds/Minecraft/mob/Enderman/idle3.ogg"
+Minecraft/Enderman/Idle4	"Sounds/Minecraft/mob/Enderman/idle4.ogg"
+Minecraft/Enderman/Idle5	"Sounds/Minecraft/mob/Enderman/idle5.ogg"
+Minecraft/Enderman/Portal1	"Sounds/Minecraft/mob/Enderman/portal1.ogg"
+Minecraft/Enderman/Portal2	"Sounds/Minecraft/mob/Enderman/portal2.ogg"
+Minecraft/Enderman/Scream1	"Sounds/Minecraft/mob/Enderman/scream1.ogg"
+Minecraft/Enderman/Scream2	"Sounds/Minecraft/mob/Enderman/scream2.ogg"
+Minecraft/Enderman/Scream3	"Sounds/Minecraft/mob/Enderman/scream3.ogg"
+Minecraft/Enderman/Scream4	"Sounds/Minecraft/mob/Enderman/scream4.ogg"
+
+Minecraft/Enderman/Death	"Sounds/Minecraft/mob/Enderman/death.ogg"
+Minecraft/Enderman/Stare	"Sounds/Minecraft/mob/Enderman/stare.ogg"
+
+$random Minecraft/Enderman/Hit
+{
+	Minecraft/Enderman/Hit1
+	Minecraft/Enderman/Hit2
+	Minecraft/Enderman/Hit3
+	Minecraft/Enderman/Hit4
+}
+$random Minecraft/Enderman/Idle
+{
+	Minecraft/Enderman/Idle1
+	Minecraft/Enderman/Idle2
+	Minecraft/Enderman/Idle3
+	Minecraft/Enderman/Idle4
+	Minecraft/Enderman/Idle5
+}
+$random Minecraft/Enderman/Portal
+{
+	Minecraft/Enderman/Portal1
+	Minecraft/Enderman/Portal2
+}
+$random Minecraft/Enderman/Scream
+{
+	Minecraft/Enderman/Scream1
+	Minecraft/Enderman/Scream2
+	Minecraft/Enderman/Scream3
+	Minecraft/Enderman/Scream4
+}
+
+$limit Minecraft/Enderman/Death	0
+$limit Minecraft/Enderman/Stare 0
+$limit Minecraft/Enderman/Hit 0
+$limit Minecraft/Enderman/Idle 0
+$limit Minecraft/Enderman/Portal 0
+$limit Minecraft/Enderman/Scream 0

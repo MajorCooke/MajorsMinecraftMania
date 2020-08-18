@@ -1,0 +1,321 @@
+//==============================================================================
+// Zombie
+// 
+// Undead monsters that are surprisingly aware at knowing what to avoid... mostly.
+// A common enemy that can spawn in packs.
+//
+// + Slow, lumbering
+// + Weakness: Head
+// + Burns in bright areas with a sky overhead
+// - Has a chance to turn into a Skeleton if the head is exploited too much
+// 		without killing it
+// - Can call other zombies to fight with it, which can make more spawn.
+//==============================================================================
+
+/*
+
+Minecraft/Zombie/Death
+Minecraft/Zombie/Idle
+Minecraft/Zombie/Pain
+Minecraft/Zombie/Step
+
+Head:		0.0,	0.0, 	4.8
+(Gib) Body:	0.0,	0.0,	3.6
+Arms:		0.0,	+-1.2,	4.4
+Legs:		0.0,	+-0.4,	2.4
+
+Gib Head: 	0.0,	0.0,	5.6
+Gib Arms: 	0.0,	+-1.2,	3.6
+Gib Leg:	0.0,	+-0.4,	1.2
+*/
+
+Class MCZombie : MinecraftEnemy
+{
+	enum EAction
+	{
+		E_Idle,
+		E_Wander,
+		E_Chase
+	};
+	
+	const _Radius = 1.6;
+	const _Height = 6.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	
+	private int CurrentAction;
+
+	mixin NormalLimbCount;
+
+	Default
+	{
+		
+		MinecraftEnemy.PeacefulDespawn false; // Remove once testing is complete.
+		MinecraftEnemy.Passive false;
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		Health 200;
+		Speed 3;
+		MeleeRange RealRadius + 4;
+		
+		ActiveSound "Minecraft/Zombie/Idle";
+		PainSound "Minecraft/Zombie/Pain";
+		DeathSound "Minecraft/Zombie/Death";
+		MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
+		
+		DamageFactor 0.92;
+		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 64 x 64). Here it's shorter.
+		
+		Tag "Zombie";
+		Obituary "%o joined the 'breeeyynns' club, courtesy of a zombie's invitation.";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = MCBodyPart(Spawn('MCZombieHead', pos));
+		Limb[Body] = MCBodyPart(Spawn('MCZombieBody', pos));
+		Limb[ArmR] = MCBodyPart(Spawn('MCZombieArmRight', pos));
+		Limb[ArmL] = MCBodyPart(Spawn('MCZombieArmLeft', pos));
+		Limb[LegR] = MCBodyPart(Spawn('MCZombieLegRight', pos));
+		Limb[LegL] = MCBodyPart(Spawn('MCZombieLegLeft', pos));
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Limb[i].Master = self;
+				Limb[i].Owner = self;
+				Limb[i].Scale = Scale;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
+		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
+		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
+		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
+		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
+		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		
+		Limb[ArmR].SetPitch(-90);
+		Limb[ArmL].SetPitch(-90);
+	}
+	
+	override void SetMeleeAnimation()
+	{
+		if (Limb[ArmR] && Limb[ArmL])
+		{
+			bool c1 = Limb[ArmR].SetAnimation('ZombieMelee');
+			bool c2 = Limb[ArmL].SetAnimation('ZombieMelee');
+		}
+	}
+	
+	// When taking fire/slime damage, try to get out of the sector by fleeing
+	// towards the nearest mass of land, if without a target.
+	/*
+	override void DamageReact(Actor inf, Actor src, int damage, Name mod, int flags, double angle)
+	{
+		return;
+		
+		if (health < 1)	return;
+		
+		if (!inf && !src && (mod == 'Slime' || mod == 'Fire') && !Goal && !ValidateTarget() &&
+			CurSector.DamageAmount > 0)
+		{
+			// Get a list of all sectors.
+			let ctr = MC_Map.GetIntersectingSectors(self, 2048);
+			if (!ctr)
+			{
+				
+				for (int i = 0; i < ctr.Sectors.Size(); i++)
+				{
+					Sector s = ctr.Sectors[i];
+					if (!s || s == CurSector)	continue;
+					
+					// Don't set a goal in the midst of another damaging sector.
+					if (s.DamageAmount > 0 && ApplyDamageFactor(s.DamageType, TELEFRAG_DAMAGE) > 0)
+						continue;
+					
+					// Some extra checks need to be included here, to get the 
+					// slope if needed. Check each vertex pair and 
+					if (s.bottom.IsSlope() || s.top.IsSlope())
+					{
+					}
+				}
+			}
+		}
+	}
+	*/
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+		
+		int limit = random[rng](1,2);
+		for (int i = 0; i < limit; i++)
+		{
+			Event.DropItem(self, 'HealthBonus');
+			Event.DropItem(self, 'ArmorBonus');
+		}
+		return true;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 35;
+	Idle:
+		TNT1 A 0 A_Jump(256, random(1, 4));
+		TNT1 AAAAAAAAAA 17 Look();
+	IdleMove:
+		TNT1 A 0 
+		{
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	See:
+		TNT1 A 1 Chase();
+		Wait;
+	Melee:
+		TNT1 A 1 DoMelee(10);
+		Goto See;
+	}
+}
+
+//------------------------------------------------------------------------------
+// Husks
+// 
+// - Doesn't burn in daylight
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// Drowned
+// 
+// - Can swim
+// - Can wield a trident
+// - Doesn't burn in daylight
+// - Immune to drowning
+//------------------------------------------------------------------------------
+
+
+//==============================================================================
+//==============================================================================
+// Limbs
+//==============================================================================
+//==============================================================================
+
+
+Class MCZombieHead : MCBodyPartHead
+{
+	Default
+	{
+		Radius 4;
+		Height 4;
+	}
+
+	States
+	{
+	Spawn:
+		ASDF A -1;
+		Stop;
+	}
+}
+
+Class MCZombieBody : MCBodyPartBody
+{
+}
+
+Class MCZombieLegRight : MCBodyPartLeg
+{
+	Default
+	{
+		Radius 0.8;
+		Height 2.0;
+	}
+}
+
+Class MCZombieLegLeft : MCZombieLegRight
+{
+	Default
+	{
+		MCBodyPart.VelSineOffset 180;
+	}
+}
+
+Class MCZombieArmRight : MCBodyPartArm
+{
+	Default
+	{
+		Radius 0.8;
+		Height 2.0;
+	}
+}
+
+Class MCZombieArmLeft : MCZombieArmRight
+{
+	Default
+	{
+		MCBodyPart.SineOffset 180, 180, 180;
+	}
+}
+
+//------------------------------------------------------------------------------
+// Gibs
+//------------------------------------------------------------------------------
+
+Class MCZombieHeadGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0, 0, 5.6;		//Head
+	}
+}
+
+Class MCZombieArmRightGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0,  1.2, 3.6;		//Right Arm
+	}
+}
+
+Class MCZombieArmLeftGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0, -1.2, 3.6;		//Left Arm
+	}
+}
+
+Class MCZombieLegRightGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0,  0.4, 1.2;		//Right Leg
+	}
+}
+Class MCZombieLegLeftGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0, -0.4, 1.2;		//Left Leg
+	}
+}
+
+Class MCZombieBodyGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.Offsets 0, 0, 3.6;
+	}
+}
+

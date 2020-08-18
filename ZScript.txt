@@ -1,0 +1,32 @@
+version "4.4"
+
+#include "ZMinecraft/Base.txt"
+#include "ZMinecraft/Constants.txt"
+#include "ZMinecraft/Debug.txt"
+#include "ZMinecraft/Drops.txt"
+#include "ZMinecraft/Effects.txt"
+#include "ZMinecraft/Event.txt"
+#include "ZMinecraft/Mixins.txt"
+#include "ZMinecraft/Monster.txt"
+#include "ZMinecraft/Limbs.txt"
+#include "ZMinecraft/SFX.txt"
+//#include "ZMinecraft/Sounds.txt"
+
+#include "ZMinecraft/Menu/MinecraftMenu.txt"
+
+
+// Monsters
+#include "ZMinecraft/Monsters/Creeper.txt"
+#include "ZMinecraft/Monsters/Zombie.txt"
+#include "ZMinecraft/Monsters/Skeleton.txt"
+#include "ZMinecraft/Monsters/Spider.txt"
+#include "ZMinecraft/Monsters/Enderman.txt"
+#include "ZMinecraft/Monsters/Pigman.txt"
+#include "ZMinecraft/Monsters/Ghast.txt"
+#include "ZMinecraft/Monsters/Blaze.txt"
+#include "ZMinecraft/Monsters/Silverfish.txt"
+#include "ZMinecraft/Monsters/Wolf.txt"
+
+// Bosses
+#include "ZMinecraft/Monsters/Bosses/EnderDragon.txt"
+#include "ZMinecraft/Monsters/Bosses/Wither.txt"

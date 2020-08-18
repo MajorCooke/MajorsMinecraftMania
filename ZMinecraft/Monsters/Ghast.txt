@@ -1,0 +1,18 @@
+//==============================================================================
+// Ghast
+// 
+// Big crying ghosts that shoot massive fireballs.
+// + Slow
+// + Reflected fireballs instantly kill them
+// - Immune to fire
+// - Sporadic movement pattern makes it more difficult to hit
+//==============================================================================
+
+Class MCGhast : MinecraftEnemy
+{
+	Default
+	{
+		DamageFactor "Fire", 0.0;
+		DamageFactor "Slime", 0.0;
+	}
+}

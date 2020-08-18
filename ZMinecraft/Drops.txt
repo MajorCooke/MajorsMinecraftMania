@@ -1,0 +1,44 @@
+//==============================================================================
+// Drop Timer
+//==============================================================================
+
+Class MCDropTimer : Thinker
+{
+	Inventory Item;
+	int Timer;
+	
+	static MCDropTimer Create(Inventory Item)
+	{
+		if (!Item || Item.Owner || MCC_ItemTimer < 1)
+			return null;
+			
+		let t = new('MCDropTimer');
+		t.Item = Item;
+		t.Timer = Minute * MCC_ItemTimer;
+		return t;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		if (MCC_ItemTimer <= 0 || !Item || Item.Owner)
+			Destroy();
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED || level.IsFrozen())
+			return;
+			
+		if (!Item || Item.Owner)	{	Destroy();	return;	}
+		
+		if (Timer > 0)	Timer--;
+		else Item.A_FadeOut(0.05);
+	}
+}
+
+Class MCZombieItems : RandomSpawner
+{
+	
+}

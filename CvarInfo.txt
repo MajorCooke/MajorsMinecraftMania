@@ -1,0 +1,54 @@
+
+
+// Difficulty
+// 0 = Easy, 1 = Normal, 2 = Hard.
+// Easy are simplest and deal the least damage.
+// Normal have increased spawn rates with low damage. Some monsters inflict effects.
+// Hard deals increased damage.
+server int MCC_Difficulty = 1;
+
+//==============================================================================
+// Peaceful Behavior
+//==============================================================================
+
+// Peaceful mode serves to pacify or remove mobs. Useful if they're too much
+// in the way.
+server bool MCC_Peaceful = false;
+
+// 0 = Despawn
+// 1 = Follow Minecraft rules (despawns hostile mobs)
+// 2 = Docile monsters, more do not spawn.
+// 3 = 2 but they still spawn.
+server int MCC_PeacefulBehavior = 0;
+
+
+//==============================================================================
+// Spawn Properties
+//==============================================================================
+
+// Multiplies how many monsters can spawn in packs.
+server float MCC_PackMul = 1.0;
+// Multiplies how many can be spawned at once.
+server float MCC_SpawnMul = 1.0;
+
+//==============================================================================
+// Monster Properties
+//==============================================================================
+
+// Monsters move directly towards their targets if they can.
+server bool MCC_EnhancedChase = true;
+
+// Idle swaying animation. Disabling this might slightly improve performance.
+server bool MCC_IdleSway = true;
+
+// Monsters can drop ammo/health/armor
+server bool MCC_DropItems = true;
+
+// Timer in minutes to wait before despawning items spawned by monsters.
+server int MCC_ItemTimer = 2;
+
+// Gibs start fading out the moment they stop moving if enabled.
+server bool MCC_ShortGibLives = false;
+
+// Monsters take damage from sectors.
+server bool MCC_EnvironmentDamage = true;

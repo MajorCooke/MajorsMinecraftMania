@@ -1,0 +1,43 @@
+AddOptionMenu "OptionsMenu"
+{
+	Submenu "Minecraft Options", "MinecraftOptions"
+}
+
+OptionMenu "MinecraftOptions"
+{
+	Class "MinecraftMenu"
+	Title "$MCM_OPTIONS_TITLE"
+	Position -64
+	
+	StaticText "Difficulty Settings", GOLD
+	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
+	MinecraftOption "$MCM_PEACEFUL_TEXT", "$MCM_PEACEFUL_SUB",			MCC_Peaceful,			"OnOff"
+	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
+	StaticText ""
+	StaticText "Monster Tweaks", GOLD
+	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
+	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
+	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT", "$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
+	/*
+	MinecraftOption "$CP_VANILLA_TEXT",			"$CP_VANILLA_SUB",		CP_VanillaMode,		"OnOff"
+	MinecraftOption "$CP_SILENT_ITEMS_TEXT",	"$CP_SILENT_ITEMS_SUB", CP_SilentItems,		"OnOff"
+	MinecraftOption "$CP_RELOAD_TEXT",			"$CP_RELOAD_SUB",		CP_NoReloading,		"NoYes"
+	MinecraftSlider "$CP_CORPSETIMER_TEXT",		"$CP_CORPSETIMER_SUB",	CP_CorpseTimer,		0, 10, 1
+	MinecraftSlider "$CP_ITEMTIMER_TEXT",		"$CP_ITEMTIMER_SUB",	CP_ItemTimer,		0, 10, 1
+	*/
+}
+
+OptionValue "DifficultySelection"
+{
+	0, "Easy"
+	1, "Normal"
+	2, "Hard"
+}
+
+OptionValue "PeacefulBehaviors"
+{
+	0, "Force Despawn"
+	1, "Minecraft Peaceful"
+	2, "No (De)Spawning"
+	3, "Allow Spawning"
+}

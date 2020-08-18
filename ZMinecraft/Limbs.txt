@@ -1,0 +1,547 @@
+//==============================================================================
+//==============================================================================
+// Body parts
+//==============================================================================
+//==============================================================================
+
+// NOTICE: Each limb that can 'swing' needs a radius and height defined in order 
+// to properly scale the swaying. Use the measurement tool and measure from the
+// bottom of the limb to the pivot point. By 'swing', it's effectively the legs
+// moving forward and backwards while the monster moves.
+
+Class MCBodyPart : MinecraftEntity
+{
+	protected int CurAction;
+	protected double LimbLength;
+	protected MCBodyPart Attachment;
+	protected Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
+		PosOff,		// Position Offsets
+		AngOff,		// Secondary angle offsets (reset every tic to (0,0,0)
+		CurAng,		// The current angle, pitch and roll.
+		MainAng,	// Primary angle offsets (not reset)
+		NextAng,	// For spring dampening. Target angles to reach.
+		VelAng; 	// Current velocity of transition to NextAng.
+	protected MC_QuatTurner Turner;
+	protected Class<MCBodyPartGib> Gib;
+	
+	double
+			OffX, OffY, OffZ,
+			VelSineOffset,
+			SOX, SOY, SOZ, 
+			SDX, SDY, SDZ, 
+			SSX, SSY, SSZ;
+	
+	LimbSway Sway;
+	LimbSwing Swing;
+	MinecraftEnemy Owner;
+	
+	Property CurAction : CurAction;			// See Constants.txt
+	Property LimbLength: LimbLength;
+	Property SineOffset: SOX, SOY, SOZ;
+	Property SineDistance: SDX, SDY, SDZ;
+	Property SineSpeed: SSX, SSY, SSZ;
+	Property VelSineOffset: VelSineOffset;
+	Property Offsets: OffX, OffY, OffZ;
+	Property Gib: Gib;
+	
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOTRIGGER
+	}
+	
+	override void Activate(Actor activator)
+	{
+		if (bKILLED || bDESTROYED || !Owner || !bDORMANT)	return;
+		if (Attachment)	Attachment.Activate(activator);
+		doSpring = false;
+		bDONTINTERPOLATE = true;
+		UpdatePosition(Master);
+		UpdateAngles(NextAng + MainAng);
+		bDONTINTERPOLATE = bINVISIBLE = bDORMANT = false;
+	}
+	
+	override void Deactivate(Actor activator)
+	{
+		if (bKILLED || bDESTROYED || !Owner)	return;
+		if (Attachment)	Attachment.Deactivate(activator);
+		bINVISIBLE = bDORMANT = true;
+	}
+	
+	override void Tick()
+	{	
+		if (!Owner || IsFrozen() || bDESTROYED || bDORMANT)	return;
+		
+		DoPreMotion();
+		Super.Tick();
+		DoMotion();
+		
+		if (!bKILLED)
+		{
+			if (Attachment)
+			{
+				Attachment.bBRIGHT = bBRIGHT;
+				Attachment.bINVISIBLE = bINVISIBLE;
+			}
+		}
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		if (LimbLength <= 0)
+			LimbLength = Height;
+		
+		Sway.Init((SOX,SOY,SOZ), (SDX, SDY, SDZ), (SSX, SSY, SSZ));
+		Swing.Init(VelSineOffset, LimbLength, Scale.Y);
+		Turner = MC_QuatTurner.Create();
+		
+		NextAng = (Angle, Pitch, Roll);
+		CurAng = NextAng + MainAng + AngOff;
+	}
+	
+	override void OnDestroy()
+	{
+		if (Attachment)
+			Attachment.Destroy();
+		Super.OnDestroy();
+	}
+	
+	//--------------------------------------------------------------------------
+	// Custom functions
+	//--------------------------------------------------------------------------
+	
+	// Offsets are relative, a la A_SpawnItemEx/A_Warp.
+	void SpawnGib(double VelLen, Vector3 Ofs = (0,0,0))
+	{
+		if (bKILLED || bDESTROYED)	return;
+		if (Attachment)	Attachment.SpawnGib(VelLen, Ofs);
+		bKILLED = true;
+		
+		// I've named all the gibs after the same with the "gib" affix after
+		// so this will suffice, but the Gib property can still be overridden
+		// for customization sake.
+		
+		if (!Gib)	
+		{
+			String gname = GetClassName().."Gib";
+			Gib = gname;
+			
+			if (!Gib)	return;
+		}
+		
+		let g = MCBodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
+		if (g)
+		{
+			g.Warp(self, 
+				(Ofs.X + g.OffX) * cos(pitch), 
+				(Ofs.Y + g.OffY), 
+				(Ofs.Z + g.OffZ) * -sin(pitch), 
+				0, WARPF_NOCHECKPOSITION);
+			g.Angle = Angle;
+			g.Pitch = Pitch;
+			g.Roll = Roll;
+			g.Scale = Scale;
+			
+			bINVISIBLE = true;
+			
+			// Apply a random velocity in the event there's little speed.
+			g.Vel3DFromAngle(frandom(3.0,6.0), random(0,359), random(-90, 45));
+			if (Owner) 
+				g.Vel += Owner.Vel;
+			/*
+			Vector3 TempVel = g.Vel;
+			
+			[g.Angle, g.Pitch] = S7_Math.GetAnglesTo(level, g.pos, g.pos + g.vel);
+			
+			Turner = MC_QuatTurner.Create();
+			[g.Angle, g.Pitch, g.Roll] = Turner.GetTurnActorDouble(g, frandom(-20,20), frandom(-20,20), 0);
+			
+			// NOW apply the primary velocity of the owner.
+			g.Vel3DFromAngle((VelLen + TempVel.Length()) * 0.75, g.Angle, g.Pitch);
+			*/
+		}
+		Destroy();
+	}
+	
+	void SetPosOffsets(Vector3 Off, bool scaling = true)
+	{
+		PosOff = Off;
+		OffX = Off.X;
+		OffY = Off.Y;
+		OffZ = Off.Z;
+		if (scaling) UpdateScales(Scale);
+		UpdatePosition(Master);
+	}
+	
+	void UpdateScales(Vector2 Scale)
+	{
+		self.Scale = Scale;
+		PosOff.XY = (OffX, OffY) * Scale.X;
+		PosOff.Z  = OffZ * Scale.Y;
+		A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
+	}
+	
+	virtual void UpdatePosition(Actor who, int flags = 0)
+	{
+		if (who)
+			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);
+		if (Attachment)
+			Attachment.UpdatePosition(self, flags);
+	}
+	
+	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
+	{
+		if (!Owner)	return;
+		A_SetAngle(Next.X + AngOff.X, turnflags);
+		A_SetPitch(Next.Y + AngOff.Y, turnflags);
+		A_SetRoll(Next.Z + AngOff.Z, turnflags);
+	}
+	
+	virtual void SetNextAngles(Vector3 Next)	{	NextAng = Next;	}
+	
+	void SetAngles(double ang = 0.0, double pit = 0.0, double rol = 0.0, bool ofs = false, bool snap = true)
+	{
+		if (ofs)	AngOff = (ang, pit, rol);
+		else		MainAng = (ang, pit, rol);
+		doSpring = !snap;
+	}
+	
+	void SetAction(int act)
+	{
+		CurAction = act;
+	}
+	
+	virtual void SetSwingGain(double amt) 	{	Swing.VelAmplifier = amt;	}
+	
+	void SetYaw(double ang, bool snap = true)			{	MainAng.X = ang;	PostAngSet(snap);	}
+	void SetPitch(double pit, bool snap = true)			{	MainAng.Y = pit;	PostAngSet(snap);	}
+	void SetRoll(double rol, bool snap = true)			{	MainAng.Z = rol;	PostAngSet(snap);	}
+	
+	void SetYawOffset(double ang, bool snap = true)		{	AngOff.X = ang;		PostAngSet(snap);	}
+	void SetPitchOffset(double pit, bool snap = true)	{	AngOff.Y = pit;		PostAngSet(snap);	}
+	void SetRollOffset(double rol, bool snap = true)	{	AngOff.Z = rol;		PostAngSet(snap);	}
+	
+	protected void PostAngSet(bool snap)
+	{
+		VelAng = (0,0,0);
+		doSpring = !snap;
+	}
+	
+	// Primarily used for the arms/legs if needed. Also, didn't want to create
+	// another subclass for limbs. If 'swinging' is false, it'll modify the sway
+	// based on if it's used or not. Arms and legs have their own predetermined
+	// functional overrides.
+	virtual void SetSineOffset(Vector3 off, bool swinging = false){}
+	virtual void SetSineDistance(Vector3 dist, bool swinging = false) {}
+	virtual void SetSineSpeed(Vector3 speed, bool swinging = false) {}
+	
+	bool SetAnimation(StateLabel next)
+	{
+		if (next == null)	return false;
+		
+		State s = ResolveState(next);
+		if (s)	SetState(s);
+		return (s != null);
+	}
+	
+	// Motion handling virtual.
+	virtual void DoPreMotion()	
+	{
+		// Counteract the MainAng and AngOff. We don't want it part of the
+		// calculations or it won't work correctly.
+		CurAng = (Angle, Pitch, Roll) - AngOff;
+		AngOff = (0,0,0);
+	}
+	protected bool doSpring;
+	virtual void DoMotion()		
+	{
+		if (CurAction > 0)
+		{
+			if (MCC_IdleSway && (CurAction & E_Sway))
+			{
+				AngOff = Turner.GetTurn((0,0,0), Sway.NextSway());
+			}
+			if (CurAction & E_Swing)
+			{
+				AngOff.Y += Swing.NextSwing(Owner.VelLen);
+			}
+		}
+		if (!doSpring)
+		{
+			VelAng = MainAng;
+			doSpring = true;
+		}
+		else
+		{
+			VelAng = MC_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
+		}
+
+		CurAng += VelAng;
+		
+		UpdateAngles(CurAng, SPF_INTERPOLATE);
+		
+	}
+	
+	States
+	{
+	Spawn:
+		ASDF A -1;
+		Stop;
+	}
+}
+
+//------------------------------------------------------------------------------
+// Head
+//
+// 
+//------------------------------------------------------------------------------
+
+Class MCBodyPartHead : MCBodyPart 
+{
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (Owner)	Owner.CameraHeight = OffZ;
+	}
+	
+	override void DoMotion()
+	{
+		if (!Owner)	return;
+		Target = (Owner.Target != Owner.Goal) ? Owner.Target : null;
+		
+		if (Target && Target.Health > 0)
+		{
+			Angle = Owner.Angle;
+			Pitch = 0;
+			double zh = (Target.Player) ? ((Target.Player.ViewZ + 4) - Target.Pos.Z) : Target.CameraHeight;
+			A_FaceTarget(90, 45, 0, 0, FAF_BOTTOM, zh);
+			NextAng = (Angle, Pitch, Roll);
+			Angle = CurAng.X;
+			Pitch = CurAng.Y;
+			Roll =	CurAng.Z;
+		}
+		Super.DoMotion();
+	}
+}
+
+Class MCBodyPartBody : MCBodyPart
+{
+}
+
+//------------------------------------------------------------------------------
+// LimbSway
+// 
+// Performs idle swaying, adding onto the current limb's APR (Angle/Pitch/Roll)
+//------------------------------------------------------------------------------
+
+Struct LimbSway play
+{
+	Vector3 SineOff, // Keeps the current sine as it's updated.
+			SineDist,
+			SineSpeed;
+			
+	void Init(Vector3 SO, Vector3 SD, Vector3 SS)
+	{
+		SineOff = (abs(SO.X) % 360, abs(SO.Y) % 360, abs(SO.Z) % 360);
+		SineDist = (abs(SD.X), abs(SD.Y), abs(SD.Z));
+		SineSpeed = (abs(SS.X), abs(SS.Y), abs(SS.Z));
+	}
+			
+	Vector3 NextSway()
+	{
+		// Advance the sine wave.
+		SineOff.X = (SineOff.X + SineWavePerSecond * SineSpeed.X) % 360.0;
+		SineOff.Y = (SineOff.Y + SineWavePerSecond * SineSpeed.Y) % 360.0;
+		SineOff.Z = (SineOff.Z + SineWavePerSecond * SineSpeed.Z) % 360.0;
+		
+		return (Sin(SineOff.X) * SineDist.X, Sin(SineOff.Y) * SineDist.Y, Sin(SineOff.Z) * SineDist.Z);
+	}
+}
+
+//------------------------------------------------------------------------------
+// LimbSwing
+// 
+// Does active movement for limbs like legs.
+//------------------------------------------------------------------------------
+Struct LimbSwing play
+{
+	const GainCap = 8.0;
+	double VelAmplifier;
+	double VelTheta, LimbLength, Scale;
+	
+	void Init(double off, double len, double s)	
+	{	
+		VelTheta = abs(off % 360);
+		LimbLength = len;
+		Scale = s;
+	}
+	
+	double NextSwing(double VelLen)
+	{
+		if (Scale ~== 0.0 || VelLen ~== 0.0)	return 0;
+		
+		// TO DO: Fix this. Make it so it looks more like a leg walking the distance
+		// it can go based on velocity/position offsets. It's currently not
+		// moving correctly with the speed of enemy movements.
+		double mag = Clamp((VelLen * LimbLength) / Scale, 0, SineWavePerSecond * 4.0);
+		VelTheta = (VelTheta + mag) % 360;
+		return Sin(VelTheta) * Clamp(VelLen * 8, 0, 80);
+	}
+}
+
+Class MCBodyPartArm : MCBodyPart
+{	
+	Default
+	{
+		MCBodyPart.CurAction E_Sway;
+		MCBodyPart.SineOffset 0, 0, 0;			// Starting offset
+		MCBodyPart.SineDistance 1, 2, 0;			// Wave Size
+		MCBodyPart.SineSpeed 0.1, 0.2, 0;		// Waves Per Second
+	}
+	
+	override void SetSineOffset(Vector3 off, bool swinging)	
+	{	
+		if (swinging)	Swing.VelTheta = off.x;
+		else			Sway.SineOff = off;	
+	}
+	override void SetSineDistance(Vector3 dist, bool swing) {	Sway.SineDist = (abs(dist.x), abs(dist.y), abs(dist.z));	}
+	override void SetSineSpeed(Vector3 sped, bool swing) 	{	Sway.SineSpeed = sped;	}
+	
+	States
+	{
+	ZombieMelee:
+		---- A 8 SetPitch(-160, false);
+		---- A 10 
+		{
+		//	SetPitch(-160, true);
+			SetPitch(-90, false);
+		}
+		Goto Spawn;
+	}
+}
+
+Class MCBodyPartLeg : MCBodyPart
+{
+	Default
+	{
+		MCBodyPart.CurAction E_Swing;
+		MCBodyPart.VelSineOffset 0;
+	}
+	
+	override void SetSineOffset(Vector3 off, bool swinging)	
+	{	Swing.VelTheta = off.x;	}
+}
+
+//==============================================================================
+// Gibbed Parts
+//==============================================================================
+
+Class MCBodyPartGib : MinecraftEntity abstract
+{
+	const FadeTime = 1.0 / 35.0;
+	const TimeCap = 90.0;
+	const Timing = TimeCap / 17.5;
+	
+	double OffX, OffY, OffZ;
+	
+	Vector3 Turning; // X = Angle, Y = Pitch, Z = Roll
+	
+	private Vector2 HoldAng;
+	private int LifeTime;
+	private double Timer, StartPitch, VelLen;
+	protected double EndPitch, EndRoll;
+	
+	Property Offsets: OffX, OffY, OffZ;
+	Property LifeTime: LifeTime;
+	Property EndPitch: EndPitch;
+	Property EndRoll: EndRoll;
+	Default
+	{
+		MCBodyPartGib.Offsets 0, 0, 0;
+		MCBodyPartGib.LifeTime 350;
+		MCBodyPartGib.EndPitch -90;
+		MCBodyPartGib.EndRoll 0;
+		Projectile;
+		+THRUACTORS
+		+CANBOUNCEWATER
+		+BOUNCEONWALLS
+		+BOUNCEONCEILINGS
+		-BOUNCEAUTOOFF
+		+NOTRIGGER
+		-NOGRAVITY
+		+CANNOTPUSH
+		+DONTSPLASH
+		BounceType "Doom";
+		BounceFactor 0.4;
+		WallBounceFactor 0.8;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		VelLen = vel.Length();
+		double velo = min(VelLen * 0.2, 20.0);
+		Turning = (
+			frandom(-2.0, 2.0) * velo,
+			frandom(-2.0, 2.0) * velo,
+			frandom(-2.0, 2.0) * velo);
+	}
+	
+	void Turn()
+	{
+		if (!(Turning ~== (0,0,0)))
+		{
+			A_SetAngle(Angle + Turning.X, SPF_INTERPOLATE);
+			A_SetPitch(Pitch + Turning.Y, SPF_INTERPOLATE);
+			A_SetRoll(Roll + Turning.Z, SPF_INTERPOLATE);
+		}
+	}
+	
+	void ResetDirection()
+	{
+		if (Timer ~== 0.0)
+		{
+			HoldAng = (Pitch, Roll);
+		}
+		Timer += Timing;
+		double sn = abs(cos(90 + Timer));
+		
+		Vector2 between = MC_VectorUtil.LerpUnclampedVec2(HoldAng, (EndPitch, EndRoll), sn);
+		A_SetPitch(between.X, SPF_INTERPOLATE);
+		A_SetRoll(between.Y, SPF_INTERPOLATE);
+	}
+	
+	override void Tick()
+	{
+		if (IsFrozen())	return;
+		
+		Super.Tick();
+		
+		// Counteract gravity when underwater.
+		if (!bNOINTERACTION && WaterLevel > 1)
+			Vel.Z += (Gravity * 0.5);
+		
+		if ((bKILLED && MCC_ShortGibLives) || --LifeTime < 1)
+			A_FadeOut(FadeTime);
+	}
+	
+	States
+	{
+	Spawn:
+		ASDF A 1 NoDelay Turn();
+		Wait;
+	Death:
+		ASDF AAAAAAAAAAAAAAAAA 1
+		{
+			bNOINTERACTION = true;
+			bMOVEWITHSECTOR = true;
+			A_Stop();
+			ResetDirection();
+		}
+		ASDF A -1 { bKILLED = true; }
+		Stop;
+	}
+}

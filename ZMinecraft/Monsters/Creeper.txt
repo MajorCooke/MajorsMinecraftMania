@@ -1,0 +1,174 @@
+/*
+Minecraft/Creeper/Pain
+Minecraft/Creeper/Death
+
+Head:			0.0,	0.0,	3.6
+(Gib) Body:		0.0,	0.0,	2.4
+Legs F:			0.4,	+-.4,	1.2
+Legs B:			-.4,	+-.4,	1.2
+
+Gib Head:		0.0,	0.0,	4.4
+Gib Legs F:		0.8,	+-.4,	0.6
+Gib Legs B:		-.8,	+-.4,	0.6
+
+*/
+
+// Because someone is going to want to use them against the Creeper Ghoul.
+// I just know it.
+Class MCCreeper : MinecraftEnemy
+{
+	const _Radius = 1.6;
+	const _Height = 6.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	enum ELimbs
+	{
+		Head = 0,
+		Body,
+		LegFL,
+		LegFR,
+		LegBL,
+		LegBR,
+		LimbCount
+	};
+	
+	const ExploRange = 384.0;
+	
+	Default
+	{
+		+EXTREMEDEATH
+		+FORCERADIUSDMG
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		
+		Tag "Creeper";
+		Obituary "A creeper blasted %o sky high, Team Rocket style.";
+		MeleeRange 256;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = MCBodyPart(Spawn('MCCreeperHead', pos));
+		Limb[Body] = MCBodyPart(Spawn('MCCreeperBody', pos));
+		Limb[LegFL] = MCBodyPart(Spawn('MCCreeperLegFront', pos));
+		Limb[LegFR] = MCBodyPart(Spawn('MCCreeperLegFront', pos));
+		Limb[LegBL] = MCBodyPart(Spawn('MCCreeperLegBack', pos));
+		Limb[LegBR] = MCBodyPart(Spawn('MCCreeperLegBack', pos));
+		
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Limb[i].Master = self;
+				Limb[i].Owner = self;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((0.0,0.0,3.6));
+		Limb[Body].SetPosOffsets((0.0,0.0,2.4));
+		Limb[LegFR].SetPosOffsets((0.4,0.4,1.2));
+		Limb[LegFL].SetPosOffsets((0.4,-.4,1.2));
+		Limb[LegBR].SetPosOffsets((-.4,0.4,1.2));
+		Limb[LegBL].SetPosOffsets((-.4,-.4,1.2));
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (health < 1 || IsFrozen())	return;
+		
+		if (ValidateTarget())
+		{
+			if (!OnGround && Vel.Z < -9.0)
+				ExplosionTimer(true, true);
+			
+			// Handle the charging effects.
+			ChargeTimer = Clamp(ChargeTimer + (Charging) ? 1 : -1, 0, MaxCharge);
+			
+			
+			if (Charging && ChargeTimer >= MaxCharge)
+			{
+				if ((ChargeFall && OnGround && InExploRange(Target, true)) ||
+					(!ChargeFall && InExploRange(Target)))
+				{
+					A_Die("Suicide");
+					return;
+				}
+			}
+		}
+		else ExplosionTimer(false);
+	}
+	
+	
+	const MaxCharge = Second + 18; // Just above 1.5 seconds.
+	private int ChargeTimer;
+	private int FlashTimer;
+	private bool Charging, ChargeFall;
+	private bool SuperCharged; // Charged creeper. Ruh roh!
+	
+	void ExplosionTimer(bool on, bool fall = false) 
+	{
+		Charging = on;
+		if (on)	A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
+		ChargeFall = (on) ? fall : false;
+	}
+	
+	bool InExploRange(Actor mo = null, bool _2d = false)
+	{
+		if (!mo)	
+		{
+			ValidateTarget();
+			mo = Target;
+			if (!mo)	return false;
+		}
+	
+		return (mo && ((Distance3DSquared(mo) <= (ExploRange ** 2)) ||
+				(_2d && Distance2DSquared(mo) <= (ExploRange ** 2))));
+	}
+	
+	States
+	{
+	Melee:
+		TNT1 A 4
+		{
+			StateLabel next = null;
+			ExplosionTimer(InExploRange());
+			
+			if (!Charging)	next = "See";
+				
+			return ResolveState(next);
+		}
+		Wait;
+	Death.Falling:
+		TNT1 A 0
+		{
+			StateLabel next = "Death";
+			if (Charging && ChargeFall && InExploRange())
+				next = "Death.Suicide";
+			return ResolveState(next);
+		}
+	Death.Suicide:
+		TNT1 A 15
+		{
+			DestroyLimbs();
+			A_StopSound(CHAN_VOICE);
+			Explode(256, ExploRange, 0, -1, XF_NOTMISSILE);
+		}
+		Stop;
+	}
+}
+
+
+Class MCCreeperHead :		MCBodyPartHead {}
+Class MCCreeperBody :		MCBodyPartBody {}
+Class MCCreeperLegFront :	MCBodyPartLeg {}
+Class MCCreeperLegBack :	MCBodyPartLeg {}
+
+Class MCCreeperHeadGib :	MCBodyPartGib {}
+Class MCCreeperBodyGib :	MCBodyPartGib {}
+Class MCCreeperLegGib :		MCBodyPartGib {}

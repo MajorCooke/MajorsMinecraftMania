@@ -1,0 +1,7 @@
+Class MCWither : MCBoss
+{
+	Default
+	{
+		MinecraftEnemy.MobType M_Undead;
+	}
+}

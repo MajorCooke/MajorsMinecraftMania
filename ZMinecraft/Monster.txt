@@ -1,0 +1,809 @@
+/*
+Minecraft Enemy
+By Major Cooke
+
+The idea behind minecraft enemies is to replicate everything from Minecraft if
+possible. This means creeper explosions, spider climbing, skeletons using weapons
+and a few other cool tricks.
+
+Behaviors:
+	Idle:
+		The torso itself only ever turns by the head when searching for things.
+		In particular, it appears that when the head turns, it will lead the body
+		anywhere from 45-90 degrees, never aiming up or down. Sometimes will
+		look at nearby entities.
+		
+		When moving however, the head is limited to a maximum of 75 degrees.
+		The torso itself takes over and forces the head to follow.
+		
+	
+
+*/
+
+Class MinecraftEnemy : MinecraftEntity
+{
+	enum EMobTypes
+	{
+		M_Normal = 0,
+		M_Undead,
+		M_Anthropod,
+	};
+	const AttackDelayMax = 35;
+	const DefaultDrownTimer = 35 * 30;
+	
+	MinecraftHandler Event;
+	
+	bool OnGround;
+	private Vector3 PrevVel;
+	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
+				DrownTimer, DrownTimerStart, DrownDamage,
+				CurrentTranslation, ActiveSoundDelay, DamageTimer;
+	
+	
+	protected Array<MCBodyPart> Limb;
+	protected Vector2 PrevScale;
+	protected Vector3 PrevAngs, PrevPos, AngVel, HoldAngs;
+	Vector3 Angs;
+	protected uint PrevTrans;
+	protected double PrevAlpha;
+	protected int CurStyle, PrevStyle;
+	protected int AttackDelay;
+	protected int SoundDelay;
+	protected bool Passive;
+	protected int IdleTimer, ChaseCheckTimer, LookTimer;
+	
+	double FallDmgVel;
+	double VelLen;
+	
+	meta bool PeacefulDespawn;
+	meta int MobType;
+	Sound StepSound;
+	
+	Property FallDmgVel:	FallDmgVel;
+	Property StepSound: StepSound;
+	Property DrownTimer: DrownTimerStart;
+	Property PeacefulDespawn: PeacefulDespawn;
+	Property MobType: MobType;
+	Property Passive: Passive;
+	
+	Default
+	{
+		MineCraftEnemy.FallDmgVel 15.0;
+		MinecraftEnemy.DrownTimer DefaultDrownTimer;
+		MinecraftEnemy.PeacefulDespawn true;
+		MinecraftEnemy.MobType M_Normal;
+		Monster;
+		Health 200;
+		Speed 4;
+		Scale 6;
+		PushFactor 0.3;
+		PainChance 0; // Handled internally.
+		+NEVERRESPAWN
+		+NEVERFAST
+		-COUNTKILL
+		// Preventing bad behaviors that will screw with the monsters.
+		+DONTMORPH
+		+NOICEDEATH
+		+PUSHABLE
+		+NOTRIGGER // They wander around, so don't allow them to trigger anything.
+		+QUICKTORETALIATE
+		+DONTGIB
+		+DONTCORPSE
+		+ALWAYSTELEFRAG
+		+NOTELESTOMP
+		+NOKILLSCRIPTS
+	}
+	
+	//==========================================================================
+	// Base overrides
+	//==========================================================================
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		PrevScale = Scale;
+		PrevAngs = (Angle, Pitch, Roll);
+		PrevPos = Pos;
+		PrevTrans = Translation;
+		PrevAlpha = Alpha;
+		PrevStyle = GetRenderStyle();
+		PrevVel = Vel;
+		DrownTimer = DrownTimerStart;
+		FallDmgVel = -abs(FallDmgVel);
+	}
+	
+	override void Activate(Actor activator)
+	{
+		if (health < 1 || bDESTROYED)	return;
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].Activate(activator);
+		
+		A_SetShootable();
+		A_ChangeLinkFlags(0);
+		Super.Activate(activator);
+	}
+	
+	override void Deactivate(Actor activator)
+	{
+		if (health < 1 || bDESTROYED)	return;
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].Deactivate(activator);
+			
+		A_UnsetShootable();
+		A_ChangeLinkFlags(1);
+		Super.Deactivate(activator);
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		bPUSHABLE = (!other || other is "PlayerPawn" || other is "MinecraftEnemy");
+		return true;
+	}
+	
+	override bool CanResurrect(Actor other, bool passive)
+	{	return false;	}
+	
+	override void Tick()
+	{
+		// Process nothing if destroyed.
+		if (bDESTROYED)	return;
+		
+		// Destroy it if peaceful difficulty is activated, and the monster can
+		// despawn on peaceful with 
+		if (health > 1 &&
+			(MCC_Peaceful && 
+			(MCC_PeacefulBehavior <= CV_Despawn ||
+			(MCC_PeacefulBehavior <= CV_Minecraft && PeacefulDespawn > 0))))
+		{
+			Destroy();
+			return;
+		}
+		
+		Super.Tick();
+		
+		// Process nothing else if the actor died.
+		if (IsFrozen() || health < 1)
+			return;
+		
+		if (!bDORMANT)
+		{
+			//----------------------------------------------------------------------
+			// Fall/Slime/Lava/Drowning damage handling.
+			//----------------------------------------------------------------------
+			OnGround = (Pos.Z <= FloorZ || bONMOBJ);
+			
+			Sector sec = CurSector;
+			if (BlockingFloor)	sec = BlockingFloor;
+				
+			if (MCC_EnvironmentDamage && Pos.Z <= FloorZ && sec)
+			{
+				// if fall damage threshold is not 0 and
+				// velocity is cancelled out and
+				// the prior velocity descends below the threshold and
+				// the sector doesn't cancel falling damage,
+				// deal fall damage.
+				if (FallDmgVel != 0.0 && 
+					Vel.Z >= 0.0 && PrevVel.Z <= FallDmgVel &&
+					!(sec.Flags & Sector.SECF_NOFALLINGDAMAGE))
+				{
+					if (DoFallDamage())
+					{
+						SectorDamageTimer = 0;
+						if (health < 1)	return;
+					}
+				}
+				
+				int DmgAmt = sec.DamageAmount,
+					DmgInt = sec.DamageInterval;
+				
+				if (DmgAmt && DmgInt > 0 && 
+					++SectorDamageTimer >= DmgInt)
+				{
+					if (DmgAmt < 0)	GiveBody(DmgAmt);
+					else			DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
+					
+					if (health < 1)	return;
+					
+					SectorDamageTimer = 0;
+				}
+			}
+			
+			// Drowning
+			if (WaterLevel >= 3 && !bINVULNERABLE)
+			{
+				if (DrownTimer > 0)	DrownTimer--;
+				else
+				{
+					DrownDamage++;
+					DrownTimer = Second - 1;
+					DamageMobj(null, null, min(DrownDamage, TELEFRAG_DAMAGE - 1), "Drowning", DMG_NO_ARMOR);
+				}
+			}
+			else if (DrownTimer < DrownTimerStart)
+			{
+				DrownDamage = 0;
+				DrownTimer += 3;
+				DrownTimer = Min(DrownTimer, DrownTimerStart);
+			}
+			//----------------------------------------------------------------------
+			// Play an active sound every 5-6 seconds.
+			//----------------------------------------------------------------------
+			if (--ActiveSoundDelay < 1)
+			{
+				ActiveSoundDelay += (Second * 4) + random[snd](0,Second * 2);
+				if (ActiveSound != "")
+					A_StartSound(ActiveSound, CHAN_VOICE, CHANF_OVERLAP);
+			}
+			//----------------------------------------------------------------------
+			//
+			//----------------------------------------------------------------------
+			if (AttackDelay > 0)
+				AttackDelay--;
+			//----------------------------------------------------------------------
+			// Handle damage timer & translation changes.
+			//----------------------------------------------------------------------
+			if (DamageTimer > 0 && --DamageTimer < 1)
+			{
+				Translation = TempTranslation;
+				bBRIGHT = false;
+			}
+		}
+		
+		//----------------------------------------------------------------------
+		// Update the various properties to affect the various segments.
+		// Adjust the scale as needed and call the functions.
+		//----------------------------------------------------------------------
+		Angs = (Angle, Pitch, Roll);		
+		
+		if (!(vel ~== (0,0,0)))
+			VelLen = vel.Length();
+		else if (~(Pos ~== PrevPos))
+			VelLen = level.Vec3Diff(PrevPos, Pos).Length();
+		else VelLen = 0;
+		
+		CurStyle = GetRenderStyle();
+		UpdateLimbs();
+		
+		PrevTrans = Translation;
+		PrevScale = Scale;
+		PrevAngs = Angs;
+		PrevPos = Pos;
+		PrevAlpha = Alpha;
+		PrevStyle = CurStyle;
+		PrevVel = Vel;
+	}
+	
+	private uint TempTranslation;
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		int prevhp = health;
+		int dmg = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		
+		if (dmg < 1)	return dmg;
+		
+		Actor i = inflictor, s = source;
+		bool painless = (flags & DMG_NO_PAIN) || (i && i.bNOPAIN) || (!i && s && s.bNOPAIN);
+		if (health > 0 && !painless)
+		{
+			if (DamageTimer < 1)
+			{
+				DamageTimer = 17;
+				TempTranslation = Translation;
+				bBRIGHT = true;
+				
+				DamageReact(inflictor, source, damage, mod, flags, angle);
+				
+				SetTranslation("DamageRed");
+				A_StartSound(PainSound, CHAN_VOICE, CHANF_OVERLAP);
+				
+				double ang = angle;
+				
+				if (damageType == 'Falling')
+				{
+					flags &= ~DMG_THRUSTLESS;
+					flags |= DMG_USEANGLE;
+					ang += 180;
+				}
+				else if ((i && i.bNODAMAGETHRUST) || (!i && s && s.bNODAMAGETHRUST))
+				{
+					if (!(flags & DMG_USEANGLE))
+						flags |= DMG_THRUSTLESS;
+				}
+				else if (i && !i.bNODAMAGETHRUST)		ang = AngleTo(i);
+				else if (!i && s && !s.bNODAMAGETHRUST)	ang = AngleTo(i);
+				else flags |= DMG_THRUSTLESS;
+				
+				
+				if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
+				{	
+					Vector2 v = Vel.XY;
+					if (Vel.Z <= 0)
+						Vel.Z += 7.0;
+					
+					VelFromAngle(-2, ang);
+					Vel.XY += v;
+				}
+			}
+		}
+		return dmg;
+	}
+	
+	// This is never called if the actor is dead. Used by monsters to try and
+	// move out of damaging sectors.
+	virtual void DamageReact(Actor inflictor, Actor source, int damage, Name mod, int flags = 0, double angle = 0)
+	{
+		
+	}
+	
+	private Vector3 DeathPos;
+	override void Die(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
+	{
+		
+		DeathPos = pos;
+		
+		A_NoBlocking(true);
+		if (MCC_DropItems)
+			DropItems(source, inflictor, MeansOfDeath);
+		
+		Super.Die(source, inflictor, dmgflags, MeansOfDeath);
+		
+		bNOINTERACTION = true;
+		A_ChangeLinkFlags(1);
+		
+		// Boing!
+		if (MeansOfDeath == 'Falling')
+		{
+			Vel.Z = abs(PrevVel.Z);
+		}
+		VelLen = Vel.Length();
+		Gib(VelLen);
+		SetOrigin(DeathPos, false);
+		A_Stop();
+		
+		A_Scream();
+	}
+	
+	override void OnDestroy()
+	{
+		DestroyLimbs();
+		RemoveGoal();
+		Super.OnDestroy();
+	}
+	
+	//==========================================================================
+	// Custom Functions
+	//==========================================================================
+	
+	virtual void UpdateLimbs()
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Vector3 NA = Angs;
+				if (!(Limb[i] is 'MCBodyPartHead'))
+					NA.Y -= Pitch;
+				
+				Limb[i].UpdatePosition(self, WARPF_INTERPOLATE);
+				Limb[i].UpdateScales(Scale);
+				Limb[i].SetNextAngles(NA);
+				Limb[i].A_SetRenderStyle(alpha, CurStyle);
+				Limb[i].Translation = Translation;
+				Limb[i].bINVISIBLE = bINVISIBLE;
+				Limb[i].bBRIGHT = bBRIGHT;
+			}
+		}
+	}
+	
+	// The goal of this function is simply to call Super.DropItems and pass in the
+	// source, inflictor and damagetype for the monsters to use. The base class
+	// simply checks if a player did the killing. Naturally this can be overridden
+	// as needed, such as the creeper and skeleton special drops.
+	virtual protected bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		return (src is 'PlayerPawn' || (inf is 'PlayerPawn' || (inf && inf.target is 'PlayerPawn')));
+	}
+	
+	protected void DropItem(Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	{
+		if (!Event)	Event = MinecraftHandler.Fetch();
+		if (Event)	Event.DropItem(self, Cls, Amount, Chance);
+	}
+	
+	// Checks if the actor is immune to a damagetype.
+	bool IsImmune(Name DmgType)
+	{	return (ApplyDamageFactor(DmgType, TELEFRAG_DAMAGE) < 1);	}
+	
+	//--------------------------------------------------------------------------
+	// Sets the drown timer.
+	// 
+	// * maxtime
+	//		How long the monster can go without drowning
+	// * current
+	//		How much air time they have before drowning
+	void SetDrownTimer(int maxtime, int current = -1)
+	{
+		DrownTimerStart = maxtime;
+		DrownTimer = (current > -1) ? current : maxtime;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Initializes Limb array.
+	protected void Init(int limbs)
+	{
+		Limb.Clear();
+		if (limbs < 1)	return;
+		Limb.Reserve(limbs);
+		for (int i = 0; i < Limb.Size(); i++)
+			Limb[i] = null;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Called when dealing fall damage. Returns false if no damage was dealt
+	// or if the actor is incapable of receiving fall damage.
+	virtual bool DoFallDamage()
+	{
+		if (bNOGRAVITY || bFLOAT || GetGravity() <= 0.0 || waterlevel >= 3)
+			return false;
+			
+		int dmg = Clamp((abs(PrevVel.z) - FallDmgVel) * 8, 0, TELEFRAG_DAMAGE - 1);
+		if (dmg < 1)	return false;
+		return (DamageMobj(null, null, dmg, 'Falling') > 0);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Helper function simply to set limbs as well as 
+	protected void SetTranslation(Name n)
+	{
+		A_SetTranslation(n);
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].A_SetTranslation(n);
+		PrevTrans = Translation;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Causes all the limbs to turn into their gibbed variants and send them
+	// flying all around based on velocity.
+	protected void Gib(double VelLen)
+	{
+		Translation = Default.Translation;
+		bBRIGHT = false;
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Translation = Translation;
+				Limb[i].bBRIGHT = false;
+				Limb[i].SpawnGib(VelLen);
+			}
+		}
+	}
+	
+	protected void DestroyLimbs()
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Destroy();
+				Limb[i] = null;
+			}
+		}
+	}
+	
+	//==========================================================================
+	//
+	//==========================================================================
+	protected bool ValidateTarget()
+	{
+		if (Target)
+		{
+			if (Distance3DSquared(Target) > MaxTargetRange ** 2)
+				return false;
+				
+			if ((Target is 'PlayerPawn' && (MCC_Peaceful || Passive)) ||	// Don't target players on peaceful
+				(Target.Player && (Target.Player.Cheats & CF_NOTARGET)) ||	// NOTARGET cheat
+				Target.Health < 1 || !Target.bSHOOTABLE ||					// Target dead or not shootable
+				Target.bNEVERTARGET || (Target.bNOTARGET && !bFRIENDLY))	// NO/NEVERTARGET flags
+				return false;
+			
+			return true;
+		}
+		return false;
+	}
+	
+	protected void Look(bool time = false)
+	{
+		if (Passive)
+		{
+			if (Target && (Target is "PlayerPawn" || Target.Player))
+				A_ClearTarget();
+		}
+		else if (!time || --LookTimer < 1)
+		{
+			if (time)
+				LookTimer = 17;
+			
+			A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
+			
+			if (ValidateTarget())
+				SetState(ResolveState("See"));
+			else
+				A_ClearTarget();
+			
+		}
+	}
+	
+	protected void LookWander()
+	{
+		Look(true);
+		A_Wander();
+	}
+	
+	virtual void SetPassive(bool on)	{	Passive = on;	}
+	
+	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0)
+	{
+		if (health < 1)
+		{
+			return;
+		}
+	
+		int newflags = CHF_NOPLAYACTIVE;
+		
+		// Get a target if invalid.
+		if (!ValidateTarget())
+		{
+			if (!Goal)
+			{
+				A_ClearTarget();
+				A_Chase(null, null);
+				return;
+			}
+			else Target = Goal;
+		}
+		
+		bool good = false;
+		if (CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY)) // Use regular A_Chase if cannot see.
+		{
+			
+			HoldAngs = (Angle, Pitch, Roll);
+			A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
+			if (Target)
+			{
+				if (bFLOAT)
+				{	
+					
+					double c = cos(Pitch) * Speed;
+					double s = -sin(Pitch) * Speed;
+					
+					Vector3 old = pos;
+					Vector2 new = Vec2Angle(Speed, AngleTo(Target));
+					
+					SetZ(pos.z + s);
+					if (TryMove(new, bDROPOFF))
+						good = true;
+					else 
+					{
+						SetOrigin(old, false);
+					}
+					
+				}
+				else
+				{
+					Vector2 nmpos = Vec2Angle(speed, AngleTo(Target));
+					if (TryMove(nmpos, bDROPOFF))
+						good = true;
+				}
+				
+				
+				
+				// Move was good. Do the chase but without actually moving. 
+				if (good)
+					newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
+				else
+				{
+					Angle = HoldAngs.X;
+					Pitch = HoldAngs.Y;
+					Roll =	HoldAngs.Z;
+				}
+			}
+		}
+		if (!good && (angle % 45 != 0.0))
+			AlignMoveDir();
+		
+		
+		A_Chase(melee, missile, flags|newflags);
+	}
+	
+	void AlignMoveDir()
+	{
+		double roundee = Normalize180(angle);
+		if (roundee <= 0.0)	roundee += 360.0;
+		double deg = roundee % 45.0;
+		int DirAdd = (deg >= 22.5) ? 1 : 0;
+		moveDir = uint((roundee / 45.0) + DirAdd) % 8;
+		
+		/*
+		double NextAngle = MoveDir * 45;
+		if (angle != NextAngle)
+		{
+			double Delta = deltaangle(angle, NextAngle);
+			if (delta != 0.0)
+			{
+				double TurnAmount = 11.25; // 45 * 0.25
+				if (abs(Delta) <= TurnAmount)
+					angle = NextAngle;
+				else
+					angle += (Delta > 0) ? TurnAmount : -TurnAmount;
+			}
+		}
+		*/
+	}
+	
+	
+	
+	virtual bool DoMissile()
+	{
+		return false;
+	}
+	
+	virtual bool DoMelee(int damage = -1)
+	{
+		if (CheckGoal(MeleeRange) > 0)
+			return true;
+		if (!Target || AttackDelay > 0 || !CheckMeleeRange())
+			return false;
+			
+		if (damage < 0)	
+		{
+			damage = MeleeDamage;
+			if (damage < 1)
+				return false;
+		}
+		
+		int dmg = Target.DamageMobj(null, self, 10, "Melee");
+		AttackDelay = AttackDelayMax;
+		SetMeleeAnimation();
+		return true;
+	}
+	
+	virtual void SetMeleeAnimation()	{	}
+	
+	//==========================================================================
+	// Goal Manipulation
+	//==========================================================================
+	
+	enum EGoalStatus
+	{
+		GS_None = 0,
+		GS_Chasing,
+		GS_Reached
+	};
+	
+	int CheckGoal(double dist)
+	{
+		if (dist <= 0.0)	dist = MeleeRange;
+		if (Target && Target == Goal)
+		{
+			if (Distance3DSquared(Goal) <= (dist ** 2))
+			{
+				SetOrigin(Goal.pos, true);
+				RemoveGoal();
+				return GS_Reached;
+			}
+			return GS_Chasing;
+		}
+		return GS_None;
+	}
+	
+	// Just in case something fucks with the goal pointer prematurely...
+	private Actor BackupGoal; 
+	virtual void SetGoal(Vector3 gp, double ang = 0, bool relative = false)
+	{
+		if (ValidateTarget())	return;
+		if (!Goal)	
+		{
+			if (!BackupGoal)
+				Goal = Spawn('MCGoal', pos);
+			else Goal = BackupGoal;
+		}
+		BackupGoal = Goal;
+		if (!ValidateTarget())	Target = Goal;
+		
+		
+		if (relative)	Goal.Warp(Self, gp.x, gp.y, gp.z, ang, WARPF_NOCHECKPOSITION);
+		else			Goal.SetOrigin(gp, false);
+	}
+	
+	void RemoveGoal()
+	{
+		if (Goal is 'MCGoal' && !Goal.bDESTROYED)
+			Goal.Destroy();
+		if (BackupGoal && !BackupGoal.bDESTROYED)
+			BackupGoal.Destroy();
+			
+		Goal = BackupGoal = null;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 35;
+	Idle:
+		---- A 0 A_Jump(256, random(1, 4));
+		---- AAAAAAAAAA 17 Look();
+	IdleMove:
+		---- A 0 
+		{
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	Death:
+		TNT1 A 35;
+		Stop;
+	}
+}
+
+Class MCGoal : MinecraftEntity
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOTONAUTOMAP
+		+DONTBLAST
+	}
+	States
+	{
+	Spawn:
+		TNT1 A -1;
+		Stop;
+	}
+}
+
+//------------------------------------------------------------------------------
+// Subtypes
+//------------------------------------------------------------------------------
+
+Class MCUndead : MinecraftEnemy
+{
+	Default
+	{
+		MinecraftEnemy.MobType M_Undead;
+		DamageFactor "Poison", 0.0;
+	}
+}
+
+Class MCAnthropod : MinecraftEnemy
+{
+	Default
+	{
+		MinecraftEnemy.MobType M_Anthropod;
+		DamageFactor "Poison", 0.0;
+	}
+}
+
+Class MCBoss : MinecraftEnemy
+{
+	Default
+	{
+		+BOSS
+		MinecraftEnemy.MobType M_Normal;
+		DamageFactor "Poison", 0.0;
+		DamageFactor "Wither", 0.0;
+		DamageFactor "Fire", 0.0;
+		DamageFactor "Drowning", 0.0;
+		DamageFactor "Falling", 0.0;
+	}
+}
+
+Class MCMobLineTracer : LineTracer
+{
+	
+}

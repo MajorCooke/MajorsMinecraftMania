@@ -1,0 +1,108 @@
+/*
+$limit Minecraft/Enderman/Death	0
+$limit Minecraft/Enderman/Stare 0
+$limit Minecraft/Enderman/Hit 0
+$limit Minecraft/Enderman/Idle 0
+$limit Minecraft/Enderman/Portal 0
+$limit Minecraft/Enderman/Scream 0
+
+- Both -
+Body:			0.0		0.0		6.6
+
+- Normal -
+Head (Angry): 	0.0		0.0		7.8
+Arms:			0.0		~1.0	7.6
+Legs:			0.0		~.4		5.8
+
+- Gib -
+Head:			0.0		0.0		9.4
+Arms:			0.0		~1.0	4.8
+Legs:			0.0		~.4		3.0
+
+*/
+
+Class MCEnderman : MinecraftEnemy
+{
+	const HeadHeight = 8.6;
+	mixin NormalLimbCount;
+
+	Default
+	{
+		Scale 6;
+		Radius 1.6;
+		Height 9.4;
+		ActiveSound "Minecraft/Enderman/Idle";
+		PainSound "Minecraft/Enderman/Hit";
+		DeathSound "Minecraft/Enderman/Death";
+		
+		Tag "Enderman";
+		Obituary "%o blinked. Then an Enderman ate %p eyes.";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = MCBodyPart(Spawn('MCEndermanHead', pos));
+		Limb[Body] = MCBodyPart(Spawn('MCEndermanBody', pos));
+		Limb[ArmR] = MCBodyPart(Spawn('MCEndermanArmRight', pos));
+		Limb[ArmL] = MCBodyPart(Spawn('MCEndermanArmLeft', pos));
+		Limb[LegR] = MCBodyPart(Spawn('MCEndermanLegRight', pos));
+		Limb[LegL] = MCBodyPart(Spawn('MCEndermanLegLeft', pos));
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Limb[i].Master = self;
+				Limb[i].Owner = self;
+				Limb[i].Scale = Scale;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
+		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
+		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
+		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
+		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
+		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		
+		Limb[ArmR].SetPitch(-90);
+		Limb[ArmL].SetPitch(-90);
+		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+	}
+}
+
+Class MCEndermanArmRight : MCBodyPartArm
+{
+}
+Class MCEndermanArmLeft : MCBodyPartArm
+{
+}
+
+Class MCEndermanBody : MCBodyPart
+{
+}
+
+Class MCEndermanHead : MCBodyPartHead
+{
+}
+
+Class MCEndermanLegRight : MCBodyPartLeg
+{
+}
+
+Class MCEndermanLegLeft : MCBodyPartLeg
+{
+}
+
+Class MCEndermanHeadGib : MCBodyPartGib
+{
+}
+
+Class MCEndermanArmGib : MCBodyPart
+{
+}
+
+Class MCEndermanLegGib : MCBodyPartGib
+{
+}

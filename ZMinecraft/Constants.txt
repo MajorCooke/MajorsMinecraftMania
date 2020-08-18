@@ -1,0 +1,21 @@
+//==============================================================================
+
+enum EMinecraftConst
+{
+	// Difficulty settings
+	Dif_Easy = 0,
+	Dif_Normal,
+	Dif_Hard,
+	
+	// Peaceful mode constants
+	CV_Despawn = 0,
+	CV_Minecraft,
+	CV_Stay,
+	
+	// Actions
+	E_Sway =	1,
+	E_Swing =	1 << 1
+};
+
+const SineWavePerSecond = 360.0 / 35.0;
+const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.

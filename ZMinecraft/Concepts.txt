@@ -1,0 +1,134 @@
+
+
+// ReplaceInfoManager
+//
+// Replacement handling storage area used to house information about who replaces
+// what, their category, and tiers.
+
+Class CPReplaceInfo
+{
+	// Replacement,				Replacee
+	private Dictionary Replacement;	
+	// Replacement,				<category flags>
+	private Dictionary Category;
+	// Replacement,				<# int>
+	private Dictionary Tiers[MaxTiersInit];
+	
+	
+	// Creates the info manager.
+	static CPReplaceInfo Create()
+	{
+		let rep = new('CPReplaceInfo');
+		if (rep)	rep.Init();
+		return rep;
+	}
+	
+	// Initializes the included dictionaries.
+	protected void Init()
+	{
+		Replacement = Dictionary.Create();
+		Category = Dictionary.Create();
+		for (int i = 0; i < MaxTiers; i++)
+			Tiers[i] = Dictionary.Create();
+	}
+	
+	// Make sure the actors are valid.
+	private bool ValidateActor(String Repment, String Repee)
+	{
+		Class<Actor> mon = Repee;
+		Class<Actor> rep = Repment;
+		if (!mon || !rep)
+		{
+			if (!mon && !rep)
+				Console.Printf("%s & %s - bad actor(s)", Repee, Repment);
+			else if (!mon)
+				Console.Printf("%s | %s - bad replaceE", Repee, Repment);
+			else
+				Console.Printf("%s | %s - bad replaceMENT", Repee, Repment);
+			
+			return false;
+		}
+		return true;
+	}
+	
+	// Adds a tiered actor, whether it's a monster, weapon, ammo, powerup or whatever.
+	void AddTieredActor(String Repee, String Repment, int weight, int type, 
+		int t1, int t2, int t3,	int t4, int t5, int t6, int t7, int t8)
+	{	
+		// If someone needs to add a weightless actor, use AddActor.
+		if (weight + t1 + t2 + t3 + t4 + t5 + t6 + t7 + t8 < 1)
+		{
+			Console.Printf("%s - No spawn weight, skipping", Repment);
+			return;
+		}
+		
+		if (!AddActor(Repment, Repee))	return;
+		
+		Category.Insert(Repment, Max(type, CPT_REGULAR));
+		Tiers[0].Insert(Repment, Max(0, weight));
+		Tiers[1].Insert(Repment, Max(0, t1));
+		Tiers[2].Insert(Repment, Max(0, t2));
+		Tiers[3].Insert(Repment, Max(0, t3));
+		Tiers[4].Insert(Repment, Max(0, t4));
+		Tiers[5].Insert(Repment, Max(0, t5));
+		Tiers[6].Insert(Repment, Max(0, t6));
+		Tiers[7].Insert(Repment, Max(0, t7));
+		Tiers[8].Insert(Repment, Max(0, t8));
+	}
+	
+	bool AddActor(String Repment, String Repee)
+	{
+		if (!ValidateActor(Repment, Repee))	return false;
+		
+		// Force lower case to avoid case sensitivity mismatch.
+		Repee = Repee.MakeLower();
+		Repment = Repment.MakeLower();
+		
+		// No need to check for pre-existence since it will simply override it.
+		Replacement.Insert(Repment, Repee);
+		return true;
+	}
+	
+	
+	//==========================================================================
+	// Getter Functions
+	//==========================================================================
+	
+	//--------------------------------------------------------------------------
+	// Get the weight of the tier if it exists. Returns -1 if it doesn't have any.
+	CPTiers GetWeights(String Repment, int tier = 0)
+	{
+		if (tier < 0 || tier > MaxTiers)	
+			return -1;
+		
+		
+		String check = Tiers[tier].At(Repment);
+		if (check.Length() < 1)	
+			return -1;
+		
+		return Max(0,check.ToInt());
+	}
+	
+	
+	//--------------------------------------------------------------------------
+	// Checks if a value exists and modifies the array of keys. Dynamic arrays
+	// are passed by reference so modifying them will affect the variable where
+	// it comes from.
+	bool GetKeys(Dictionary d, String Val, Array<String> Keys)
+	{
+		if (!d || Val == '' || Val == 'None')	return false;
+		
+		DictionaryIterator i = DictionaryIterator.Create(d);
+		bool good = false;
+		Keys.Clear();
+		while (i.Next())
+		{
+			if (i.Value() ~== Val) 
+			{
+				good = true;
+				Keys.Push(i.Key());
+			}
+		}
+		return good;
+	}
+}

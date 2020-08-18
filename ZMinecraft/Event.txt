@@ -1,0 +1,326 @@
+//
+
+Class MCZombieSpawner : RandomSpawner
+{
+	Default
+	{
+		DropItem "MCZombie",		255, 10;
+	//	DropItem "MCHusk",			255, 4;
+	//	DropItem "MCDrowned",		255, 1;
+	}
+}
+
+Class MCSkeletonSpawner : RandomSpawner
+{
+	Default
+	{
+		DropItem "MCSkeleton",			255, 10;
+	//	DropItem "MCStraySkeleton",		255,  5;
+	//	DropItem "MCWitherSkeleton",	255,  1;
+	}
+}
+
+Class MinecraftHandler : EventHandler
+{
+	const SpawnTimer = Second;
+	const DespawnTimer = Second * 5;
+	const CleanTimer = Second * 10;
+	enum ETimers
+	{
+		S_Spawn = 0,
+		S_Clean,
+		S_Despawn,
+		S_Max
+	};
+	
+	private int MaxMobs;
+	private int MobCount;
+	private double DespawnDist;
+	
+	static const Class<Actor> MonsterList[] =
+	{
+	//	'MCZombieSpawner',
+		'MCZombieSpawner'
+	/*	'MCSkeleton',
+		'MCCreeper',
+		'MCSpider',
+		'MCEnderman',
+		'MCZombiePigman'
+	*/
+	};
+	
+	private int Timer[S_Max];
+	AArray Monsters;
+	
+	
+	static MinecraftHandler Fetch()
+	{
+		return MinecraftHandler(Find("MinecraftHandler"));
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		Monsters = AArray.Create();
+		MaxMobs = 80;
+	}
+	
+	override void WorldThingSpawned(WorldEvent e)
+	{
+		let mo = MinecraftEnemy(e.Thing);
+		if (mo)	
+		{
+			mo.Event = self;
+			Monsters.Push(mo);
+			MobCount++;
+		}
+	}
+	
+	override void WorldThingDied(WorldEvent e)
+	{
+		let mo = MinecraftEnemy(e.Thing);
+		if (mo)	Monsters.Delete(mo);
+		
+	}
+	
+	override void WorldThingDestroyed(WorldEvent e)
+	{
+		let mo = MinecraftEnemy(e.Thing);
+		if (mo) MobCount--;
+	}
+	
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		let src = MinecraftEnemy(e.DamageSource);
+		if (src)
+		{
+			let mo = e.Thing;
+			if (mo)	mo.A_GiveInventory('MCImmunityFrames',1);
+		}
+	}
+	
+	void DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	{
+		if (!mo || !Cls)	return;
+		
+		Inventory Item = Inventory(mo.A_DropItem(Cls, Amount, Chance));
+		if (Item && !Item.bBIGPOWERUP && !(Item is 'Ammo') && !(Item is 'Weapon'))
+		{
+			let DropTimer = MCDropTimer.Create(Item);
+		}
+	}
+	
+	override void WorldTick()
+	{
+		if (MobCount > 0 && ++Timer[S_Despawn] >= DespawnTimer)
+		{
+			Timer[S_Despawn] = 0;
+			for (int i = 0; i < Monsters.Size(); i++)
+			{
+				let mo = Monsters.Actors[i];
+				if (!mo)	continue;
+				
+				if (mo.A_CheckRange(4096, "Null", true) ||
+					(mo.A_CheckRange(2048, "Null", true) && random[rng](1,256) <= 16))
+				{
+					mo.Destroy();
+				}
+			}
+		}
+	
+		if (++Timer[S_Clean] >= CleanTimer)
+		{
+			Timer[S_Clean] = 0;
+			Monsters.Clean();
+		}
+		
+		// Spawn monsters spherically around players.
+		if (++Timer[S_Spawn] >= SpawnTimer)
+		{
+			Timer[S_Spawn]--;
+			if ((!MCC_Peaceful || MCC_PeacefulBehavior >= 3) && MobCount < MaxMobs && 
+				!level.IsFrozen())
+			{
+				SpawnMonsters();
+			}
+			else 
+			{
+				Timer[S_Spawn] = 0;
+			}
+		}
+	}
+	private MinecraftEnemy MoToSpawn;
+	private void SpawnMonsters()
+	{
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || !players[i].mo)	continue;
+			Actor plr = players[i].mo;
+			if (!plr)	continue;
+
+			if (!MoToSpawn)	MoToSpawn = MinecraftEnemy(Actor.Spawn('MCZombie', (0,0,0), ALLOW_REPLACE));
+			if (MoToSpawn)
+			{
+				MoToSpawn.bNODROPOFF = true;
+				MoToSpawn.Deactivate(null);
+			}
+			else return;
+			
+			double inc = 30;
+			double div = 360 / inc;
+			double ang = random[rng](0,12) * inc;
+			
+			int j = random[rng](0,inc);
+			
+			for (int k = 0; k < inc; k++)
+			{
+				j = (j + 1) % inc;
+				ang = random(0, inc) * j;
+				double dist = random[rng](32, 128) * 32;
+				Vector3 next; next.XY = plr.Vec2Angle(dist, ang);
+				next.Z = MoToSpawn.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
+				if (!level.IsPointInLevel(next))
+					continue;
+				MoToSpawn.SetOrigin(next, false);
+				MoToSpawn.SetZ(MoToSpawn.FloorZ);
+				if (MoToSpawn.TryMove(MoToSpawn.pos.XY, false))
+				{
+					MoToSpawn.bNODROPOFF = MoToSpawn.Default.bNODROPOFF;
+					MoToSpawn.Activate(null);
+					MoToSpawn = null;
+					return;
+				}
+			}
+		}
+	}
+}
+
+//==============================================================================
+// Spawn Lists
+//
+// MCSpawn contains the classname, group it belongs to, and weight of the spawn.
+// The weight behaves exactly like RandomSpawner's.
+//==============================================================================
+Class MCSpawn play
+{
+	Class<Actor> ClassName;
+	Name Group;
+	Int Weight;
+}
+
+Class MCSpawnList play
+{
+	private Array<MCSpawn> Classes;
+	
+	static MCSpawnList Create()
+	{
+		let s = new('MCSpawnList');
+		s.Clear();
+		return s;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Adds a class. Must be valid and weight > 0 or it won't add.
+	// If the class is already existing, update it instead of wasting memory.
+	// Also, only changes the group if not '' (blank). Use 'None' to clear.
+	void Add(Class<Actor> cls, int w, Name g = '')
+	{
+		if (!cls)	return;
+		
+		int size = Classes.Size();
+		
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			if (cls == Classes[i].ClassName)
+			{
+				Classes[i].Weight = w;
+				if (g == 'None')	Classes[i].Group = '';
+				else if (g != '')	Classes[i].Group = g;
+				
+				return;
+			}
+		}
+		
+		let sp = new('MCSpawn');
+		sp.ClassName = cls;
+		sp.Weight = w;
+		sp.Group = (g == 'None') ? '' : g;
+		
+		Classes.Push(sp);
+	}
+	
+	void Clear()	{	Classes.Clear();	}
+	
+	//--------------------------------------------------------------------------
+	// Picks a random monster based on the group it belongs to.
+	// If no group is specified, it'll choose any.
+	//
+	// Arguments
+	//	*group 
+	//		Filters the selection by the group given (whitelist)
+	//	*exclude
+	//		If true, blacklists the group instead of whitelist.
+	Class<Actor> PickRandom(Name group = '', bool exclude = false) const
+	{
+		if (Classes.Size() < 1)
+			return null;
+	
+		bool any = (group == '' || group == 'None');
+		
+		Array<Class<Actor> > Queue;	Queue.Clear();
+		Array<Int> Chances;			Chances.Clear();
+		int Weight = 0;
+		int Size = Classes.Size();
+		
+		// Get all applicable entities.
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			let c = Classes[i];
+			if (!c || !c.ClassName || c.Weight < 1)
+				continue;
+			
+			if (!any)
+				if ((exclude && group == c.Group) || (!exclude && group != c.Group))
+					continue;
+			
+			Queue.Push(c.Classname);
+			Chances.Push(c.Weight);
+			Weight += c.Weight;
+		}
+		
+		Size = Queue.Size();
+		if (Size > 1)
+		{
+			int n = random[rng](0, Weight - 1);
+			
+			for (int i = 0; i <= Size; i++)
+			{
+				if (i >= Size)
+					i = 0;
+					
+				n -= Chances[i];
+				
+				if (n < 0)	return Queue[i];
+			}
+		}
+		else if (Size == 1)
+			return Queue[0];
+		
+		return null;
+	}
+}
+
+/*
+Class MCSpawnGroup play
+{
+	Name GroupName;
+	Array<MCSpawn> Group;
+	
+	static MCSpawnGroup Create(Name g)
+	{
+		let gr = new('MCSpawnGroup');
+		gr.GroupName = g;
+		gr.Group.Clear();
+		return gr;
+	}
+}
+*/

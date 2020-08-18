@@ -1,0 +1,13 @@
+mixin Class NormalLimbCount
+{
+	enum ELimbs
+	{
+		Head = 0,
+		Body,
+		LegL,
+		LegR,
+		ArmL,
+		ArmR,
+		LimbCount
+	};
+}

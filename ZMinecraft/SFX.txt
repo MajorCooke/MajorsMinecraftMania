@@ -1,0 +1,122 @@
+Class MCExplosion : MinecraftEntity
+{
+	Default
+	{
+		Radius 1;
+		Height 1;
+		Scale 384;
+		Projectile;
+		+NOINTERACTION
+		+NOTONAUTOMAP
+		+INVISIBLE
+		+FORCERADIUSDMG
+		RenderStyle "None";
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 10 NoDelay
+		{
+			A_StartSound("Minecraft/Explode");
+			int m = int(ceil(0.5 * Scale.X));
+			int n = int(round(0.25 * Scale.X));
+			int o = int(round(0.175 * Scale.X));
+			for (int i = 0; i < m; i++)
+			{
+				Class<Actor> spr = (i < n) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
+				Angle = random(0,359);
+				Pitch = frandom(-90, 90);
+				double dist = frandom(0.25, 1.0) * Scale.X;
+				A_SpawnItemEx(spr, cos(pitch) * dist, 0, -sin(pitch) * dist, flags: SXF_NOCHECKPOSITION);
+				
+				if (i < o)
+				{
+					double velo = frandom(1.0, 3.0) * frandompick(-1, 1);
+					Vector2 AP = (random(0,359),random(-90,90));
+					A_SpawnItemEx("MCExplosionSmoke", 
+						cos(AP.Y) * dist, 0, -sin(AP.Y) * dist,
+						cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
+						AP.X, SXF_NOCHECKPOSITION, 64);
+				}		
+			}
+		}
+		Stop;
+	}
+}
+
+Class MCExplosionSprite : Actor
+{
+	int DelayMin, DelayMax;
+	Property Delay: DelayMin, DelayMax;
+	Default
+	{
+		MCExplosionSprite.Delay 0, 0;
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+ROLLSPRITE
+		+BRIGHT
+		Scale 2.0;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 1 NoDelay 
+		{
+			roll = randompick(0, 90, 180, 270);
+			bXFLIP = random(0,1);
+			A_SetScale(Scale.X + frandom(-0.35, 0.35));
+			static const Name Trans[] = 
+			{
+				'MCExplo1',
+				'MCExplo2',
+				'MCExplo3',
+				'MCExplo4',
+				'MCExplo5'
+			};
+			int size = Trans.Size();
+			int i = random(0, size);
+			if (i < size)
+				A_SetTranslation(Trans[i]);
+			A_SetTics(Max(0, random(DelayMin, DelayMax)));
+		}
+		X208 ABCDEFGHIJKLMNOP 1;
+		Stop;
+	}
+}
+
+Class MCExplosionSpriteDelay : MCExplosionSprite
+{
+	Default
+	{
+		MCExplosionSprite.Delay 1, 8;
+	}
+}
+
+Class MCExplosionSmoke : Actor
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		Scale 3.0;
+	}
+	
+	override void Tick()
+	{
+		if (IsFrozen())	return;
+		
+		Vel.XY *= 0.98;
+		if (Vel.Z < 1.0)
+			Vel.Z += 0.05;
+		Super.Tick();
+	}
+	
+	States
+	{
+	Spawn:
+		X208 QRSTUVWX random(10, 30);
+		Stop;
+	}
+}
