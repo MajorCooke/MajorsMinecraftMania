@@ -14,9 +14,12 @@ Minecraft/Explode1	"Sounds/Minecraft/random/explode1.ogg"
 Minecraft/Explode2	"Sounds/Minecraft/random/explode2.ogg"
 Minecraft/Explode3	"Sounds/Minecraft/random/explode3.ogg"
 Minecraft/Explode4	"Sounds/Minecraft/random/explode4.ogg"
+
+
 Minecraft/Fuse		"Sounds/Minecraft/random/fuse.ogg"
 Minecraft/Fizz		"Sounds/Minecraft/random/fizz.ogg"
 
+$pitchset Minecraft/Explode 0.70 0.85
 $random Minecraft/Explode
 {
 	Minecraft/Explode1
@@ -33,11 +36,6 @@ $random Minecraft/Hit
 
 $limit Minecraft/Hit 0
 $limit Minecraft/Explode 0
-
-
-Minecraft/Creeper/Hiss		"Sounds/Minecraft/random/fuse.ogg"
-$pitchset Minecraft/Creeper/Hiss 0.5;
-$limit Minecraft/Creeper/Hiss 0;
 
 //==============================================================================
 // Zombie
@@ -56,6 +54,15 @@ Minecraft/Zombie/Step4	"Sounds/Minecraft/mob/Zombie/step4.ogg"
 Minecraft/Zombie/Step5	"Sounds/Minecraft/mob/Zombie/step5.ogg"
 
 Minecraft/Zombie/Death	"Sounds/Minecraft/mob/Zombie/death.ogg"
+
+$pitchset Minecraft/Zombie/Idle1 0.75 1.25
+$pitchset Minecraft/Zombie/Idle2 0.75 1.25
+$pitchset Minecraft/Zombie/Idle3 0.75 1.25
+
+$pitchset Minecraft/Zombie/Pain1 0.75 1.25
+$pitchset Minecraft/Zombie/Pain1 0.75 1.25
+
+$pitchset Minecraft/Zombie/Death 0.75 1.25
 
 $random Minecraft/Zombie/Idle
 {
@@ -91,6 +98,14 @@ Minecraft/Creeper/Pain2	"Sounds/Minecraft/mob/creeper/say2.ogg"
 Minecraft/Creeper/Pain3	"Sounds/Minecraft/mob/creeper/say3.ogg"
 Minecraft/Creeper/Pain4	"Sounds/Minecraft/mob/creeper/say4.ogg"
 Minecraft/Creeper/Death	"Sounds/Minecraft/mob/creeper/death.ogg"
+Minecraft/Creeper/Hiss	"Sounds/Minecraft/random/fuse.ogg"
+
+$pitchset Minecraft/Creeper/Hiss 0.5;
+$pitchset Minecraft/Creeper/Pain1 0.75 1.25
+$pitchset Minecraft/Creeper/Pain2 0.75 1.25
+$pitchset Minecraft/Creeper/Pain3 0.75 1.25
+$pitchset Minecraft/Creeper/Pain4 0.75 1.25
+$pitchset Minecraft/Creeper/Death 0.75 1.25
 
 $random Minecraft/Creeper/Pain
 {
@@ -101,6 +116,7 @@ $random Minecraft/Creeper/Pain
 }
 $limit Minecraft/Creeper/Pain 0
 $limit Minecraft/Creeper/Death 0
+$limit Minecraft/Creeper/Hiss 0;
 
 
 //==============================================================================

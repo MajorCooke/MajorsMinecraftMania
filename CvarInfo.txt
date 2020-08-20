@@ -30,6 +30,10 @@ server int MCC_PeacefulBehavior = 0;
 server float MCC_PackMul = 1.0;
 // Multiplies how many can be spawned at once.
 server float MCC_SpawnMul = 1.0;
+// Toggles monster spawning without being related to peaceful.
+server bool MCC_Spawning = true;
+// Health multiplier
+server float MCC_HealthMul = 1.0;
 
 //==============================================================================
 // Monster Properties
@@ -50,5 +54,8 @@ server int MCC_ItemTimer = 2;
 // Gibs start fading out the moment they stop moving if enabled.
 server bool MCC_ShortGibLives = false;
 
-// Monsters take damage from sectors.
+// Monsters take damage from sectors/falling/drowning. Some monsters are immune.
 server bool MCC_EnvironmentDamage = true;
+server bool MCC_FallDamage = true;
+server bool MCC_SectorDamage = true;
+server bool MCC_Drowning = true;

@@ -1,0 +1,450 @@
+Struct LastDamaged
+{
+	Actor i, s;
+	int damage, dmg, flags;
+	Name mod;
+	double angle;
+	bool used;
+}
+
+extend class MinecraftEnemy
+{
+	//--------------------------------------------------------------------------
+	// "Respawns" the monster by clearing all inventory and effects, and other
+	// stuff.
+	virtual void Respawn()
+	{
+		if (health < 1 || bDORMANT)	return;
+		
+		Damager.Clear();
+		Array<Powerup> Powers; Powers.Clear();
+		Array<Inventory> Items; Items.Clear();
+		for (let probe = inv; probe; probe = probe.inv)
+		{
+			let power = Powerup(probe);
+			if (power)	Powers.Push(power);
+			else if (probe)	Items.Push(probe);
+		}
+		
+		for (int i = 0; i < Powers.Size(); i++)
+			if (Powers[i])	Powers[i].EndEffect();
+		
+		for (int i = 0; i < Items.Size(); i++)
+			if (Items[i])	Items[i].Destroy();
+		
+		// Mitigate any telefragging by making them pass through actors.
+		bTHRUACTORS = true;
+		A_Respawn(RSF_TELEFRAG);
+		Deactivate(null);
+	}
+
+	// This is never called if the actor is dead. Used by monsters to try and
+	// move out of damaging sectors.
+	virtual void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags = 0, double angle = 0)
+	{
+		
+	}
+
+	virtual void UpdateLimbs()
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Vector3 NA = Angs;
+				if (!(Limb[i] is 'MCBodyPartHead'))
+					NA.Y -= Pitch;
+				
+				Limb[i].UpdatePosition(self, WARPF_INTERPOLATE);
+				Limb[i].UpdateScales(Scale);
+				Limb[i].SetNextAngles(NA);
+				Limb[i].A_SetRenderStyle(alpha, CurStyle);
+				Limb[i].Translation = Translation;
+				Limb[i].bINVISIBLE = bINVISIBLE;
+				Limb[i].bBRIGHT = bBRIGHT;
+			}
+		}
+	}
+	
+	// The goal of this function is simply to call Super.DropItems and pass in the
+	// source, inflictor and damagetype for the monsters to use. The base class
+	// simply checks if a player did the killing. Naturally this can be overridden
+	// as needed, such as the creeper and skeleton special drops.
+	virtual protected bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		for (int i = 0; i < Damager.Size(); i++)
+			if (Damager[i] is 'PlayerPawn')	return true;
+		return (src is 'PlayerPawn');
+	}
+	
+	protected void DropItem(Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	{
+		if (!Event)	Event = MinecraftHandler.Fetch();
+		if (Event)	Event.DropItem(self, Cls, Amount, Chance);
+	}
+	
+	// Checks if the actor is immune to a damagetype.
+	bool IsImmune(Name DmgType)
+	{	return (ApplyDamageFactor(DmgType, TELEFRAG_DAMAGE) < 1);	}
+	
+	//--------------------------------------------------------------------------
+	// Sets the drown timer.
+	// 
+	// * maxtime
+	//		How long the monster can go without drowning
+	// * current
+	//		How much air time they have before drowning
+	void SetDrownTimer(int maxtime, int current = -1)
+	{
+		DrownTimerStart = maxtime;
+		DrownTimer = (current > -1) ? current : maxtime;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Initializes Limb array.
+	protected void Init(int limbs)
+	{
+		Limb.Clear();
+		if (limbs < 1)	return;
+		Limb.Reserve(limbs);
+		for (int i = 0; i < Limb.Size(); i++)
+			Limb[i] = null;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Called when dealing fall damage. Returns false if no damage was dealt
+	// or if the actor is incapable of receiving fall damage.
+	virtual bool DoFallDamage()
+	{
+		if (bNOGRAVITY || bFLOAT || GetGravity() <= 0.0 || waterlevel >= 3)
+			return false;
+			
+		int dmg = Clamp((abs(PrevVel.z) - FallDmgVel) * 5, 0, TELEFRAG_DAMAGE - 1);
+		if (dmg < 1)	return false;
+		return (DamageMobj(null, null, dmg, 'Falling') > 0);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Helper function simply to set limbs as well as 
+	protected void SetTranslation(Name n)
+	{
+		A_SetTranslation(n);
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].A_SetTranslation(n);
+		PrevTrans = Translation;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Causes all the limbs to turn into their gibbed variants and send them
+	// flying all around based on velocity.
+	protected void Gib(double VelLen)
+	{
+		Translation = Default.Translation;
+		bBRIGHT = false;
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Translation = Translation;
+				Limb[i].bBRIGHT = false;
+				Limb[i].SpawnGib(VelLen);
+			}
+		}
+	}
+	
+	protected virtual void DestroyLimbs()
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Destroy();
+				Limb[i] = null;
+			}
+		}
+	}
+	
+	//==========================================================================
+	//
+	//==========================================================================
+	protected bool ValidateTarget(bool clear = false)
+	{
+		if (!Target)	
+		{
+			if (Tracer)	Target = Tracer;
+			else if (Goal)	Target = Goal;
+			else return false;
+		}
+		
+		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
+		
+		double ChaseRange = MaxChaseRange;
+		if (Tracer && Target == Tracer)	ChaseRange *= 2;
+		else if (Goal && Target == Goal)	ChaseRange = 22767;
+		
+		if (!Targetable(Target) ||
+			Distance3DSquared(Target) > ChaseRange ** 2)
+		{
+			if (clear && !Goal)	
+			{
+				if (Tracer && Tracer == Target)
+					Tracer = null;
+				A_ClearTarget();
+			}
+			if (Tracer) Target = Tracer;
+			else if (Goal)	Target = Goal;
+			return false;
+		}
+		return true;		
+	}
+	
+	protected bool Targetable(Actor mo)
+	{
+		if (!mo)	
+			return false;
+			
+		if (Goal && mo == Goal)	
+			return true;
+		
+		if (mo.Health < 1 || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY))
+			return false;
+		
+		if ((mo is 'PlayerPawn' && (MCC_Peaceful || Passive)))
+			return false;
+			
+		if ((mo.Player && (mo.Player.Cheats & CF_NOTARGET)))
+			return false;
+			
+		return true;
+	}
+	
+	protected void Look(bool time = false)
+	{
+		if (Passive)
+		{
+			if (Target && (Target is "PlayerPawn" || Target.Player))
+				A_ClearTarget();
+		}
+		else if (!time || --LookTimer < 1)
+		{
+			if (time)
+				LookTimer = 17;
+			bool trc = (Tracer && Tracer.Health > 0);
+			
+			if (trc)	A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
+			else		A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
+			
+			
+			if (ValidateTarget())
+			{
+				if (!bAMBUSH || CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+					SetState(ResolveState("See"));
+			}
+			else
+				A_ClearTarget();
+			
+		}
+	}
+	
+	protected void LookWander()
+	{
+		Look(true);
+		A_Wander();
+	}
+	
+	virtual void SetPassive(bool on)	{	Passive = on;	}
+	
+	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0)
+	{
+		if (health < 1)
+		{
+			return;
+		}
+	
+		int newflags = CHF_NOPLAYACTIVE;
+		
+		// Get a target if invalid.
+		if (!ValidateTarget())
+		{
+			if (!Goal)
+			{
+				A_ClearTarget();
+				A_Chase(null, null);
+				SetState(ResolveState("Idle"));
+				return;
+			}
+			else Target = Goal;
+		}
+		
+		bool good = false;
+		if (CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY)) // Use regular A_Chase if cannot see.
+		{
+			
+			HoldAngs = (Angle, Pitch, Roll);
+			A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
+			if (Target)
+			{
+				if (bFLOAT)
+				{	
+					
+					double c = cos(Pitch) * Speed;
+					double s = -sin(Pitch) * Speed;
+					
+					Vector3 old = pos;
+					Vector2 new = Vec2Angle(Speed, AngleTo(Target));
+					
+					SetZ(pos.z + s);
+					if (TryMove(new, bDROPOFF))
+						good = true;
+					else 
+					{
+						SetOrigin(old, false);
+					}
+					
+				}
+				else
+				{
+					Vector2 nmpos = Vec2Angle(speed, AngleTo(Target));
+					if (TryMove(nmpos, bDROPOFF))
+						good = true;
+				}
+				
+				
+				
+				// Move was good. Do the chase but without actually moving. 
+				if (good)
+					newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
+				else
+				{
+					Angle = HoldAngs.X;
+					Pitch = HoldAngs.Y;
+					Roll =	HoldAngs.Z;
+				}
+			}
+		}
+		if (!good && (angle % 45 != 0.0))
+			AlignMoveDir();
+		
+		
+		A_Chase(melee, missile, flags|newflags);
+	}
+	
+	void AlignMoveDir()
+	{
+		double roundee = Normalize180(angle);
+		if (roundee <= 0.0)	roundee += 360.0;
+		double deg = roundee % 45.0;
+		int DirAdd = (deg >= 22.5) ? 1 : 0;
+		moveDir = uint((roundee / 45.0) + DirAdd) % 8;
+		
+		/*
+		double NextAngle = MoveDir * 45;
+		if (angle != NextAngle)
+		{
+			double Delta = deltaangle(angle, NextAngle);
+			if (delta != 0.0)
+			{
+				double TurnAmount = 11.25; // 45 * 0.25
+				if (abs(Delta) <= TurnAmount)
+					angle = NextAngle;
+				else
+					angle += (Delta > 0) ? TurnAmount : -TurnAmount;
+			}
+		}
+		*/
+	}
+	
+	
+	
+	virtual bool DoMissile()
+	{
+		return false;
+	}
+	
+	virtual bool DoMelee(int damage = -1)
+	{
+		if (CheckGoal(MeleeRange) > 0)
+			return true;
+		if (!Target || Target.Health < 1 || AttackDelay > 0 || !CheckMeleeRange())
+			return false;
+		
+		
+		if (damage < 0)	
+		{
+			damage = MeleeDamage;
+			if (damage < 1)
+				return false;
+		}
+		
+		let armor = Target.FindInventory('BasicArmor',true);
+		int armbefore = 0, armafter = 0;
+		if (armor)	armbefore = Armor.Amount;
+		int dmg = Target.DamageMobj(null, self, 10, "Melee");
+		if (armor)	armafter = Armor.Amount;
+		
+		if (dmg > 0 || armafter != armbefore)
+		{
+			AttackDelay = AttackDelayMax;
+			SetMeleeAnimation();
+		}
+		return true;
+	}
+	
+	virtual void SetMeleeAnimation()	{	}
+	
+	//==========================================================================
+	// Goal Manipulation
+	//==========================================================================
+	
+	enum EGoalStatus
+	{
+		GS_None = 0,
+		GS_Chasing,
+		GS_Reached
+	};
+	
+	int CheckGoal(double dist)
+	{
+		if (dist <= 0.0)	dist = MeleeRange;
+		if (Target && Target == Goal)
+		{
+			if (Distance3DSquared(Goal) <= (dist ** 2))
+			{
+				SetOrigin(Goal.pos, true);
+				RemoveGoal();
+				return GS_Reached;
+			}
+			return GS_Chasing;
+		}
+		return GS_None;
+	}
+	
+	// Just in case something fucks with the goal pointer prematurely...
+	private Actor BackupGoal; 
+	virtual void SetGoal(Vector3 gp, double ang = 0, bool relative = false)
+	{
+		if (ValidateTarget())	return;
+		if (!Goal)	
+		{
+			if (!BackupGoal)
+				Goal = Spawn('MCGoal', pos);
+			else Goal = BackupGoal;
+		}
+		BackupGoal = Goal;
+		if (!ValidateTarget())	Target = Goal;
+		
+		
+		if (relative)	Goal.Warp(Self, gp.x, gp.y, gp.z, ang, WARPF_NOCHECKPOSITION);
+		else			Goal.SetOrigin(gp, false);
+	}
+	
+	void RemoveGoal()
+	{
+		if (Goal is 'MCGoal' && !Goal.bDESTROYED)
+			Goal.Destroy();
+		if (BackupGoal && !BackupGoal.bDESTROYED)
+			BackupGoal.Destroy();
+			
+		Goal = BackupGoal = null;
+	}
+}

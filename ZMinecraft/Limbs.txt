@@ -16,6 +16,7 @@ Class MCBodyPart : MinecraftEntity
 	protected MCBodyPart Attachment;
 	protected Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
 		PosOff,		// Position Offsets
+		RelOff,		// Relative position offsets (takes angles into account)
 		AngOff,		// Secondary angle offsets (reset every tic to (0,0,0)
 		CurAng,		// The current angle, pitch and roll.
 		MainAng,	// Primary angle offsets (not reset)
@@ -24,8 +25,9 @@ Class MCBodyPart : MinecraftEntity
 	protected MC_QuatTurner Turner;
 	protected Class<MCBodyPartGib> Gib;
 	
-	double
-			OffX, OffY, OffZ,
+	bool	InvertInvis;
+	double	OffX, OffY, OffZ,
+			ROfX, ROfY, ROfZ,
 			VelSineOffset,
 			SOX, SOY, SOZ, 
 			SDX, SDY, SDZ, 
@@ -35,6 +37,7 @@ Class MCBodyPart : MinecraftEntity
 	LimbSwing Swing;
 	MinecraftEnemy Owner;
 	
+	Property InvertInvis: InvertInvis;
 	Property CurAction : CurAction;			// See Constants.txt
 	Property LimbLength: LimbLength;
 	Property SineOffset: SOX, SOY, SOZ;
@@ -42,6 +45,7 @@ Class MCBodyPart : MinecraftEntity
 	Property SineSpeed: SSX, SSY, SSZ;
 	Property VelSineOffset: VelSineOffset;
 	Property Offsets: OffX, OffY, OffZ;
+	Property RelOffsets: ROfX, ROfY, ROfZ;
 	Property Gib: Gib;
 	
 	Default
@@ -87,15 +91,19 @@ Class MCBodyPart : MinecraftEntity
 		}
 	}
 	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		if (LimbLength <= 0)
+			LimbLength = Height;
+		Sway.Init((SOX,SOY,SOZ), (SDX, SDY, SDZ), (SSX, SSY, SSZ));
+		Swing.Init(VelSineOffset, LimbLength, Scale.Y);
+	}
+	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
 		
-		if (LimbLength <= 0)
-			LimbLength = Height;
-		
-		Sway.Init((SOX,SOY,SOZ), (SDX, SDY, SDZ), (SSX, SSY, SSZ));
-		Swing.Init(VelSineOffset, LimbLength, Scale.Y);
 		Turner = MC_QuatTurner.Create();
 		
 		NextAng = (Angle, Pitch, Roll);
@@ -187,7 +195,7 @@ Class MCBodyPart : MinecraftEntity
 	virtual void UpdatePosition(Actor who, int flags = 0)
 	{
 		if (who)
-			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);
+			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);	
 		if (Attachment)
 			Attachment.UpdatePosition(self, flags);
 	}
@@ -307,6 +315,24 @@ Class MCBodyPartHead : MCBodyPart
 		if (Owner)	Owner.CameraHeight = OffZ;
 	}
 	
+	override void UpdatePosition(Actor who, int flags)
+	{
+		if (who)
+		{
+			RelOff = (ROfX, ROfY, ROfZ);
+			Vector3 old = pos;
+			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);
+			
+			Vector3 px, py, pz, origin;
+			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
+			origin = pos + RelOff.x * px + RelOff.y * py + RelOff.z * pz;
+			SetOrigin(origin, true);
+			prev = old;
+		}
+		if (Attachment)
+			Attachment.UpdatePosition(self, flags);
+	}
+	
 	override void DoMotion()
 	{
 		if (!Owner)	return;
@@ -316,8 +342,9 @@ Class MCBodyPartHead : MCBodyPart
 		{
 			Angle = Owner.Angle;
 			Pitch = 0;
-			double zh = (Target.Player) ? ((Target.Player.ViewZ + 4) - Target.Pos.Z) : Target.CameraHeight;
-			A_FaceTarget(90, 45, 0, 0, FAF_BOTTOM, zh);
+		//	double zh = (Target.Player) ? ((Target.Player.ViewZ) - Target.Pos.Z) : Target.CameraHeight;
+			double zh = 0.8;
+			A_FaceTarget(90, 45, 0, 0, FAF_TOP, 0);
 			NextAng = (Angle, Pitch, Roll);
 			Angle = CurAng.X;
 			Pitch = CurAng.Y;

@@ -50,6 +50,7 @@ Class MinecraftHandler : EventHandler
 	};
 	
 	private int Timer[S_Max];
+	private MCSpawnList SpawnList;
 	AArray Monsters;
 	
 	
@@ -62,6 +63,8 @@ Class MinecraftHandler : EventHandler
 	{
 		Monsters = AArray.Create();
 		MaxMobs = 80;
+		
+		CreateSpawnList();
 	}
 	
 	override void WorldThingSpawned(WorldEvent e)
@@ -70,6 +73,8 @@ Class MinecraftHandler : EventHandler
 		if (mo)	
 		{
 			mo.Event = self;
+			mo.StartHealth *= Max(0.5, MCC_HealthMul);
+			mo.Health *= Max(0.5, MCC_HealthMul);;
 			Monsters.Push(mo);
 			MobCount++;
 		}
@@ -137,7 +142,8 @@ Class MinecraftHandler : EventHandler
 		if (++Timer[S_Spawn] >= SpawnTimer)
 		{
 			Timer[S_Spawn]--;
-			if ((!MCC_Peaceful || MCC_PeacefulBehavior >= 3) && MobCount < MaxMobs && 
+			if (MCC_Spawning && 
+				(!MCC_Peaceful || MCC_PeacefulBehavior >= 3) && MobCount < MaxMobs && 
 				!level.IsFrozen())
 			{
 				SpawnMonsters();
@@ -148,6 +154,13 @@ Class MinecraftHandler : EventHandler
 			}
 		}
 	}
+	private void CreateSpawnList()
+	{
+		SpawnList = MCSpawnList.Create();
+		SpawnList.Add('MCZombie', 5);
+		SpawnList.Add('MCCreeper',1);
+	}
+	
 	private MinecraftEnemy MoToSpawn;
 	private void SpawnMonsters()
 	{
@@ -156,8 +169,10 @@ Class MinecraftHandler : EventHandler
 			if (!playeringame[i] || !players[i].mo)	continue;
 			Actor plr = players[i].mo;
 			if (!plr)	continue;
-
-			if (!MoToSpawn)	MoToSpawn = MinecraftEnemy(Actor.Spawn('MCZombie', (0,0,0), ALLOW_REPLACE));
+			
+			if (!SpawnList)	CreateSpawnList();
+			Class<Actor> cls = SpawnList.PickRandom();
+			if (!MoToSpawn)	MoToSpawn = MinecraftEnemy(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
 			if (MoToSpawn)
 			{
 				MoToSpawn.bNODROPOFF = true;

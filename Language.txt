@@ -32,8 +32,17 @@ MCM_ENVIRODAMAGE_SUB = "Monsters take sector/falling/drowning damage";
 MCM_FALLDAMAGE_TEXT = "Fall Damage";
 MCM_FALLDAMAGE_SUB = "Monsters take fall damage";
 
-MCM_DROWNINGDAMAGE_TEXT = "Drowning";
-MCM_DROWNINGDAMAGE_SUB = "Monsters can drown";
+MCM_DROWNING_TEXT = "Drowning";
+MCM_DROWNING_SUB = "Monsters can drown";
 
 MCM_SECTORDAMAGE_TEXT = "Toxic/Lava Damage";
 MCM_SECTORDAMAGE_SUB = "Monsters take damage from slime/lava floors.";
+
+MCM_SPAWNING_TEXT = "Monster Spawns";
+MCM_SPAWNING_SUB = "Can monsters spawn? Unrelated to peaceful mode.";
+
+MCM_HEALTHMUL1_TEXT = "Health Multiplier (0.x)";
+MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in small increments (0.1)";
+
+MCM_HEALTHMUL2_TEXT = "Health Multiplier (x.0)";
+MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in large increments (1.0)";

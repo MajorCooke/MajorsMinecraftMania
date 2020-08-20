@@ -18,6 +18,7 @@ Class MinecraftEntity : Actor
 		}
 		Actor source = Target;
 		if (bISMONSTER) source = self;
+		
 		return MC_Functions.Explode(self, source, damage, radius, full, thrust, flags, radflags, alert, DamageType);
 	}
 }
@@ -36,21 +37,20 @@ Class MCImmunityFrames : PowerProtection
 	
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor inflictor, Actor source, int flags)
 	{
-		if (passive && damage > 0)
+		if (passive)
 		{
-			if ((source && source is "MinecraftEnemy") || 
-				(inflictor && inflictor.target is "MinecraftEnemy"))
+			if (damage < 1 ||
+				(source is "MinecraftEnemy") || 
+				(inflictor is "MinecraftEnemy"))
 				newdamage = -1;
 		}
 	}
 	
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
 	{
-		if (damage > 0)
-		{
-			if ((source && source is "MinecraftEnemy") || 
-				(inflictor && inflictor.target is "MinecraftEnemy"))
-				newdamage = -1;
-		}
+		if (damage < 1 ||
+			(source is "MinecraftEnemy") || 
+			(inflictor is "MinecraftEnemy"))
+			newdamage = -1;
 	}
 }

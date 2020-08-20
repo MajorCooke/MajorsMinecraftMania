@@ -1,4 +1,53 @@
+class NextDamageTic
+{
+	private Array<Int> Damage;
+	private Array<CVector3> Vel;
+	private Array<Actor> inf, src;
+	private Array<Name> mod;
+	
+	int i;
+	int size;
+	bool Collecting;
+	
+	static NextDamageTic Create();
+	{
+		let ndt = new('NextDamageTic');
+		ndt.Clear();
+		return ndt;
+	}
+	
+	protected void Init()
+	{
+		i = size = 0;
+		Clear();
+	}
+	
+	void Clear()
+	{
+		Damage.Clear();
+		Vel.Clear();
+		inf.Clear();
+		src.Clear();
+		mod.Clear();
+	}
+	
+	void Reset()
+	{
+		i = 0;
+	}
+	
+	bool Next()
+	{
+		if (i >= size)	return false;
+		else
+		{
+			i++;
+			return true;
+		}
+	}
+}
 
+//==============================================================================
 
 // ReplaceInfoManager
 //

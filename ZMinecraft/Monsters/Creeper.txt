@@ -13,15 +13,19 @@ Gib Legs B:		-.8,	+-.4,	0.6
 
 */
 
+		
+
 // Because someone is going to want to use them against the Creeper Ghoul.
 // I just know it.
 Class MCCreeper : MinecraftEnemy
 {
+	const ExploRange = 256.0;
 	const _Radius = 1.6;
-	const _Height = 6.4;
-	const RealScale = 7.0;
+	const _Height = 6.0;
+	const RealScale = 8.0;
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
+	
 	enum ELimbs
 	{
 		Head = 0,
@@ -30,22 +34,31 @@ Class MCCreeper : MinecraftEnemy
 		LegFR,
 		LegBL,
 		LegBR,
-		LimbCount
+		LimbCount,
 	};
 	
-	const ExploRange = 384.0;
+	private MCBodyPart LimbX[LimbCount];
+	protected int HissingRange;
+	
+	Property HissingRange: HissingRange;
 	
 	Default
 	{
+		MCCreeper.HissingRange 350; // Once hissing starts, get this far away to stop.
+		MinecraftEnemy.MaxChaseRange 768;
+		MeleeRange 128;
+		Health 200;
 		+EXTREMEDEATH
 		+FORCERADIUSDMG
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
-		
 		Tag "Creeper";
 		Obituary "A creeper blasted %o sky high, Team Rocket style.";
-		MeleeRange 256;
+		MaxTargetRange 512;
+		
+		PainSound "Minecraft/Creeper/Pain";
+		DeathSound "Minecraft/Creeper/Death";
 	}
 	
 	override void PostBeginPlay()
@@ -59,12 +72,26 @@ Class MCCreeper : MinecraftEnemy
 		Limb[LegBL] = MCBodyPart(Spawn('MCCreeperLegBack', pos));
 		Limb[LegBR] = MCBodyPart(Spawn('MCCreeperLegBack', pos));
 		
+		LimbX[Head] = MCBodyPart(Spawn('MCCreeperHeadW', pos));
+		LimbX[Body] = MCBodyPart(Spawn('MCCreeperBodyW', pos));
+		LimbX[LegFL] = MCBodyPart(Spawn('MCCreeperLegFrontW', pos));
+		LimbX[LegFR] = MCBodyPart(Spawn('MCCreeperLegFrontW', pos));
+		LimbX[LegBL] = MCBodyPart(Spawn('MCCreeperLegBackW', pos));
+		LimbX[LegBR] = MCBodyPart(Spawn('MCCreeperLegBackW', pos));
+		
 		for (int i = 0; i < Limb.Size(); i++)
 		{
 			if (Limb[i])
 			{
 				Limb[i].Master = self;
 				Limb[i].Owner = self;
+			}
+			if (LimbX[i])
+			{
+				LimbX[i].Master = self;
+				LimbX[i].Owner = self;
+				LimbX[i].bINVISIBLE = true;
+				LimbX[i].A_FadeOut(1.0, 0);
 			}
 		}
 		
@@ -74,6 +101,72 @@ Class MCCreeper : MinecraftEnemy
 		Limb[LegFL].SetPosOffsets((0.4,-.4,1.2));
 		Limb[LegBR].SetPosOffsets((-.4,0.4,1.2));
 		Limb[LegBL].SetPosOffsets((-.4,-.4,1.2));
+		
+		Limb[LegFL].SetSineOffset((180,180,180));
+		Limb[LegBR].SetSineOffset((180,180,180));
+		
+		LimbX[Head].SetPosOffsets((0.0,0.0,4.4));
+		LimbX[Body].SetPosOffsets((0.0,0.0,2.4));
+		LimbX[LegFR].SetPosOffsets((0.8,0.4,0.6));
+		LimbX[LegFL].SetPosOffsets((0.8,-.4,0.6));
+		LimbX[LegBR].SetPosOffsets((-.8,0.4,0.6));
+		LimbX[LegBL].SetPosOffsets((-.8,-.4,0.6));
+		
+		LimbX[LegFL].SetSineOffset((180,180,180));
+		LimbX[LegBR].SetSineOffset((180,180,180));
+		
+	}
+	
+	private int age;
+	override void UpdateLimbs()
+	{
+		Super.UpdateLimbs();
+	
+		for (int i = 0; i < LimbX.Size(); i++)
+		{
+			if (ChargeTimer > 0)
+			{
+				
+				if (LimbX[i])
+				{
+					Vector3 NA = Angs;
+					if (!(LimbX[i] is 'MCBodyPartHead'))
+						NA.Y -= Pitch;
+					LimbX[i].UpdatePosition(self);
+					LimbX[i].SetNextAngles(NA);
+					LimbX[i].UpdateScales(Scale + (0.1, 0.1));
+					
+					if (GetAge() % AlterTics == 0)
+						LimbX[i].bINVISIBLE = !LimbX[i].bINVISIBLE;
+					LimbX[i].A_FadeTo(MaxChargeFrac * ChargeTimer, 1.0, 0);
+				}
+				
+			}
+			else LimbX[i].bINVISIBLE = true;
+		}
+	}
+	
+	override void Activate(Actor activator)
+	{
+		if (health < 1 || bDESTROYED)	return;
+		Super.Activate(activator);
+		for (int i = 0; i < LimbX.Size(); i++)
+			if (LimbX[i])	LimbX[i].Activate(activator);
+	}
+	
+	override void Deactivate(Actor activator)
+	{
+		if (health < 1 || bDESTROYED)	return;
+		Super.Deactivate(activator);
+		for (int i = 0; i < LimbX.Size(); i++)
+			if (LimbX[i])	LimbX[i].Deactivate(activator);
+		
+	}
+	
+	override void Die(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
+	{
+		DestroyXLimbs();
+		Super.Die(source, inflictor, dmgflags, meansofdeath);
 	}
 	
 	override void Tick()
@@ -82,39 +175,82 @@ Class MCCreeper : MinecraftEnemy
 		
 		if (health < 1 || IsFrozen())	return;
 		
+		if (!Charging && ChargeTimer > 0)
+			ChargeTimer--;
+		
 		if (ValidateTarget())
 		{
 			if (!OnGround && Vel.Z < -9.0)
-				ExplosionTimer(true, true);
-			
+				SetExplosionCounting(true, true);
+		
 			// Handle the charging effects.
-			ChargeTimer = Clamp(ChargeTimer + (Charging) ? 1 : -1, 0, MaxCharge);
+			if (Charging && ChargeTimer < MaxCharge)
+				ChargeTimer++;
+			else if (!Charging && ChargeTimer > 0)
+				ChargeTimer--;
 			
-			
+			// Do not call call actual death here. This will cause it to drop ill-gotten
+			// gains, so it must behave like Minecraft and drop absolutely nothing.
+			// As a result, it will never call WorldThingDied on purpose.
 			if (Charging && ChargeTimer >= MaxCharge)
 			{
-				if ((ChargeFall && OnGround && InExploRange(Target, true)) ||
-					(!ChargeFall && InExploRange(Target)))
+				if ((ChargeFall && OnGround && InExploRange(null, true)) ||
+					(!ChargeFall && InExploRange()))
 				{
-					A_Die("Suicide");
+					bKilled = true;
+					Health = 0;
+					Kaboom();
+					SetState(ResolveState("Death"));
 					return;
-				}
+				}				
 			}
 		}
-		else ExplosionTimer(false);
+		else SetExplosionCounting(false);
 	}
 	
+	protected void Kaboom()
+	{
+		A_ChangeLinkFlags(1);
+		bNEVERTARGET = bNOINTERACTION = bINVISIBLE = true;
+		A_UnsetShootable();
+		bVULNERABLE = false;
+		DestroyLimbs();
+		A_Stop();
+		A_StopAllSounds();
+		Explode(256, ExploRange, 128, -1, XF_NOTMISSILE);
+	}
 	
+	protected void DestroyXLimbs()
+	{
+		for (int i = 0; i < LimbX.Size(); i++)
+		{
+			if (LimbX[i])
+			{
+				LimbX[i].Destroy();
+				LimbX[i] = null;
+			}
+		}
+	}
+	
+	override void DestroyLimbs()
+	{
+		DestroyXLimbs();
+		Super.DestroyLimbs();
+	}
+
 	const MaxCharge = Second + 18; // Just above 1.5 seconds.
+	const MaxChargeFrac = 1.0 / MaxCharge;
+	const AlterTics = 4;
 	private int ChargeTimer;
 	private int FlashTimer;
 	private bool Charging, ChargeFall;
 	private bool SuperCharged; // Charged creeper. Ruh roh!
 	
-	void ExplosionTimer(bool on, bool fall = false) 
+	void SetExplosionCounting(bool on, bool fall = false) 
 	{
+		
+		if (on && !Charging)	A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
 		Charging = on;
-		if (on)	A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
 		ChargeFall = (on) ? fall : false;
 	}
 	
@@ -126,39 +262,67 @@ Class MCCreeper : MinecraftEnemy
 			mo = Target;
 			if (!mo)	return false;
 		}
-	
-		return (mo && ((Distance3DSquared(mo) <= (ExploRange ** 2)) ||
-				(_2d && Distance2DSquared(mo) <= (ExploRange ** 2))));
+		
+		double Range = (Charging) ? HissingRange : ExploRange;
+		
+		
+		return (mo && ((Distance3DSquared(mo) <= (Range ** 2)) ||
+				(_2d && Distance2DSquared(mo) <= (Range ** 2))));
 	}
 	
 	States
 	{
+	Spawn:
+		TNT1 A 35;
+	Idle:
+		TNT1 A 0 
+		{
+			SetExplosionCounting(false);
+			return A_Jump(256, random(1, 4));
+		}
+		TNT1 AAAAAAAAAA 17 Look();
+	IdleMove:
+		TNT1 A 0 
+		{
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	See:
+		TNT1 A 1 
+		{
+			SetExplosionCounting(false);
+			Chase();
+		}
+		Wait;
 	Melee:
-		TNT1 A 4
+		TNT1 A AlterTics
+		{
+			SetExplosionCounting(true);
+		}
+		TNT1 A AlterTics
 		{
 			StateLabel next = null;
-			ExplosionTimer(InExploRange());
-			
-			if (!Charging)	next = "See";
-				
+			if (OnGround && !InExploRange())
+			{
+				SetExplosionCounting(false);
+				next = "See";
+			}
 			return ResolveState(next);
 		}
 		Wait;
 	Death.Falling:
 		TNT1 A 0
 		{
-			StateLabel next = "Death";
-			if (Charging && ChargeFall && InExploRange())
-				next = "Death.Suicide";
-			return ResolveState(next);
+			if (Charging)// && ChargeFall && InExploRange())
+				Kaboom();
 		}
 	Death.Suicide:
-		TNT1 A 15
-		{
-			DestroyLimbs();
-			A_StopSound(CHAN_VOICE);
-			Explode(256, ExploRange, 0, -1, XF_NOTMISSILE);
-		}
+		TNT1 A 15;
 		Stop;
 	}
 }
@@ -166,8 +330,16 @@ Class MCCreeper : MinecraftEnemy
 
 Class MCCreeperHead :		MCBodyPartHead {}
 Class MCCreeperBody :		MCBodyPartBody {}
-Class MCCreeperLegFront :	MCBodyPartLeg {}
-Class MCCreeperLegBack :	MCBodyPartLeg {}
+Class MCCreeperLegFront :	MCBodyPartLeg { Default { MCBodyPart.Gib 'MCCreeperLegGib'; } }
+//Class MCCreeperLegFrontL :	MCBodyPartLeg { Default { MCBodyPart.Gib 'MCCreeperLegGib'; } }
+Class MCCreeperLegBack :	MCBodyPartLeg { Default { MCBodyPart.Gib 'MCCreeperLegGib'; } }
+//Class MCCreeperLegBackL :	MCBodyPartLeg { Default { MCBodyPart.Gib 'MCCreeperLegGib'; MCBodyPart.VelSineOffset 180;} }
+
+//InvertInvis
+Class MCCreeperHeadW :		MCCreeperHead { Default { RenderStyle "Stencil"; StencilColor "White"; +BRIGHT }}
+Class MCCreeperBodyW :		MCCreeperBody { Default { RenderStyle "Stencil"; StencilColor "White"; +BRIGHT }}
+Class MCCreeperLegFrontW :	MCCreeperLegFront { Default { RenderStyle "Stencil"; StencilColor "White"; +BRIGHT }}
+Class MCCreeperLegBackW :	MCCreeperLegBack { Default { RenderStyle "Stencil"; StencilColor "White"; +BRIGHT }}
 
 Class MCCreeperHeadGib :	MCBodyPartGib {}
 Class MCCreeperBodyGib :	MCBodyPartGib {}

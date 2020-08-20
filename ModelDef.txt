@@ -69,6 +69,16 @@ Model MCCreeperHead
 	FrameIndex ASDF A 0 0
 }
 
+Model MCCreeperHeadW
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/HeadGib.obj"
+	Scale 1.2 1.2 1.3
+	FrameIndex ASDF A 0 0
+}
+
 Model MCCreeperHeadGib
 {
 	USEACTORPITCH
@@ -89,6 +99,16 @@ Model MCCreeperBody
 	FrameIndex ASDF A 0 0
 }
 
+Model MCCreeperBodyW
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/Body.obj"
+	Scale 1.1 1.1 1.3
+	FrameIndex ASDF A 0 0
+}
+
 Model MCCreeperLegFront
 {
 	USEACTORPITCH
@@ -99,6 +119,16 @@ Model MCCreeperLegFront
 	FrameIndex ASDF A 0 0
 }
 
+Model MCCreeperLegFrontW
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/LegGib.obj"
+	Scale 1.1 1.1 1.3
+	FrameIndex ASDF A 0 0
+}
+
 Model MCCreeperLegBack
 {
 	USEACTORPITCH
@@ -106,6 +136,16 @@ Model MCCreeperLegBack
 	INTERPOLATEDOUBLEDFRAMES
 	Model 0 "Models/Creeper/LegBack.obj"
 	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCCreeperLegBackW
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Creeper/LegGib.obj"
+	Scale 1.1 1.1 1.3
 	FrameIndex ASDF A 0 0
 }
 

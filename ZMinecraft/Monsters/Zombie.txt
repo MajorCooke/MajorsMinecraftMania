@@ -29,6 +29,59 @@ Gib Arms: 	0.0,	+-1.2,	3.6
 Gib Leg:	0.0,	+-0.4,	1.2
 */
 
+extend class MinecraftEnemy
+{
+	enum EAMFlags
+	{
+		AM_NOPARENT =	1,
+		AM_FORCE =		1 << 1,
+		
+	//	AM_EXCLUDE =	1 << 1,
+	};
+
+	virtual void AlertMonsters(double dist, Actor targ = null, Class<Actor> filter = null, int limit = 0, int flags = 0)
+	{
+		if (dist <= 0.0)	return;
+		if (!targ)
+		{
+			if (Target)	targ = Target;
+			else		return;
+		}
+		
+		if (targ.health < 1 || !targ.bSHOOTABLE ||
+			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
+			return;
+		
+		let it = BlockThingsIterator.Create(self, dist);
+		Actor mo = null;
+		int count = limit;
+		while (it.Next())
+		{
+			mo = it.thing;
+			if (!mo || mo.Health < 1)	continue;
+			
+			if (filter)
+			{
+				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
+					(!(flags & AM_NOPARENT) && !(mo is filter)))
+					continue;
+			}
+			
+			bool change = ((flags & AM_FORCE) || !mo.Target || mo.Target.Health < 1);
+			if (!change)	continue;
+			
+			mo.bAMBUSH = true;
+			mo.CopyFriendliness(self, change);
+			
+			let mon = MinecraftEnemy(mo);
+			if (mon)	mon.Tracer = mo.Target;
+			if (count > 0 && --count < 1)
+				return;
+			
+		}
+	}
+}
+
 Class MCZombie : MinecraftEnemy
 {
 	enum EAction
@@ -66,7 +119,7 @@ Class MCZombie : MinecraftEnemy
 		MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
 		
 		DamageFactor 0.92;
-		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 64 x 64). Here it's shorter.
+		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
 		
 		Tag "Zombie";
 		Obituary "%o joined the 'breeeyynns' club, courtesy of a zombie's invitation.";
@@ -112,26 +165,35 @@ Class MCZombie : MinecraftEnemy
 		}
 	}
 	
-	// When taking fire/slime damage, try to get out of the sector by fleeing
+	// When taking sector damage, try to get out of the sector by fleeing
 	// towards the nearest mass of land, if without a target.
-	/*
-	override void DamageReact(Actor inf, Actor src, int damage, Name mod, int flags, double angle)
+	// Otherwise if there is a target, 
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle)
 	{
-		return;
-		
+		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		if (health < 1)	return;
+		
+		if (src && src.health > 1)
+		{
+			RemoveGoal();
+			if (src is 'PlayerPawn' || src.player)
+				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15));
+		}
+		
+		return;
 		
 		if (!inf && !src && (mod == 'Slime' || mod == 'Fire') && !Goal && !ValidateTarget() &&
 			CurSector.DamageAmount > 0)
 		{
 			// Get a list of all sectors.
-			let ctr = MC_Map.GetIntersectingSectors(self, 2048);
+			let LC = MC_Map.GetIntersectingLines(self, (2048, 2048));
+			let ctr = MC_Map.GetIntersectingSectors(self, (2048, 2048), LC);
 			if (!ctr)
 			{
 				
 				for (int i = 0; i < ctr.Sectors.Size(); i++)
 				{
-					Sector s = ctr.Sectors[i];
+					Sector s = ctr.Sectors[i].sec;
 					if (!s || s == CurSector)	continue;
 					
 					// Don't set a goal in the midst of another damaging sector.
@@ -140,25 +202,28 @@ Class MCZombie : MinecraftEnemy
 					
 					// Some extra checks need to be included here, to get the 
 					// slope if needed. Check each vertex pair and 
-					if (s.bottom.IsSlope() || s.top.IsSlope())
+					if (s.floorplane.IsSlope() || s.ceilingplane.IsSlope())
 					{
 					}
 				}
 			}
 		}
 	}
-	*/
+	
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 		
-		int limit = random[rng](1,2);
-		for (int i = 0; i < limit; i++)
+		int end = 5;
+		for (int i = 0; i < end; i++)
 		{
-			Event.DropItem(self, 'HealthBonus');
-			Event.DropItem(self, 'ArmorBonus');
+			if (random[rng](1, end) == end)
+			{
+				Event.DropItem(self, 'HealthBonus');
+				Event.DropItem(self, 'ArmorBonus');
+			}
 		}
 		return true;
 	}

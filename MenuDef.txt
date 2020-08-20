@@ -15,9 +15,17 @@ OptionMenu "MinecraftOptions"
 	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
 	StaticText ""
 	StaticText "Monster Tweaks", GOLD
+	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
+	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 10.0, 0.1
+	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 10.0, 1.0
 	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
 	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
-	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT", "$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
+	StaticText ""
+	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
+	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"YesNo", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 		"YesNo", MCC_EnvironmentDamage
+	
 	/*
 	MinecraftOption "$CP_VANILLA_TEXT",			"$CP_VANILLA_SUB",		CP_VanillaMode,		"OnOff"
 	MinecraftOption "$CP_SILENT_ITEMS_TEXT",	"$CP_SILENT_ITEMS_SUB", CP_SilentItems,		"OnOff"
