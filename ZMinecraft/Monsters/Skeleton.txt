@@ -44,6 +44,12 @@ $limit Minecraft/WitherSkeleton/Step 0
 
 Class MCSkeleton : MCUndead
 {
+	const _Radius = 1.6;
+	const _Height = 6.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+
 	mixin NormalLimbCount;
 
 	enum ETypes
@@ -59,15 +65,26 @@ Class MCSkeleton : MCUndead
 	
 	Default
 	{
-		Tag "Skeleton";
+		
 		MCSkeleton.Type S_Normal;
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		Health 175;
+		
+		
+		MeleeRange 512;
+		MaxTargetRange 768;
+		MinecraftEnemy.MaxChaseRange 2048;
 		ActiveSound "Minecraft/Skeleton/Idle";
 		PainSound "Minecraft/Skeleton/Hurt";
 		DeathSound "Minecraft/Skeleton/Death";
-		Obituary "%o was used for target practice by a Skeleton.";
 		+NOBLOOD
 		
 		DamageFactor "Drowning", 0.0;
+		
+		Tag "Skeleton";
+		Obituary "%o was used for target practice by a Skeleton.";
 	}
 	
 	override void PostBeginPlay()
@@ -93,12 +110,197 @@ Class MCSkeleton : MCUndead
 		
 		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
 		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
-		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
-		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
+		Limb[ArmR].SetPosOffsets((0.0,  1.0, 4.4)); //Y is 1.2 for strays.
+		Limb[ArmL].SetPosOffsets((0.0, -1.0, 4.4));
 		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
 		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
 		
-		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+		int end = 2;
+		for (int i = 0; i < end; i++)
+		{
+			if (random[rng](1, 5) == 5)
+			{
+				Event.DropItem(self, 'Shell');
+				Event.DropItem(self, 'Clip');
+				Event.DropItem(self, 'RocketAmmo');
+				Event.DropItem(self, 'Cell');
+			}
+		}
+		return true;
+	}
+	
+	void SetArmAnimation(StateLabel Next)
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		if (i == ArmR || i == ArmL)
+		{
+			State n = Limb[i].ResolveState(Next);
+			if (n && Limb[i] && !Limb[i].InStateSequence(Limb[i].CurState,n))
+				Limb[i].SetState(n);
+		}
+	}
+	
+	override void SetMeleeAnimation()	
+	{	
+		SetArmAnimation('ZombieMelee');
+	}
+	
+	private double AttackCharge;
+	void NotchBow()
+	{
+		double dist = 0;
+		if (Targetable(Target))
+			Dist = Distance3DSquared(Target);
+		else AttackCharge = 0;
+		
+		if (Dist > 0.0 && Dist <= ((MeleeRange + 10) ** 2) && CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+		{
+			A_Face(Target, 25, 0, 0, 0, FAF_TOP);
+			
+			double Frac = (1.0 - (Dist / (MeleeRange ** 2)));
+			AttackCharge += Max(1.0, 1.0 + Frac);
+			
+			if (AttackCharge >= 80)
+			{
+				AttackCharge = 0;
+				FireBow();
+			}
+			
+			// Try to back away from enemies that get too close.
+			if (Dist <= (MeleeRange * 0.5) ** 2)
+			{
+				double _speed = speed;
+				bool nofear = bNOFEAR;
+				bool afraid = bFRIGHTENED;
+				bFRIGHTENED = true;
+				bNOFEAR = false;
+				speed *= 0.5;
+				
+				A_Chase(null, null, CHF_NODIRECTIONTURN|CHF_NOPLAYACTIVE);
+				
+				speed = _speed;
+				bNOFEAR = nofear;
+				bFRIGHTENED = afraid;
+				
+			}
+		}
+		else
+		{
+			SetState(ResolveState('Chasing'));
+		}
+	}
+	
+	void FireBow()
+	{
+		if (!Targetable(Target)) return;
+		
+		Vector3 APR = (Angle, Pitch, Roll);
+		A_Face(Target, 0, 0, 0, 0, FAF_BOTTOM, Target.Height * 0.75);
+		Vector3 APR2 = (Angle, Pitch, Roll);
+		Turner = new('MC_QuatTurner');
+		[Angle, Pitch, Roll] = Turner.GetTurnDouble2(APR2, (frandom(-5, 5), -frandom(0, 10), 0));
+		A_SpawnProjectile('MCArrowProjectile', 32, 0, 0, CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH, pitch);
+		Angle = APR.X;
+		Pitch = APR.Y;
+		Roll = APR.Z;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 35;
+	Idle:
+		TNT1 A 0 
+		{
+			SetArmAnimation('Spawn');
+			AttackCharge = 0;
+			return A_Jump(256, random(1, 4));
+		}
+	Idle2:
+		TNT1 AAAAAAAAAA 17 Look();
+	IdleMove:
+		TNT1 A 0 
+		{
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	See:
+		TNT1 A 0 SetArmAnimation('Alert');
+	Chasing:
+		TNT1 A 1 
+		{
+			Chase();
+		}
+		Wait;
+	Melee:
+		TNT1 A 1 NotchBow();
+		Wait;
+	}
+}
+
+
+Class MCArrowProjectile : MinecraftEntity	
+{
+	const _Radius = 0.75;
+	const _Height = 0.75;
+	const RealScale = 8.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	Default
+	{
+		Projectile;
+		-NOGRAVITY
+	//	+HITOWNER
+		
+		Radius RealRadius;
+		Height RealHeight;
+		Scale RealScale;
+		Speed 35;
+		Gravity 0.8;
+		DamageFunction (random(10, 30));
+		
+		SeeSound "Minecraft/Bow";
+		DeathSound "Minecraft/BowHit";
+	}
+	
+	private void ArrowDeath()
+	{
+		bKILLED = bNOINTERACTION = true;
+		A_Stop();
+		A_StartSound(DeathSound, CHAN_BODY, CHANF_OVERLAP);
+	}
+	
+	override void Tick()
+	{
+		if (bKILLED)	Vel = (0,0,0);
+		Super.Tick();
+	}
+	
+	States
+	{
+	Spawn:
+		ASDF A 1 A_FaceMovementDirection(0,0);
+		Wait;
+	Crash:
+	XDeath:
+		TNT1 A 35 ArrowDeath();
+		Stop;
+	Death:
+		ASDF A 0 { bKILLED = bNOINTERACTION = true; }
+		ASDF A 350 ArrowDeath();
+		ASDF A 1 A_FadeOut(0.05);
+		Wait;
 	}
 }
 
@@ -118,14 +320,14 @@ Class MCStraySkeleton : MCSkeleton
 
 Class MCWitherSkeleton : MCSkeleton
 {
+	const WitherScale = 9.0;
 	Default
 	{
-		
 		MCSkeleton.Type S_Wither;
-		Scale 7;
 		ActiveSound "Minecraft/WitherSkeleton/Idle";
 		PainSound "Minecraft/WitherSkeleton/Hurt";
 		DeathSound "Minecraft/WitherSkeleton/Death";
+		Scale WitherScale;
 		
 		DamageFactor "Slime", 0.0;
 		DamageFactor "Wither", 0.0;
@@ -136,11 +338,51 @@ Class MCWitherSkeleton : MCSkeleton
 	}
 }
 
-Class MCSkeletonArmRight : MCBodyPartArm
+//==============================================================================
+// Limbs
+//==============================================================================
+
+Class MCSkeletonArm : MCBodyPartArm
 {
+	Default
+	{
+		MCBodyPart.Gib 'MCSkeletonArmGib';
+		MCBodyPart.CurAction E_Swing|E_Sway;
+		Radius 0.8;
+		Height 2.0;
+	}
+	
+	States
+	{
+	Spawn:
+		ASDF A -1
+		{
+			CurAction = (E_Swing|E_Sway);
+			SetPitch(0);
+		}
+		Wait;
+	Alert:
+		---- A -1
+		{
+			CurAction = E_Sway;
+			SetPitch(-90);
+		}
+	ZombieMelee:
+		---- A 8 SetPitch(-160, false);
+		---- A -1 SetPitch(-90, false);
+	}
 }
 
-Class MCSkeletonArmLeft : MCBodyPartArm
+Class MCSkeletonArmRight : MCSkeletonArm
+{
+	Default
+	{
+		MCBodyPart.SineOffset 180, 180, 180;
+		MCBodyPart.VelSineOffset 180;
+	}
+}
+
+Class MCSkeletonArmLeft : MCSkeletonArm
 {
 }
 
@@ -152,12 +394,27 @@ Class MCSkeletonHead : MCBodyPartHead
 {
 }
 
-Class MCSkeletonLegRight : MCBodyPartLeg
+Class MCSkeletonLeg : MCBodyPartLeg
+{
+	Default
+	{
+		MCBodyPart.Gib 'MCSkeletonLegGib';
+		Radius 0.8;
+		Height 2.0;
+	}
+}
+
+Class MCSkeletonLegRight : MCSkeletonLeg
 {
 }
 
-Class MCSkeletonLegLeft : MCBodyPartLeg
+Class MCSkeletonLegLeft : MCSkeletonLeg
 {
+	Default
+	{
+		MCBodyPart.SineOffset 180, 180, 180;
+		MCBodyPart.VelSineOffset 180;
+	}
 }
 
 Class MCSkeletonArmGib : MCBodyPartGib
@@ -169,6 +426,10 @@ Class MCSkeletonHeadGib : MCBodyPartGib
 }
 
 Class MCSkeletonLegGib : MCBodyPartGib
+{
+}
+
+Class MCSkeletonBodyGib : MCBodyPartGib
 {
 }
 

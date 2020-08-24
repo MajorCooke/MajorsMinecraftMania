@@ -64,7 +64,15 @@ extend class MinecraftEnemy
 			{
 				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
 					(!(flags & AM_NOPARENT) && !(mo is filter)))
+				{
+					if (MCC_Debug)
+					{
+						Name cls = mo.GetClassName();
+						name fil = filter.GetClassName();
+						Console.Printf("%s doesn't fit filter %s, skipping", cls, fil);
+					}
 					continue;
+				}
 			}
 			
 			bool change = ((flags & AM_FORCE) || !mo.Target || mo.Target.Health < 1);
@@ -82,7 +90,7 @@ extend class MinecraftEnemy
 	}
 }
 
-Class MCZombie : MinecraftEnemy
+Class MCZombie : MCUndead
 {
 	enum EAction
 	{
@@ -110,8 +118,8 @@ Class MCZombie : MinecraftEnemy
 		Radius RealRadius;
 		Height RealHeight;
 		Health 200;
-		Speed 3;
-		MeleeRange RealRadius + 4;
+		Speed 4;
+		MeleeRange RealRadius + 8;
 		
 		ActiveSound "Minecraft/Zombie/Idle";
 		PainSound "Minecraft/Zombie/Pain";
@@ -170,46 +178,39 @@ Class MCZombie : MinecraftEnemy
 	// Otherwise if there is a target, 
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle)
 	{
-		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		if (health < 1)	return;
+		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		
 		if (src && src.health > 1)
 		{
 			RemoveGoal();
-			if (src is 'PlayerPawn' || src.player)
-				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15));
+			
+			if (random[rng](1,10) == 1)
+				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15), AM_NOPARENT);
 		}
-		
-		return;
-		
-		if (!inf && !src && (mod == 'Slime' || mod == 'Fire') && !Goal && !ValidateTarget() &&
-			CurSector.DamageAmount > 0)
+		/*
+		else if (CurSector.DamageAmount > 0 && !Goal & !ValidateTarget())
 		{
-			// Get a list of all sectors.
-			let LC = MC_Map.GetIntersectingLines(self, (2048, 2048));
-			let ctr = MC_Map.GetIntersectingSectors(self, (2048, 2048), LC);
-			if (!ctr)
+			int ang = random(0,359);
+		
+			for (double i = 0; i < 360; i += 15)
 			{
-				
-				for (int i = 0; i < ctr.Sectors.Size(); i++)
+				for (double j = 0; j < 1024; j += radius)
 				{
-					Sector s = ctr.Sectors[i].sec;
-					if (!s || s == CurSector)	continue;
+					Vector3 p = pos + Vec3Angle(j, ang + i);
+					Sector s = Level.PointInSector(p.xy);
+					p.z = floorplane.ZatPoint(p.xy);
+					if (!level.IsPointInLevel(p) || 
+						s.DamageAmount > 0 ||
+						!CheckPosition(p))	continue;
 					
-					// Don't set a goal in the midst of another damaging sector.
-					if (s.DamageAmount > 0 && ApplyDamageFactor(s.DamageType, TELEFRAG_DAMAGE) > 0)
-						continue;
-					
-					// Some extra checks need to be included here, to get the 
-					// slope if needed. Check each vertex pair and 
-					if (s.floorplane.IsSlope() || s.ceilingplane.IsSlope())
-					{
-					}
+					SetGoal(p);
+					return;
 				}
 			}
 		}
+		*/
 	}
-	
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
@@ -250,7 +251,7 @@ Class MCZombie : MinecraftEnemy
 		TNT1 A 1 Chase();
 		Wait;
 	Melee:
-		TNT1 A 1 DoMelee(10);
+		TNT1 A 1 DoMelee(random[rng](20, 25));
 		Goto See;
 	}
 }
@@ -281,12 +282,6 @@ Class MCZombie : MinecraftEnemy
 
 Class MCZombieHead : MCBodyPartHead
 {
-	Default
-	{
-		Radius 4;
-		Height 4;
-	}
-
 	States
 	{
 	Spawn:

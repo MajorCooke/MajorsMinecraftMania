@@ -23,7 +23,6 @@ Class MinecraftEntity : Actor
 	}
 }
 
-Class MCArrowProjectile : Actor	{}
 Class MCSword : Actor	{}
 Class MCBow : Actor	{}
 

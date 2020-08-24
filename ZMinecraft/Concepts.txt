@@ -181,3 +181,120 @@ Class CPReplaceInfo
 		return good;
 	}
 }
+
+//------------------------------------------------------------------------------
+// A failed attempt at making a line finder.
+//------------------------------------------------------------------------------
+
+let LC = MC_Map.GetIntersectingLines(self, (2048, 2048));
+			
+			if (!LC)	return;
+		//	Console.Printf("Lines made.");
+		//	LC.SortDeltas();
+			
+			for (int i = 0; i < LC.Lines.Size(); i++)
+			{
+				Line l = LC.Lines[i].lin;
+				// Make sure there's a sector in front and behind.
+				if (!l)
+				{
+				//	Console.Printf("%d: No line. Skipping.", i);
+					continue;
+				}
+				
+				if ((l.flags & (Line.ML_BLOCKING|Line.ML_BLOCKMONSTERS)))
+				{
+				//	Console.Printf("%d: Blocking line. Skipping.", i);
+					continue;
+				}
+				
+				// No walls.
+				if (!l.frontsector || !l.backsector)
+				{
+				//	Console.Printf("%d: Missing front or back sector. Skipping.", i);
+					continue;
+				}
+				
+				let f = l.frontsector;
+				let b = l.backsector;
+				
+				if (f.DamageAmount > 0 && b.DamageAmount > 0)
+				{
+				//	Console.Printf("%d: Both sectors damaging. Skipping.", i);
+					continue;
+				}
+				
+				bool front = true;
+				Sector s = b;
+				if (f.DamageAmount < 1)
+				{
+					s = f;
+					front = false;
+				}
+				
+			
+				Vector2 cpos = level.vec2offset(l.v1.p, l.v2.p) / 2.0;
+				Vector2 offadd = cpos;// + Vec2Angle(1, VectorAngle(cpos.x, cpos.y) + (front ? 0 : 180));
+			
+				
+			//	Console.Printf("%d %d -- %d %d", l.delta.x, l.delta.y, cpos.x, cpos.y);
+				FCheckPosition tm;
+				tm.thing = self;
+				tm.pos = pos;
+				
+				bool thruactors = bTHRUACTORS;
+				bTHRUACTORS = true;
+				if (CheckPosition(offadd, false, tm))
+				{
+					//Console.Printf("1");
+					SetGoal((offadd.x, offadd.y, tm.floorz));
+					bTHRUACTORS = false;
+					return;
+				}
+				else
+				{
+				//	Console.Printf("Attempt failed.");
+					if (tm.CurSector != CurSector)
+					{
+						double tempstep = MaxStepHeight;
+						if (tm.floorz > pos.z + MaxStepHeight && 
+							(abs(pos.z - tm.floorz) > MaxStepHeight && 
+							abs(pos.z - s.CenterFloor()) <= MaxStepHeight))
+							
+						{
+							double tempstep = MaxStepHeight;
+							MaxStepHeight += abs(tm.floorz - s.CenterFloor());
+							bool good = (CheckPosition(offadd, false, tm));
+							MaxStepHeight = tempstep;
+							bTHRUACTORS = false;
+							if (good)
+							{
+							//	Console.Printf("2");
+								SetGoal((offadd.x, offadd.y, tm.floorz));
+								return;
+							}
+							//else Console.Printf("-1");
+						}
+						//else Console.Printf("-4");						
+						if (tm.floorz < pos.z - MaxDropoffHeight &&
+							(abs(pos.z - tm.floorz) > MaxDropoffHeight && 
+							abs(pos.z - s.CenterFloor()) <= MaxDropoffHeight))
+						{
+							double tempdrop = MaxDropoffHeight;
+							MaxDropoffHeight += tm.floorz - s.CenterFloor();
+							bTHRUACTORS = true;
+							bool good = (CheckPosition(offadd, false, tm));
+							bTHRUACTORS = false;
+							MaxDropoffHeight = tempdrop;
+							if (good)
+							{
+							//	Console.Printf("3");
+								SetGoal((offadd.x, offadd.y, tm.floorz));
+								return;
+							}
+							//else Console.Printf("-2");
+						}
+						//else Console.Printf("-5");
+					}
+				}
+			}

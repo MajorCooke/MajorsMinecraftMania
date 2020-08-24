@@ -369,6 +369,21 @@ Model MCSkeletonBody
 	FrameIndex ASDF C 0 0
 }
 
+
+Model MCSkeletonBodyGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Skeleton/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/Stray.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Graphics/WitherSkeleton.png"
+	FrameIndex ASDF C 0 0
+}
+
 Model MCSkeletonHead
 {
 	USEACTORPITCH

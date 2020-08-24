@@ -51,6 +51,8 @@ Class MinecraftHandler : EventHandler
 	
 	private int Timer[S_Max];
 	private MCSpawnList SpawnList;
+	MC_SectorContainer DamageSectors;
+	MC_LineContainer WaitingLines;
 	AArray Monsters;
 	
 	
@@ -59,12 +61,61 @@ Class MinecraftHandler : EventHandler
 		return MinecraftHandler(Find("MinecraftHandler"));
 	}
 	
+	
+	
+	override void WorldLineActivated(WorldEvent e)
+	{
+		Line l = e.ActivatedLine;
+		// Floor_*TxTy - changes texture before/after movement and gets the special.
+		
+		Sector f = l.frontsector;
+		Sector b = l.backsector;
+		
+		Switch(l.special)
+		{
+			Case 239:
+			Case 241:		
+			{
+				if (l.Args[0] == 0)
+				{
+					if (f && f.DamageAmount > 0)
+						DamageSectors.AddSector(b);
+				}
+				else
+				{
+					let it = level.CreateSectorTagIterator(l.Args[0]);
+					int id = it.Next();
+					while (id > -1)
+					{
+						DamageSectors.AddSector(level.Sectors[id]);
+						id = it.Next();
+					}
+				}
+				break;
+			}
+			Default:
+				break;
+		}
+	}
+	
 	override void WorldLoaded(WorldEvent e)
 	{
 		Monsters = AArray.Create();
 		MaxMobs = 80;
 		
 		CreateSpawnList();
+		
+		DamageSectors = MC_SectorContainer.Create();
+		for (int i = 0; i < level.Sectors.Size(); i++)
+		{
+			Sector s = level.Sectors[i];
+			if (s.DamageAmount > 0)
+				DamageSectors.AddSector(s);
+		}
+		
+		// TO DO: Find out via testing and printing what the line specials are
+		// for floorLowerAndChange, etc.
+		
 	}
 	
 	override void WorldThingSpawned(WorldEvent e)
@@ -99,7 +150,12 @@ Class MinecraftHandler : EventHandler
 		if (src)
 		{
 			let mo = e.Thing;
-			if (mo)	mo.A_GiveInventory('MCImmunityFrames',1);
+			if (mo && !mo.FindInventory("MCImmunityFrames"))
+			{
+				mo.A_GiveInventory('MCImmunityFrames',1);
+				if (!(mo is 'MinecraftEnemy'))
+					mo.A_StartSound("Minecraft/Hit", CHAN_BODY, CHANF_OVERLAP);
+			}
 		}
 	}
 	
@@ -157,8 +213,9 @@ Class MinecraftHandler : EventHandler
 	private void CreateSpawnList()
 	{
 		SpawnList = MCSpawnList.Create();
-		SpawnList.Add('MCZombie', 5);
-		SpawnList.Add('MCCreeper',1);
+		SpawnList.Add('MCZombie',			3);
+		SpawnList.Add('MCSkeleton',			3);
+		SpawnList.Add('MCCreeper',			1);
 	}
 	
 	private MinecraftEnemy MoToSpawn;

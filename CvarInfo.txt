@@ -59,3 +59,8 @@ server bool MCC_EnvironmentDamage = true;
 server bool MCC_FallDamage = true;
 server bool MCC_SectorDamage = true;
 server bool MCC_Drowning = true;
+
+//==============================================================================
+// Debug
+//==============================================================================
+server noarchive int MCC_Debug = 0;

@@ -13,8 +13,8 @@ enum EMinecraftConst
 	CV_Stay,
 	
 	// Actions
-	E_Sway =	1,
-	E_Swing =	1 << 1
+	E_Sway =	1 << 1,
+	E_Swing =	1 << 2
 };
 
 const SineWavePerSecond = 360.0 / 35.0;

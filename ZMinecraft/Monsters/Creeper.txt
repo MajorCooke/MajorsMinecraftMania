@@ -21,7 +21,7 @@ Class MCCreeper : MinecraftEnemy
 {
 	const ExploRange = 256.0;
 	const _Radius = 1.6;
-	const _Height = 6.0;
+	const _Height = 5.2;
 	const RealScale = 8.0;
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
@@ -45,8 +45,11 @@ Class MCCreeper : MinecraftEnemy
 	Default
 	{
 		MCCreeper.HissingRange 350; // Once hissing starts, get this far away to stop.
-		MinecraftEnemy.MaxChaseRange 768;
 		MeleeRange 128;
+		
+		MinecraftEnemy.MaxChaseRange 768;
+		MaxTargetRange 512;
+		
 		Health 200;
 		+EXTREMEDEATH
 		+FORCERADIUSDMG
@@ -55,8 +58,7 @@ Class MCCreeper : MinecraftEnemy
 		Height RealHeight;
 		Tag "Creeper";
 		Obituary "A creeper blasted %o sky high, Team Rocket style.";
-		MaxTargetRange 512;
-		
+		Speed 5;
 		PainSound "Minecraft/Creeper/Pain";
 		DeathSound "Minecraft/Creeper/Death";
 	}
@@ -178,7 +180,7 @@ Class MCCreeper : MinecraftEnemy
 		if (!Charging && ChargeTimer > 0)
 			ChargeTimer--;
 		
-		if (ValidateTarget())
+		if (ValidateTarget(false, HissingRange))
 		{
 			if (!OnGround && Vel.Z < -9.0)
 				SetExplosionCounting(true, true);
@@ -195,7 +197,7 @@ Class MCCreeper : MinecraftEnemy
 			if (Charging && ChargeTimer >= MaxCharge)
 			{
 				if ((ChargeFall && OnGround && InExploRange(null, true)) ||
-					(!ChargeFall && InExploRange()))
+					(!ChargeFall && InExploRange(null, true)))
 				{
 					bKilled = true;
 					Health = 0;
@@ -249,7 +251,12 @@ Class MCCreeper : MinecraftEnemy
 	void SetExplosionCounting(bool on, bool fall = false) 
 	{
 		
-		if (on && !Charging)	A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
+		if (on && !Charging)	
+		{
+			A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
+			for (int i = 0; i < LimbX.Size(); i++)
+				if (LimbX[i])	LimbX[i].PostAngSet(true);
+		}
 		Charging = on;
 		ChargeFall = (on) ? fall : false;
 	}

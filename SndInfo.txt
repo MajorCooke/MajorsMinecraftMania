@@ -19,7 +19,9 @@ Minecraft/Explode4	"Sounds/Minecraft/random/explode4.ogg"
 Minecraft/Fuse		"Sounds/Minecraft/random/fuse.ogg"
 Minecraft/Fizz		"Sounds/Minecraft/random/fizz.ogg"
 
-$pitchset Minecraft/Explode 0.70 0.85
+$PitchSet Minecraft/Explode 0.5 0.65
+
+
 $random Minecraft/Explode
 {
 	Minecraft/Explode1
@@ -27,6 +29,9 @@ $random Minecraft/Explode
 	Minecraft/Explode3
 	Minecraft/Explode4
 }
+
+$rolloff Minecraft/Explode 2048 3096
+
 $random Minecraft/Hit
 {
 	Minecraft/Hit1
@@ -34,6 +39,7 @@ $random Minecraft/Hit
 	Minecraft/Hit3
 }
 
+$PitchSet Minecraft/Hit 0.9 1.1
 $limit Minecraft/Hit 0
 $limit Minecraft/Explode 0
 
@@ -55,14 +61,14 @@ Minecraft/Zombie/Step5	"Sounds/Minecraft/mob/Zombie/step5.ogg"
 
 Minecraft/Zombie/Death	"Sounds/Minecraft/mob/Zombie/death.ogg"
 
-$pitchset Minecraft/Zombie/Idle1 0.75 1.25
-$pitchset Minecraft/Zombie/Idle2 0.75 1.25
-$pitchset Minecraft/Zombie/Idle3 0.75 1.25
+$PitchSet Minecraft/Zombie/Idle1 0.75 1.25
+$PitchSet Minecraft/Zombie/Idle2 0.75 1.25
+$PitchSet Minecraft/Zombie/Idle3 0.75 1.25
 
-$pitchset Minecraft/Zombie/Pain1 0.75 1.25
-$pitchset Minecraft/Zombie/Pain1 0.75 1.25
+$PitchSet Minecraft/Zombie/Pain1 0.75 1.25
+$PitchSet Minecraft/Zombie/Pain1 0.75 1.25
 
-$pitchset Minecraft/Zombie/Death 0.75 1.25
+$PitchSet Minecraft/Zombie/Death 0.75 1.25
 
 $random Minecraft/Zombie/Idle
 {
@@ -100,12 +106,12 @@ Minecraft/Creeper/Pain4	"Sounds/Minecraft/mob/creeper/say4.ogg"
 Minecraft/Creeper/Death	"Sounds/Minecraft/mob/creeper/death.ogg"
 Minecraft/Creeper/Hiss	"Sounds/Minecraft/random/fuse.ogg"
 
-$pitchset Minecraft/Creeper/Hiss 0.5;
-$pitchset Minecraft/Creeper/Pain1 0.75 1.25
-$pitchset Minecraft/Creeper/Pain2 0.75 1.25
-$pitchset Minecraft/Creeper/Pain3 0.75 1.25
-$pitchset Minecraft/Creeper/Pain4 0.75 1.25
-$pitchset Minecraft/Creeper/Death 0.75 1.25
+$PitchSet Minecraft/Creeper/Hiss 0.5;
+$PitchSet Minecraft/Creeper/Pain1 0.75 1.25
+$PitchSet Minecraft/Creeper/Pain2 0.75 1.25
+$PitchSet Minecraft/Creeper/Pain3 0.75 1.25
+$PitchSet Minecraft/Creeper/Pain4 0.75 1.25
+$PitchSet Minecraft/Creeper/Death 0.75 1.25
 
 $random Minecraft/Creeper/Pain
 {
