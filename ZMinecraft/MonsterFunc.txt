@@ -110,7 +110,7 @@ extend class MinecraftEnemy
 	}
 	
 	// Checks if the actor is immune to a damagetype.
-	bool IsImmune(Name DmgType)
+	bool IsImmune(Name DmgType) const
 	{	return (ApplyDamageFactor(DmgType, TELEFRAG_DAMAGE) < 1);	}
 	
 	//--------------------------------------------------------------------------
@@ -202,7 +202,10 @@ extend class MinecraftEnemy
 	//==========================================================================
 	//
 	//==========================================================================
-	protected bool ValidateTarget(bool clear = false, double range = 0)
+	private int OOSTimer; // Out of sight timer
+	const OOSTimeOut = Second * 5;
+	const LookTimerDefault = 17;
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false)
 	{
 		if (!Target)	
 		{
@@ -215,10 +218,29 @@ extend class MinecraftEnemy
 		
 		double ChaseRange = (range <= 0) ? MaxChaseRange : range;
 		if (Tracer && Target == Tracer)		ChaseRange *= 2;
-		else if (Goal && Target == Goal)	ChaseRange = 22767;
+		else if ((Goal && Target == Goal))	ChaseRange = 22767;
 		
-		if (Target != Goal && (!Targetable(Target) ||
-			Distance3DSquared(Target) > ChaseRange ** 2))
+		
+		bool targetable = (Targetable(Target));
+		if (targetable)
+		{
+			if (Distance3DSquared(Target) > ChaseRange ** 2 
+				|| (MCC_SightCheck && chasing && !CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+				)
+			{
+				if (chasing)
+					OOSTimer++;
+				
+				if (!chasing || OOSTimer >= OOSTimeOut)
+				{
+					targetable = false;
+					OOSTimer = 0;
+				}
+			}
+			else OOSTimer = 0;
+		}
+		
+		if (!targetable)
 		{
 			if (clear && !Goal)	
 			{
@@ -226,12 +248,13 @@ extend class MinecraftEnemy
 					Tracer = null;
 				A_ClearTarget();
 			}
-			return false;
+			
+			OOSTimer = 0;
 		}
-		return true;		
+		return targetable;
 	}
 	
-	protected bool Targetable(Actor mo)
+	virtual bool Targetable(Actor mo) const
 	{
 		if (!mo)	
 			return false;
@@ -245,7 +268,7 @@ extend class MinecraftEnemy
 		if ((mo is 'PlayerPawn' && (MCC_Peaceful || Passive)))
 			return false;
 			
-		if ((mo.Player && (mo.Player.Cheats & CF_NOTARGET)))
+		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
 			return false;
 			
 		return true;
@@ -272,7 +295,7 @@ extend class MinecraftEnemy
 		}
 		else if (!time || --LookTimer < 1)
 		{
-			if (time)	LookTimer = 17;
+			if (time)	LookTimer = LookTimerDefault;
 			bool trc = (Tracer && Tracer.Health > 0);
 			
 			if (trc)	A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
@@ -335,7 +358,7 @@ extend class MinecraftEnemy
 		int newflags = CHF_NOPLAYACTIVE;
 		
 		// Get a target if invalid.
-		if (!ValidateTarget())
+		if (!ValidateTarget(chasing: true))
 		{
 			if (!Goal)
 			{
@@ -384,6 +407,7 @@ extend class MinecraftEnemy
 					if (TryMove(nmpos, bDROPOFF))
 						good = true;
 				}
+				else newflags |= CHF_DONTMOVE;
 				
 				
 				

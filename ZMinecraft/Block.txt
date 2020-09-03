@@ -1,0 +1,38 @@
+Class MCBlock : MinecraftEntity
+{
+	MCBlock Top, Bottom, Front, Left, Back, Right;
+	
+	
+	Default
+	{
+		+SOLID
+		+ACTLIKEBRIDGE
+		+NOGRAVITY
+		+DONTTHRUST
+		Radius 32;
+		Height 32;
+	}
+	
+	bool InView(PlayerInfo plr)
+	{
+		if (!plr || !plr.mo)	return false;
+		
+		return true;
+	}
+}
+
+Class MCTileEntity : MCBlock
+{
+	
+}
+
+Class MCTileInfo
+{
+	Array<Name> Tag;
+	Array<Name> Data;
+}
+
+Class MCBlock_Stone : MCBlock
+{
+	
+}

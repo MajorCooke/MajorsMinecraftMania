@@ -1,0 +1,58 @@
+//==============================================================================
+//==============================================================================
+// Attachments
+// 
+// These belong to limbs, which are also responsible for dealing with the angle
+// and position setting.
+//==============================================================================
+//==============================================================================
+
+
+Class MCBodyPartAttachment : MCBodyPart 
+{
+	// Since this is being handled by a limb, we do not want to process anything
+	// else. The limb will handle the positioning of both itself and this.
+	override void Tick()
+	{
+		Actor.Tick();
+	}
+	
+	override void DoPreMotion() {}
+	override void DoMotion() {}
+}
+
+
+Class MCSword : MCBodyPartAttachment 
+{
+	
+}
+Class MCBow : MCBodyPartAttachment	
+{
+	enum EType
+	{
+		Fr_Normal = 0,
+		Fr_Fancy
+	};
+
+	Default
+	{
+		
+	}
+	States
+	{
+	Spawn:
+		ASDF A -1;
+	Fancy:
+		ASDF B -1;
+		Stop;
+	}
+}
+
+Class MCBowGib : MCBodyPartGib
+{
+	Default
+	{
+		MCBodyPartGib.EndPitch 0;
+		MCBodyPartGib.EndRoll 90;
+	}
+}

@@ -23,9 +23,6 @@ Class MinecraftEntity : Actor
 	}
 }
 
-Class MCSword : Actor	{}
-Class MCBow : Actor	{}
-
 Class MCImmunityFrames : PowerProtection
 {
 	override void InitEffect()
@@ -36,7 +33,7 @@ Class MCImmunityFrames : PowerProtection
 	
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor inflictor, Actor source, int flags)
 	{
-		if (passive)
+		if (passive && EffectTics > 0)
 		{
 			if (damage < 1 ||
 				(source is "MinecraftEnemy") || 
@@ -47,9 +44,12 @@ Class MCImmunityFrames : PowerProtection
 	
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
 	{
-		if (damage < 1 ||
-			(source is "MinecraftEnemy") || 
-			(inflictor is "MinecraftEnemy"))
-			newdamage = -1;
+		if (EffectTics > 0)
+		{
+			if (damage < 1 ||
+				(source is "MinecraftEnemy") || 
+				(inflictor is "MinecraftEnemy"))
+				newdamage = -1;
+		}
 	}
 }

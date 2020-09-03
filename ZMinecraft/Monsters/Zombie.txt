@@ -65,7 +65,7 @@ extend class MinecraftEnemy
 				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
 					(!(flags & AM_NOPARENT) && !(mo is filter)))
 				{
-					if (MCC_Debug)
+					if (MCC_Debug == 1)
 					{
 						Name cls = mo.GetClassName();
 						name fil = filter.GetClassName();
@@ -79,7 +79,7 @@ extend class MinecraftEnemy
 			if (!change)	continue;
 			
 			mo.bAMBUSH = true;
-			mo.CopyFriendliness(self, change);
+			mo.CopyFriendliness(self, change, false);
 			
 			let mon = MinecraftEnemy(mo);
 			if (mon)	mon.Tracer = mo.Target;
@@ -117,7 +117,7 @@ Class MCZombie : MCUndead
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
-		Health 200;
+		Health 100;
 		Speed 4;
 		MeleeRange RealRadius + 8;
 		
@@ -128,6 +128,8 @@ Class MCZombie : MCUndead
 		
 		DamageFactor 0.92;
 		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
+		
+		BloodColor "Black";
 		
 		Tag "Zombie";
 		Obituary "%o joined the 'breeeyynns' club, courtesy of a zombie's invitation.";
@@ -162,6 +164,7 @@ Class MCZombie : MCUndead
 		
 		Limb[ArmR].SetPitch(-90);
 		Limb[ArmL].SetPitch(-90);
+		UpdateLimbs();
 	}
 	
 	override void SetMeleeAnimation()
@@ -178,15 +181,16 @@ Class MCZombie : MCUndead
 	// Otherwise if there is a target, 
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle)
 	{
-		if (health < 1)	return;
+		if (health < 1 || dmg < 1)	return;
 		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		
 		if (src && src.health > 1)
 		{
 			RemoveGoal();
-			
-			if (random[rng](1,10) == 1)
-				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15), AM_NOPARENT);
+			bool plr = (src is 'PlayerPawn');
+			int flags = (plr) ? AM_NOPARENT : AM_FORCE|AM_NOPARENT;
+			if (!plr || random[rng](1,10) == 1)
+				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15), flags);
 		}
 		/*
 		else if (CurSector.DamageAmount > 0 && !Goal & !ValidateTarget())

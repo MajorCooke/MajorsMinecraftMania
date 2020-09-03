@@ -11,6 +11,7 @@ enum EMinecraftConst
 	CV_Despawn = 0,
 	CV_Minecraft,
 	CV_Stay,
+	CV_Spawn,
 	
 	// Actions
 	E_Sway =	1 << 1,

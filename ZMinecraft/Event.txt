@@ -22,7 +22,8 @@ Class MCSkeletonSpawner : RandomSpawner
 
 Class MinecraftHandler : EventHandler
 {
-	const SpawnTimer = Second;
+	const SpawnTimerMin = Second * 10;
+	const SpawnTimerMax = Second * 15;
 	const DespawnTimer = Second * 5;
 	const CleanTimer = Second * 10;
 	enum ETimers
@@ -33,7 +34,6 @@ Class MinecraftHandler : EventHandler
 		S_Max
 	};
 	
-	private int MaxMobs;
 	private int MobCount;
 	private double DespawnDist;
 	
@@ -51,8 +51,6 @@ Class MinecraftHandler : EventHandler
 	
 	private int Timer[S_Max];
 	private MCSpawnList SpawnList;
-	MC_SectorContainer DamageSectors;
-	MC_LineContainer WaitingLines;
 	AArray Monsters;
 	
 	
@@ -62,7 +60,7 @@ Class MinecraftHandler : EventHandler
 	}
 	
 	
-	
+	/*
 	override void WorldLineActivated(WorldEvent e)
 	{
 		Line l = e.ActivatedLine;
@@ -97,14 +95,25 @@ Class MinecraftHandler : EventHandler
 				break;
 		}
 	}
+	*/
+	
+	override void OnRegister()
+	{
+		if (!level || level.LevelName == 'TitleMap')
+		{
+			Destroy();
+			return;
+		}
+		Super.OnRegister();
+	}
 	
 	override void WorldLoaded(WorldEvent e)
 	{
 		Monsters = AArray.Create();
-		MaxMobs = 80;
-		
+		InitQueues();
 		CreateSpawnList();
-		
+		Timer[S_Spawn] = Second;
+		/*
 		DamageSectors = MC_SectorContainer.Create();
 		for (int i = 0; i < level.Sectors.Size(); i++)
 		{
@@ -112,7 +121,7 @@ Class MinecraftHandler : EventHandler
 			if (s.DamageAmount > 0)
 				DamageSectors.AddSector(s);
 		}
-		
+		*/
 		// TO DO: Find out via testing and printing what the line specials are
 		// for floorLowerAndChange, etc.
 		
@@ -150,7 +159,7 @@ Class MinecraftHandler : EventHandler
 		if (src)
 		{
 			let mo = e.Thing;
-			if (mo && !mo.FindInventory("MCImmunityFrames"))
+			if (mo && mo is 'PlayerPawn' && !mo.FindInventory("MCImmunityFrames"))
 			{
 				mo.A_GiveInventory('MCImmunityFrames',1);
 				if (!(mo is 'MinecraftEnemy'))
@@ -172,6 +181,8 @@ Class MinecraftHandler : EventHandler
 	
 	override void WorldTick()
 	{
+		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap')
+			return;
 		if (MobCount > 0 && ++Timer[S_Despawn] >= DespawnTimer)
 		{
 			Timer[S_Despawn] = 0;
@@ -192,76 +203,16 @@ Class MinecraftHandler : EventHandler
 		{
 			Timer[S_Clean] = 0;
 			Monsters.Clean();
+			SpawnQueue.Clean();
+			SpawnQueuePriority.Clean();
+			ClsQueue.Clean();
+			ClsQueuePriority.Clean();
 		}
 		
 		// Spawn monsters spherically around players.
-		if (++Timer[S_Spawn] >= SpawnTimer)
+		if (--Timer[S_Spawn] < 1)
 		{
-			Timer[S_Spawn]--;
-			if (MCC_Spawning && 
-				(!MCC_Peaceful || MCC_PeacefulBehavior >= 3) && MobCount < MaxMobs && 
-				!level.IsFrozen())
-			{
-				SpawnMonsters();
-			}
-			else 
-			{
-				Timer[S_Spawn] = 0;
-			}
-		}
-	}
-	private void CreateSpawnList()
-	{
-		SpawnList = MCSpawnList.Create();
-		SpawnList.Add('MCZombie',			3);
-		SpawnList.Add('MCSkeleton',			3);
-		SpawnList.Add('MCCreeper',			1);
-	}
-	
-	private MinecraftEnemy MoToSpawn;
-	private void SpawnMonsters()
-	{
-		for (int i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i] || !players[i].mo)	continue;
-			Actor plr = players[i].mo;
-			if (!plr)	continue;
-			
-			if (!SpawnList)	CreateSpawnList();
-			Class<Actor> cls = SpawnList.PickRandom();
-			if (!MoToSpawn)	MoToSpawn = MinecraftEnemy(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
-			if (MoToSpawn)
-			{
-				MoToSpawn.bNODROPOFF = true;
-				MoToSpawn.Deactivate(null);
-			}
-			else return;
-			
-			double inc = 30;
-			double div = 360 / inc;
-			double ang = random[rng](0,12) * inc;
-			
-			int j = random[rng](0,inc);
-			
-			for (int k = 0; k < inc; k++)
-			{
-				j = (j + 1) % inc;
-				ang = random(0, inc) * j;
-				double dist = random[rng](32, 128) * 32;
-				Vector3 next; next.XY = plr.Vec2Angle(dist, ang);
-				next.Z = MoToSpawn.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
-				if (!level.IsPointInLevel(next))
-					continue;
-				MoToSpawn.SetOrigin(next, false);
-				MoToSpawn.SetZ(MoToSpawn.FloorZ);
-				if (MoToSpawn.TryMove(MoToSpawn.pos.XY, false))
-				{
-					MoToSpawn.bNODROPOFF = MoToSpawn.Default.bNODROPOFF;
-					MoToSpawn.Activate(null);
-					MoToSpawn = null;
-					return;
-				}
-			}
+			TriggerMapSpawns();
 		}
 	}
 }

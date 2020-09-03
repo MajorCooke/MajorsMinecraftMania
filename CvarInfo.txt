@@ -26,6 +26,8 @@ server int MCC_PeacefulBehavior = 0;
 // Spawn Properties
 //==============================================================================
 
+// # monsters the mod will attempt to have spawned at any given time.
+server int MCC_Spawns = 80;
 // Multiplies how many monsters can spawn in packs.
 server float MCC_PackMul = 1.0;
 // Multiplies how many can be spawned at once.
@@ -39,11 +41,15 @@ server float MCC_HealthMul = 1.0;
 // Monster Properties
 //==============================================================================
 
+
 // Monsters move directly towards their targets if they can.
 server bool MCC_EnhancedChase = true;
 
 // Idle swaying animation. Disabling this might slightly improve performance.
 server bool MCC_IdleSway = true;
+
+// Sight checks for chasing.
+server bool MCC_SightCheck = true;
 
 // Monsters can drop ammo/health/armor
 server bool MCC_DropItems = true;

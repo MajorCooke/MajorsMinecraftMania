@@ -41,6 +41,18 @@ Model MCBow
 	FrameIndex ASDF B 0 0
 }
 
+Model MCBowGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/BowNormal.obj"
+	FrameIndex ASDF A 0 0
+	Model 0 "Models/Misc/BowFancy.obj"
+	FrameIndex ASDF B 0 0
+}
+
 //==============================================================================
 //==============================================================================
 // Monsters
@@ -699,4 +711,16 @@ Model MCSpiderThorax
 	FrameIndex ASDF A 0 0
 	Skin 0 "Graphics/CaveSpider.png"
 	FrameIndex ASDF B 0 0
+}
+
+//==============================================================================
+// Blocks
+//==============================================================================
+Model MCBlock_Stone
+{
+	Model 0 "Models/Blocks/Block_1.obj"
+	Scale 1.0 1.0 1.2
+	
+	Skin 0 "Graphics/Blocks/Stone.png"
+	FrameIndex ASDF A 0 0
 }

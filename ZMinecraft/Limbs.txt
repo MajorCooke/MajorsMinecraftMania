@@ -76,21 +76,24 @@ Class MCBodyPart : MinecraftEntity
 
 	protected int CurAction;
 	protected double LimbLength;
-	protected MCBodyPart Attachment;
+	protected MCBodyPartAttachment Attachment;
 	protected Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
+		
 		PosOff,		// Position Offsets
 		RelOff,		// Relative position offsets (takes angles into account)
 		AngOff,		// Secondary angle offsets (reset every tic to (0,0,0)
 		CurAng,		// The current angle, pitch and roll.
 		MainAng,	// Primary angle offsets (not reset)
 		NextAng,	// For spring dampening. Target angles to reach.
-		VelAng; 	// Current velocity of transition to NextAng.
+		VelAng, 	// Current velocity of transition to NextAng.
+		AttachPos;	// Attachment Posiiton
 	protected MC_QuatTurner Turner;
 	protected Class<MCBodyPartGib> Gib;
 	
 	bool	InvertInvis;
 	double	OffX, OffY, OffZ,
 			ROfX, ROfY, ROfZ,
+			AOffX, AOffY, AOffZ,
 			VelSineOffset,
 			SOX, SOY, SOZ, 
 			SDX, SDY, SDZ, 
@@ -109,10 +112,13 @@ Class MCBodyPart : MinecraftEntity
 	Property VelSineOffset: VelSineOffset;
 	Property Offsets: OffX, OffY, OffZ;
 	Property RelOffsets: ROfX, ROfY, ROfZ;
+	Property AttachOffset: AOffX, AOffY, AOffZ;
 	Property Gib: Gib;
 	
 	Default
 	{
+		Radius 4;
+		Height 8;
 		+NOINTERACTION
 		+NOBLOCKMAP
 		+NOTRIGGER
@@ -120,7 +126,7 @@ Class MCBodyPart : MinecraftEntity
 	
 	override void Activate(Actor activator)
 	{
-		if (bKILLED || Destroyed() || !Owner || !bDORMANT)	return;
+		if (bKILLED || Destroyed() || !Master || !bDORMANT)	return;
 		if (Attachment)	Attachment.Activate(activator);
 		doSpring = false;
 		bDONTINTERPOLATE = true;
@@ -131,14 +137,14 @@ Class MCBodyPart : MinecraftEntity
 	
 	override void Deactivate(Actor activator)
 	{
-		if (bKILLED || Destroyed() || !Owner)	return;
+		if (bKILLED || Destroyed() || !Master)	return;
 		if (Attachment)	Attachment.Deactivate(activator);
 		bINVISIBLE = bDORMANT = true;
 	}
 	
 	override void Tick()
 	{	
-		if (!Owner || IsFrozen() || Destroyed() || bDORMANT)	return;
+		if (!Master || IsFrozen() || Destroyed() || bDORMANT)	return;
 		
 		if (DestroyMe)
 		{
@@ -150,6 +156,9 @@ Class MCBodyPart : MinecraftEntity
 		DoPreMotion();
 		Super.Tick();
 		DoMotion();
+		
+		Translation = Owner.Translation;
+		if (!Default.bBRIGHT)	bBRIGHT = Owner.bBRIGHT;
 		
 		if (!bKILLED)
 		{
@@ -190,12 +199,29 @@ Class MCBodyPart : MinecraftEntity
 	//--------------------------------------------------------------------------
 	// Custom functions
 	//--------------------------------------------------------------------------
-	
+	MCBodyPart SetAttachment(Class<MCBodyPartAttachment> cls)
+	{
+		if (!cls)	return null;
+		
+		if (Attachment)
+			Attachment.Destroy();
+			
+		Attachment = MCBodyPartAttachment(Spawn(cls, pos, ALLOW_REPLACE));
+		if (Attachment)
+		{
+			Attachment.Owner = Owner;
+			Attachment.Master = self;
+			UpdateScales(Scale);
+			UpdateAngles(NextAng);
+			UpdatePosition(self);
+		}
+		return Attachment;
+	}
+		
 	// Offsets are relative, a la A_SpawnItemEx/A_Warp.
 	void SpawnGib(double VelLen, Vector3 Ofs = (0,0,0))
 	{
 		if (bKILLED || Destroyed())	return;
-		if (Attachment)	Attachment.SpawnGib(VelLen, Ofs);
 		bKILLED = true;
 		
 		// I've named all the gibs after the same with the "gib" affix after
@@ -222,6 +248,7 @@ Class MCBodyPart : MinecraftEntity
 			g.Pitch = Pitch;
 			g.Roll = Roll;
 			g.Scale = Scale;
+			g.Frame = Frame;
 			
 			bINVISIBLE = true;
 			
@@ -229,6 +256,8 @@ Class MCBodyPart : MinecraftEntity
 			g.Vel3DFromAngle(frandom(3.0,6.0), random(0,359), random(-90, 45));
 			if (Owner) g.Vel += Owner.Vel;
 		}
+		
+		if (Attachment)	Attachment.SpawnGib(VelLen, Ofs);
 		DestroyMe = true;
 	}
 	bool Destroyed() { return bDESTROYED || DestroyMe;	}
@@ -243,31 +272,56 @@ Class MCBodyPart : MinecraftEntity
 		UpdatePosition(Master);
 	}
 	
-	void UpdateScales(Vector2 Scale)
+	// Updates the scale of all vectors based on scale so their limbs grow
+	// or shrink with their height changes accordingly.
+	virtual void UpdateScales(Vector2 Scale)
 	{
 		if (Destroyed())	return;
 		self.Scale = Scale;
 		PosOff.XY = (OffX, OffY) * Scale.X;
 		PosOff.Z  = OffZ * Scale.Y;
+		RelOff.XY = (ROfX, ROfY) * Scale.X;
+		RelOff.Z  = ROfZ * Scale.Y;
+		AttachPos.XY = (AOffX, AOffY) * Scale.X;
+		AttachPos.Z  = AOffZ * Scale.Y;
+		LimbLength = Default.Limblength * Scale.Y;
 		if ((Scale.X != Default.Radius * Scale.X) || (Scale.Y != Default.Height * Scale.Y))
 			A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
+		
+		if (Attachment)	Attachment.UpdateScales(Scale);
 	}
 	
 	virtual void UpdatePosition(Actor who, int flags = 0)
 	{
 		if (Destroyed())	return;
+		
 		if (who)
-			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);	
-		if (Attachment)
-			Attachment.UpdatePosition(self, flags);
+		{
+			Vector3 NP = MC_Map.GetWarpPos(level, Owner.Pos, PosOff, CurAng.X);
+			Vector3 px, py, pz, origin;
+			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
+			origin = NP + RelOff.x * px + RelOff.Y * py + RelOff.Z * pz;
+			SetOrigin(origin, true);
+			if (Attachment)
+			{
+				[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
+				origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
+				Attachment.SetOrigin(origin, true);
+			}
+		}
 	}
 	
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
-		if (!Owner || Destroyed())	return;
+		if (!Master || Destroyed())	return;
 		A_SetAngle(Next.X + AngOff.X, turnflags);
 		A_SetPitch(Next.Y + AngOff.Y, turnflags);
 		A_SetRoll(Next.Z + AngOff.Z, turnflags);
+		
+		if (Attachment)	
+		{
+			Attachment.UpdateAngles(Next, turnflags);
+		}
 	}
 	
 	virtual void SetNextAngles(Vector3 Next)	{	NextAng = Next;	}
@@ -297,7 +351,6 @@ Class MCBodyPart : MinecraftEntity
 	
 	void PostAngSet(bool snap)
 	{
-		if (Destroyed())	return;
 		VelAng = (0,0,0);
 		doSpring = !snap;
 	}
@@ -331,7 +384,7 @@ Class MCBodyPart : MinecraftEntity
 	protected bool doSpring;
 	virtual void DoMotion()		
 	{
-		if (Destroyed())	return;
+		if (Destroyed() || !Owner)	return;
 		if (CurAction > 0)
 		{
 			if (MCC_IdleSway && (CurAction & E_Sway))
@@ -345,18 +398,31 @@ Class MCBodyPart : MinecraftEntity
 		}
 		if (!doSpring)
 		{
-			VelAng = MainAng;
+		//	VelAng = NextAng + MainAng;
+			CurAng = NextAng + MainAng;
 			doSpring = true;
 		}
 		else
 		{
 			VelAng = MC_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
+			CurAng += VelAng;
 		}
 
-		CurAng += VelAng;
 		
 		UpdateAngles(CurAng, SPF_INTERPOLATE);
 		
+	}
+	
+	Vector3, Vector3, Vector3 GetAngles()
+	{
+		return CurAng, VelAng, NextAng;
+	}
+	
+	void CopyAngles(MCBodyPart limb)
+	{
+		if (!limb)	return;
+		
+		[CurAng, VelAng, NextAng] = limb.GetAngles(); 
 	}
 	
 	States
@@ -379,30 +445,6 @@ Class MCBodyPartHead : MCBodyPart
 	{
 		Radius 1.6;
 		Height 1.6;
-	}
-
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		if (Owner)	Owner.CameraHeight = OffZ * Scale.Y;
-	}
-	
-	override void UpdatePosition(Actor who, int flags)
-	{
-		if (who)
-		{
-			RelOff = (ROfX, ROfY, ROfZ);
-			Vector3 old = pos;
-			Warp(who, PosOff.X, PosOff.Y, PosOff.Z, CurAng.X, flags|WARPF_NOCHECKPOSITION|WARPF_ABSOLUTEANGLE);
-			
-			Vector3 px, py, pz, origin;
-			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-			origin = pos + RelOff.x * px + RelOff.y * py + RelOff.z * pz;
-			SetOrigin(origin, true);
-			prev = old;
-		}
-		if (Attachment)
-			Attachment.UpdatePosition(self, flags);
 	}
 	
 	MinecraftEnemy Trg;
@@ -467,6 +509,7 @@ Class MCBodyPartArm : MCBodyPart
 		MCBodyPart.SineOffset 0, 0, 0;			// Starting offset
 		MCBodyPart.SineDistance 1, 2, 0;			// Wave Size
 		MCBodyPart.SineSpeed 0.1, 0.2, 0;		// Waves Per Second
+		MCBodyPart.AttachOffset 0, 0, -1.6;
 	}
 	
 	override void SetSineOffset(Vector3 off, bool swinging)	
@@ -594,17 +637,18 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	States
 	{
 	Spawn:
-		ASDF A 1 NoDelay Turn();
+		ASDF A 0;
+		---- A 1 Turn();
 		Wait;
 	Death:
-		ASDF AAAAAAAAAAAAAAAAA 1
+		---- AAAAAAAAAAAAAAAAA 1
 		{
 			bNOINTERACTION = true;
 			bMOVEWITHSECTOR = true;
 			A_Stop();
 			ResetDirection();
 		}
-		ASDF A -1 { bKILLED = true; }
+		---- A -1 { bKILLED = true; }
 		Stop;
 	}
 }

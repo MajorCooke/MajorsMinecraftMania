@@ -80,6 +80,8 @@ Class MinecraftEnemy : MinecraftEntity
 		+ALWAYSTELEFRAG
 		+NOTELESTOMP
 		+NOKILLSCRIPTS
+		
+		DamageFactor "Crush", 20.0;
 	}
 	
 	//==========================================================================
@@ -109,6 +111,7 @@ Class MinecraftEnemy : MinecraftEntity
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Activate(activator);
 		
+		UpdateLimbs();
 		A_SetShootable();
 		A_ChangeLinkFlags(0);
 		Super.Activate(activator);
@@ -133,18 +136,19 @@ Class MinecraftEnemy : MinecraftEntity
 	
 	override bool CanResurrect(Actor other, bool passive)
 	{	return false;	}
-	
+	private int Lifetime;
 	override void Tick()
 	{
 		// Process nothing if destroyed.
 		if (bDESTROYED)	return;
 		
 		// Destroy it if peaceful difficulty is activated, and the monster can
-		// despawn on peaceful.
+		// despawn on peaceful. Dead monsters will despawn on their own though.
+		
 		if (health > 1 &&
 			(MCC_Peaceful && 
 			(MCC_PeacefulBehavior <= CV_Despawn ||
-			(MCC_PeacefulBehavior <= CV_Minecraft && PeacefulDespawn > 0))))
+			(MCC_PeacefulBehavior == CV_Minecraft && PeacefulDespawn > 0))))
 		{
 			Destroy();
 			return;
@@ -160,6 +164,7 @@ Class MinecraftEnemy : MinecraftEntity
 		
 		if (!bDORMANT)
 		{
+			if (Lifetime < 5)	Lifetime++;
 			if (!DmgInfo.Used)
 			{
 				DmgInfo.used = true;
@@ -264,7 +269,17 @@ Class MinecraftEnemy : MinecraftEntity
 		else VelLen = 0;
 		
 		CurStyle = GetRenderStyle();
-		UpdateLimbs();
+		
+		if ((LifeTime < 5) ||
+			!(vel ~== (0,0,0)) ||
+			PrevPos != pos ||
+			PrevAngs != Angs ||
+			PrevAlpha != alpha || 
+			PrevStyle != CurStyle || 
+			PrevTrans != Translation)
+		{
+			UpdateLimbs();
+		}
 		
 		PrevTrans = Translation;
 		PrevScale = Scale;
@@ -290,7 +305,16 @@ Class MinecraftEnemy : MinecraftEntity
 			Damager.Push(source);
 		}
 		
-		if (!painless && health > 0)
+		if (MCC_Debug > 0 && s && !(s is 'PlayerPawn'))
+		{
+			Name src = "Null";
+			Name inf = "Null";
+			if (i)	inf = i.GetClassName();
+			if (s)	src = s.GetClassName();
+			Console.Printf("%d: %s from %s, %s", dmg, GetClassName(), src, inf);
+		}
+		
+		if (!painless && health > 0 && dmg > 0)
 		{
 			if (DamageTimer < 1)
 			{
@@ -336,16 +360,13 @@ Class MinecraftEnemy : MinecraftEntity
 					if (Vel.Z <= 0)
 						Vel.Z += 7.0;
 					
-					Vector3 APR = (Angle, Pitch, Roll);
-					
 					if ((flags & DMG_USEANGLE))
 						ang = angle;
-					else if (s)	A_Face(s);
-					else if (i)	A_Face(i);
-					ang = angle;
-					angle = APR.X;
-					VelFromAngle(-2, ang);
-					Vel.XY += v;
+					else if (s)	ang = AngleTo(s);
+					else if (i)	ang = AngleTo(i);
+					Thrust(-1, ang);
+				//	VelFromAngle(-2, ang);
+				//	Vel.XY += v;
 				}
 			}
 		}

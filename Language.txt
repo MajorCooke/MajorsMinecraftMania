@@ -46,3 +46,9 @@ MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in small increments (0.1)";
 
 MCM_HEALTHMUL2_TEXT = "Health Multiplier (x.0)";
 MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in large increments (1.0)";
+
+MCM_SPAWNS_TEXT = "Monster Count";
+MCM_SPAWNS_SUB = "# of monsters that can spawn.";
+
+MCM_SPAWNMUL_TEXT = "Monster Multiplier";
+MCM_SPAWNMUL_SUB = "Monster Count * this. Increase at your own risk...";

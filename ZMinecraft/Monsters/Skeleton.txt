@@ -70,7 +70,7 @@ Class MCSkeleton : MCUndead
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
-		Health 175;
+		Health 80;
 		
 		
 		MeleeRange 512;
@@ -114,6 +114,11 @@ Class MCSkeleton : MCUndead
 		Limb[ArmL].SetPosOffsets((0.0, -1.0, 4.4));
 		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
 		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		
+		int pick = randompick(ArmR, ArmL);
+		Limb[pick].SetAttachment('MCBow');
+		
+		UpdateLimbs();
 	}
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
@@ -137,6 +142,7 @@ Class MCSkeleton : MCUndead
 	
 	void SetArmAnimation(StateLabel Next)
 	{
+		
 		for (int i = 0; i < Limb.Size(); i++)
 		if (i == ArmR || i == ArmL)
 		{
@@ -144,6 +150,7 @@ Class MCSkeleton : MCUndead
 			if (n && Limb[i] && !Limb[i].InStateSequence(Limb[i].CurState,n))
 				Limb[i].SetState(n);
 		}
+		
 	}
 	
 	override void SetMeleeAnimation()	
@@ -166,6 +173,11 @@ Class MCSkeleton : MCUndead
 			double Frac = (1.0 - (Dist / (MeleeRange ** 2)));
 			AttackCharge += Max(1.0, 1.0 + Frac);
 			
+			if (AttackCharge < 30)
+				SetArmAnimation('Alert');
+			else
+				SetArmAnimation('Charging');
+				
 			if (AttackCharge >= 80)
 			{
 				AttackCharge = 0;
@@ -257,21 +269,31 @@ Class MCArrowProjectile : MinecraftEntity
 	const RealScale = 8.0;
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
+	
+	private MinecraftEnemy Owner;
 	Default
 	{
 		Projectile;
 		-NOGRAVITY
-	//	+HITOWNER
+		+HITTRACER
 		
 		Radius RealRadius;
 		Height RealHeight;
 		Scale RealScale;
 		Speed 35;
 		Gravity 0.8;
-		DamageFunction (random(10, 30));
+	//	Damage 6;
+		DamageFunction (random(5, 20));
 		
+		DamageType "Normal";
 		SeeSound "Minecraft/Bow";
 		DeathSound "Minecraft/BowHit";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Owner = MinecraftEnemy(Target);
 	}
 	
 	private void ArrowDeath()
@@ -279,6 +301,14 @@ Class MCArrowProjectile : MinecraftEntity
 		bKILLED = bNOINTERACTION = true;
 		A_Stop();
 		A_StartSound(DeathSound, CHAN_BODY, CHANF_OVERLAP);
+		
+		if (Tracer && Tracer.Target == Owner && Target == Owner && Owner.Targetable(Tracer)
+				&& !(Tracer is 'PlayerPawn') && Tracer != Target)
+		{
+			// Aim at the tracer and try to finish them off since we know they're
+			// in danger now.
+			Target.Target = Tracer;
+		}
 	}
 	
 	override void Tick()
@@ -298,7 +328,8 @@ Class MCArrowProjectile : MinecraftEntity
 		Stop;
 	Death:
 		ASDF A 0 { bKILLED = bNOINTERACTION = true; }
-		ASDF A 350 ArrowDeath();
+		ASDF A 1 ArrowDeath();
+		ASDF A 350;
 		ASDF A 1 A_FadeOut(0.05);
 		Wait;
 	}
@@ -344,6 +375,7 @@ Class MCWitherSkeleton : MCSkeleton
 
 Class MCSkeletonArm : MCBodyPartArm
 {
+	const BowYaw = 20.0;
 	Default
 	{
 		MCBodyPart.Gib 'MCSkeletonArmGib';
@@ -352,12 +384,23 @@ Class MCSkeletonArm : MCBodyPartArm
 		Height 2.0;
 	}
 	
+	virtual void BowIn()
+	{
+		SetYaw(BowYaw);
+	}
+	
+	virtual void BowOut()
+	{
+		SetYaw(0);
+	}
+	
 	States
 	{
 	Spawn:
 		ASDF A -1
 		{
 			CurAction = (E_Swing|E_Sway);
+			SetYaw(0);
 			SetPitch(0);
 		}
 		Wait;
@@ -366,7 +409,17 @@ Class MCSkeletonArm : MCBodyPartArm
 		{
 			CurAction = E_Sway;
 			SetPitch(-90);
+			BowOut();
 		}
+		Wait;
+	Charging:
+		---- A -1
+		{
+			CurAction = E_Sway;
+			SetPitch(-90);
+			BowIn();
+		}
+		Wait;
 	ZombieMelee:
 		---- A 8 SetPitch(-160, false);
 		---- A -1 SetPitch(-90, false);
@@ -384,6 +437,10 @@ Class MCSkeletonArmRight : MCSkeletonArm
 
 Class MCSkeletonArmLeft : MCSkeletonArm
 {
+	override void BowIn()
+	{
+		SetYaw(-BowYaw);
+	}
 }
 
 Class MCSkeletonBody : MCBodyPartBody

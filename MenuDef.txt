@@ -16,8 +16,11 @@ OptionMenu "MinecraftOptions"
 	StaticText ""
 	StaticText "Monster Tweaks", GOLD
 	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
+	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
+	MinecraftSlider "$MCM_SPAWNMUL_TEXT", "$MCM_SPAWNMUL_SUB",			MCC_SpawnMul,			0.5, 10.0, 0.1
 	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 10.0, 0.1
 	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 10.0, 1.0
+	StaticText ""
 	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
 	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
 	StaticText ""

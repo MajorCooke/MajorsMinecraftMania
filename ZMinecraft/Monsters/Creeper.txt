@@ -13,10 +13,22 @@ Gib Legs B:		-.8,	+-.4,	0.6
 
 */
 
-		
+Class MCCreeperWeaponSpawner : RandomSpawner
+{
+	Default
+	{
+		DropItem 'Shotgun', 		255, 80;
+		DropItem 'SuperShotgun',	255, 60;
+		DropItem 'Chaingun', 		255, 50;
+		DropItem 'RocketLauncher',	255, 30;
+		DropItem 'PlasmaRifle',		255, 15;
+		DropItem 'BFG9000',			255, 1;
+	}
+}
 
-// Because someone is going to want to use them against the Creeper Ghoul.
-// I just know it.
+
+// Because someone is going to want to use them against the Creeper Ghoul from
+// Ghoul's Forest. I just know it. >:)
 Class MCCreeper : MinecraftEnemy
 {
 	const ExploRange = 256.0;
@@ -50,17 +62,20 @@ Class MCCreeper : MinecraftEnemy
 		MinecraftEnemy.MaxChaseRange 768;
 		MaxTargetRange 512;
 		
-		Health 200;
+		Health 100;
 		+EXTREMEDEATH
 		+FORCERADIUSDMG
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
-		Tag "Creeper";
-		Obituary "A creeper blasted %o sky high, Team Rocket style.";
 		Speed 5;
 		PainSound "Minecraft/Creeper/Pain";
 		DeathSound "Minecraft/Creeper/Death";
+		
+		BloodColor "LightGreen";
+		
+		Tag "Creeper";
+		Obituary "A creeper blasted %o sky high, Team Rocket style.";
 	}
 	
 	override void PostBeginPlay()
@@ -116,37 +131,10 @@ Class MCCreeper : MinecraftEnemy
 		
 		LimbX[LegFL].SetSineOffset((180,180,180));
 		LimbX[LegBR].SetSineOffset((180,180,180));
-		
+		UpdateLimbs();
 	}
 	
 	private int age;
-	override void UpdateLimbs()
-	{
-		Super.UpdateLimbs();
-	
-		for (int i = 0; i < LimbX.Size(); i++)
-		{
-			if (ChargeTimer > 0)
-			{
-				
-				if (LimbX[i])
-				{
-					Vector3 NA = Angs;
-					if (!(LimbX[i] is 'MCBodyPartHead'))
-						NA.Y -= Pitch;
-					LimbX[i].UpdatePosition(self);
-					LimbX[i].SetNextAngles(NA);
-					LimbX[i].UpdateScales(Scale + (0.1, 0.1));
-					
-					if (GetAge() % AlterTics == 0)
-						LimbX[i].bINVISIBLE = !LimbX[i].bINVISIBLE;
-					LimbX[i].A_FadeTo(MaxChargeFrac * ChargeTimer, 1.0, 0);
-				}
-				
-			}
-			else LimbX[i].bINVISIBLE = true;
-		}
-	}
 	
 	override void Activate(Actor activator)
 	{
@@ -170,12 +158,47 @@ Class MCCreeper : MinecraftEnemy
 		DestroyXLimbs();
 		Super.Die(source, inflictor, dmgflags, meansofdeath);
 	}
-	
 	override void Tick()
 	{
 		Super.Tick();
 		
 		if (health < 1 || IsFrozen())	return;
+		
+		for (int i = 0; i < LimbX.Size(); i++)
+		{
+			if (ChargeTimer > 0)
+			{
+				
+				if (LimbX[i])
+				{
+					Vector3 NA = Angs;
+				//	Vector3 OtherLimbAng = (Angs);
+				//	if (Limb[i])
+				//	if (!(LimbX[i] is 'MCBodyPartHead'))
+				//		NA.Y -= Pitch;
+					
+					
+					if (Limb[i])
+					{
+						LimbX[i].CopyAngles(Limb[i]);
+						LimbX[i].UpdatePosition(Limb[i]);
+					}
+					else
+					{
+						LimbX[i].UpdatePosition(self);
+						LimbX[i].SetNextAngles(Angs);
+					}
+					LimbX[i].UpdateScales(Scale + (0.1, 0.1));
+					LimbX[i].bBRIGHT = true;
+					
+					if (GetAge() % AlterTics == 0)
+						LimbX[i].bINVISIBLE = !LimbX[i].bINVISIBLE;
+					LimbX[i].A_FadeTo(MaxChargeFrac * ChargeTimer, 1.0, 0);
+				}
+				
+			}
+			else if (LimbX[i])	LimbX[i].bINVISIBLE = true;
+		}
 		
 		if (!Charging && ChargeTimer > 0)
 			ChargeTimer--;
@@ -199,8 +222,6 @@ Class MCCreeper : MinecraftEnemy
 				if ((ChargeFall && OnGround && InExploRange(null, true)) ||
 					(!ChargeFall && InExploRange(null, true)))
 				{
-					bKilled = true;
-					Health = 0;
 					Kaboom();
 					SetState(ResolveState("Death"));
 					return;
@@ -212,6 +233,8 @@ Class MCCreeper : MinecraftEnemy
 	
 	protected void Kaboom()
 	{
+		bKilled = true;
+		Health = min(0, Health);
 		A_ChangeLinkFlags(1);
 		bNEVERTARGET = bNOINTERACTION = bINVISIBLE = true;
 		A_UnsetShootable();
@@ -239,6 +262,12 @@ Class MCCreeper : MinecraftEnemy
 		DestroyXLimbs();
 		Super.DestroyLimbs();
 	}
+	
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle)
+	{
+		if (Charging && mod == 'Falling' && dmg > 0)
+			Kaboom();
+	}
 
 	const MaxCharge = Second + 18; // Just above 1.5 seconds.
 	const MaxChargeFrac = 1.0 / MaxCharge;
@@ -250,7 +279,6 @@ Class MCCreeper : MinecraftEnemy
 	
 	void SetExplosionCounting(bool on, bool fall = false) 
 	{
-		
 		if (on && !Charging)	
 		{
 			A_StartSound("Minecraft/Creeper/Hiss",CHAN_BODY,CHANF_OVERLAP);
@@ -277,6 +305,15 @@ Class MCCreeper : MinecraftEnemy
 				(_2d && Distance2DSquared(mo) <= (Range ** 2))));
 	}
 	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+		
+		A_DropItem('MCCreeperWeaponSpawner',1, 16);
+		return true;
+	}
+	
 	States
 	{
 	Spawn:
@@ -284,7 +321,8 @@ Class MCCreeper : MinecraftEnemy
 	Idle:
 		TNT1 A 0 
 		{
-			SetExplosionCounting(false);
+			if (!ChargeFall || (ChargeFall && OnGround))
+				SetExplosionCounting(false);
 			return A_Jump(256, random(1, 4));
 		}
 		TNT1 AAAAAAAAAA 17 Look();
