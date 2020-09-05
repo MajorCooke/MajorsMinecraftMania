@@ -350,12 +350,13 @@ extend class MinecraftEnemy
 	
 	virtual void SetPassive(bool on)	{	Passive = on;	}
 	
-	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0)
+	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0, bool _3dmelee = false)
 	{
 		if (health < 1)
 			return;
 	
 		int newflags = CHF_NOPLAYACTIVE;
+		int chflags = SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY;
 		
 		// Get a target if invalid.
 		if (!ValidateTarget(chasing: true))
@@ -376,7 +377,7 @@ extend class MinecraftEnemy
 		}
 		
 		bool good = false;
-		if (CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY)) // Use regular A_Chase if cannot see.
+		if (CheckSight(Target, chflags)) // Use regular A_Chase if cannot see.
 		{
 			
 			HoldAngs = (Angle, Pitch, Roll);
@@ -435,6 +436,22 @@ extend class MinecraftEnemy
 		if (!good && (angle % 45 != 0.0))
 			AlignMoveDir();
 		
+		if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
+		{
+			let s = ResolveState(melee);
+			if (s)
+			{
+				// TO DO: Convert to use a trace function.
+				double rad = (Target.Radius + MeleeRange) ** 2;
+				if (Distance3DSquared(Target) <= rad && CheckSight(Target, chflags))
+				{
+					bJUSTATTACKED = true;
+					SetState(s);
+					return;
+				}
+			}
+		}
+		
 		A_Chase(melee, missile, flags|newflags);
 	}
 	
@@ -486,18 +503,19 @@ extend class MinecraftEnemy
 		let armor = Target.FindInventory('BasicArmor',true);
 		int armbefore = 0, armafter = 0;
 		if (armor)	armbefore = Armor.Amount;
-		int dmg = Target.DamageMobj(null, self, damage, "Melee");
+		int dmg = //((Target.bINVULNERABLE && !bFOILINVUL) || Target.bNODAMAGE) ? 0 : 
+			Target.DamageMobj(null, self, damage, "Melee");
 		if (armor)	armafter = Armor.Amount;
 		
-		if (dmg > 0 || armafter != armbefore)
+	//	if (dmg > 0 || armafter != armbefore)
 		{
 			if (ValidateTarget() && !bNODAMAGETHRUST && !Target.bDONTTHRUST && 
 				!(Target is 'MinecraftEnemy') && Target.Mass > 0)
 			{
 			//	Vector3 v = Target.Vel;
-				double thrust = clamp((damage * 20.0) / Mass, 0., 32);
+				double thrust = clamp((damage * 20.0) / Target.Mass, 0., 32);
 				Target.Thrust(thrust, AngleTo(Target));
-				Target.Vel.Z += 8;
+				Target.Vel.Z += 800 / Target.Mass;
 			}
 			AttackDelay = AttackDelayMax;
 			SetMeleeAnimation();

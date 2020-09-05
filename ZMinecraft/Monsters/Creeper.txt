@@ -341,7 +341,7 @@ Class MCCreeper : MinecraftEnemy
 		TNT1 A 1 
 		{
 			SetExplosionCounting(false);
-			Chase();
+			Chase('Melee', null, 0, 30, true);
 		}
 		Wait;
 	Melee:

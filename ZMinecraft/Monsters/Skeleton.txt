@@ -252,7 +252,7 @@ Class MCSkeleton : MCUndead
 	Chasing:
 		TNT1 A 1 
 		{
-			Chase();
+			Chase('Melee', null, 0, 30, true);
 		}
 		Wait;
 	Melee:
