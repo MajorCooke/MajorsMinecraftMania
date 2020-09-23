@@ -15,8 +15,30 @@ enum EMinecraftConst
 	
 	// Actions
 	E_Sway =	1 << 1,
-	E_Swing =	1 << 2
+	E_Swing =	1 << 2,
+	
+	// Relations
+	Rel_None =	0,
+	Rel_Neutral,
+	Rel_Hate,
+	Rel_Ignored,
+	Rel_Afraid,
+	
 };
+
+enum EMinecraftMountConst
+{
+	// DoMount Flags
+	MTF_TOMOUNT =		1,
+	MTF_TORIDER =		1 << 1,
+	
+	MTF_ADD =			1,
+	MTF_INSERT =		1 << 1,
+	MTF_FORCE =			1 << 2,
+	
+	// Mount Flags
+	MMF_RELATIVE =	1,
+}
 
 const SineWavePerSecond = 360.0 / 35.0;
 const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.

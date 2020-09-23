@@ -60,11 +60,32 @@ server int MCC_ItemTimer = 2;
 // Gibs start fading out the moment they stop moving if enabled.
 server bool MCC_ShortGibLives = false;
 
+// Wait time to spawn additional enemies.
+server int MCC_SpawnDelayMinute = 0;
+server int MCC_SpawnDelaySecond = 10;
+server int MCC_SpawnDelayRandom = 5;
+
 // Monsters take damage from sectors/falling/drowning. Some monsters are immune.
 server bool MCC_EnvironmentDamage = true;
 server bool MCC_FallDamage = true;
 server bool MCC_SectorDamage = true;
 server bool MCC_Drowning = true;
+
+//==============================================================================
+// Individual monster properties
+//==============================================================================
+
+//------------------------------------------------------------------------------
+// Creeper
+//------------------------------------------------------------------------------
+// Creepers explode when killed while charging.
+server bool MCC_CreeperBoomBoom = false;
+
+// Creeper explosions cause other creepers to explode around them.
+// 0 = Disabled
+// 1 = Only hissing creepers
+// 2 = All
+server int MCC_CreeperChainBoom = 0;
 
 //==============================================================================
 // Debug

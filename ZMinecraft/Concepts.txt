@@ -298,3 +298,346 @@ let LC = MC_Map.GetIntersectingLines(self, (2048, 2048));
 					}
 				}
 			}
+			
+			
+			
+			
+			
+			
+			
+			
+			
+// How this works:
+
+// 1. Call the static function MCMountInfo.DoMount and supply the necessary 
+// instructions. The function will attempt to establish a connection by checking
+// for the inventory
+/*
+Class MCMount : Inventory
+{
+	MCMountInfo Info;
+	
+	override void OwnerDied()
+	{
+		if (Info && Owner)
+		{
+			Info.RemoveActor(Owner);
+			Destroy();
+			return;
+		}
+		Super.OwnerDied();
+	}
+}
+
+Class MCMountObject play
+{
+	Actor Mo;
+	Vector3 Offset;
+	
+	static MCMountObject CreateMountObject(Actor mo, Vector3 off)
+	{
+		if (!mo || mo.health < 1)
+			return null;
+			
+		let mobj = new('MCMountObject');
+		mobj.Mo = mo;
+		mobj.Offset = off;
+		return mobj;
+	}
+}
+
+Class MCMountInfo : Thinker
+{
+	const CleanTimer = Second;
+	
+	private double TotalHeight; // Height of all combined actors.
+	private int Timer;
+	
+	private Array<MCMountObject> Container;
+//	private Array<Int> Flags;
+
+	MCMountInfo CreateMountInfo()
+	{
+		let info = new('MCMountInfo');
+		info.Init();
+		return info;
+	}
+	
+	protected void Init() 
+	{
+		Container.Clear();
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		
+		if (++Timer >= CleanTimer)
+		{
+			Timer = 0;
+			Refresh();
+			
+			int size = Infos.Size();
+			if (size < 1)
+			{
+				Destroy();
+				return;
+			}
+		}
+	}
+	
+	protected void Refresh()
+	{
+		Timer = 0;
+		
+		Array<MCMountObject> temp; temp.Clear();
+		int size = Container.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let con = Container[i];
+			if (con && con.Mo)
+			{
+				if (con.Mo.Health > 0)
+				{
+					temp.Push(con);
+					continue;
+				}
+				else RemoveActor(con.Mo, true);
+			}
+		}
+		Container.Move(temp);
+	}
+
+	// Bottom-most actor (the one carrying the rest)
+	Actor GetBottom() 	
+	{	
+		int size = Container.Size();
+		if (size < 1)	return null;
+		return Container[0].Mo;
+	}
+	
+	// Top-most actor.
+	Actor GetTop()
+	{	
+		int size = Container.Size();
+		if (size < 1)	return null;
+		return Container[size - 1].Mo;
+	}
+	
+	static bool ValidateActor(Actor mo)
+	{
+		return (mo && mo.health > 0);
+	}
+	
+	static MCMount GetMountToken(Actor mo)
+	{
+		if (!mo)	return null;
+		return MCMount(mo.FindInventory('MCMount', true);
+	}
+	
+	// Checks if an actor is already mounted on a chain.
+	static MCMountInfo GetMountInfo(Actor mo)
+	{
+		if (!mo)	return null;
+		let token = GetMountToken(mo);
+		return (token) ? token.MountInfo : null;
+	}
+	
+	//--------------------------------------------------------------------------
+	// DoMount
+	//
+	// Attempts to set a rider atop a mount.
+	//
+	// Parameters:
+	// 
+	// *Rider
+	//	The one to ride atop the Mount.
+	//
+	// *Mount
+	//	The one to be ridden by the Rider.
+	// 
+	// *Offset
+	//	The relative positional offsets (at least for XY).
+	// 
+	// *Flags
+	//	-MTF_TOMOUNT: Moves the Rider to the Mount's chain.
+	//	-MTF_TORIDER: Moves the Mount to the Rider's chain.
+	//--------------------------------------------------------------------------
+	
+	static bool DoMount(Actor Rider, Actor Mount, Vector3 Offset, int flags = MTF_TOMOUNT)
+	{
+		if (!Rider || !Mount)	return false;
+		
+		// Check if the actor is already mounted elsewhere. This requires some
+		// special handling in order to make sure it's properly set up. Flags
+		// determine the chain to attach to.
+		let rinfo = GetMountInfo(Rider);
+		let minfo = GetMountInfo(Mount);
+		
+		bool ToMount = (flags & MTF_TOMOUNT);
+		bool ToRider = (flags & MTF_TORIDER);
+		
+		// Remove them both from their chains and start a new one.
+		if (ToMount && ToRider)
+		{
+			if (minfo)	Dismount(Mount, minfo);
+			if (rinfo)	Dismount(Rider, rinfo);
+			
+			let info = CreateMountInfo();
+			info.AddActor(Mount, (0,0,0));
+			info.AddActor(Rider, Offset);
+		}
+		// Peel the rider off the current and stick it on top of the mount.
+		else if (ToMount)
+		{
+			if (!minfo)	
+			{
+				minfo = CreateMountInfo();
+				minfo.AddActor(Mount, (0,0,0));
+			}
+			if (rinfo != minfo)	Dismount(Rider, rinfo);
+			minfo.AddActor(Rider, Offset, minfo.GetActorIndex(Mount) + 1);
+		}
+		// Take the mount away from their stack and stick'em under the rider.
+		else if (ToRider)
+		{
+			if (!rinfo)
+			{
+				rinfo = CreateMountInfo();
+				rinfo.AddActor(Rider, Offset);
+			}
+			if (rinfo != minfo)	Dismount(Mount, minfo);
+			rinfo.AddActor(Mount, (0,0,0), Max(0, rinfo.GetActorIndex(Rider) - 1));
+		}
+		else if (!rinfo && !minfo)
+		{				
+			let info = CreateMountInfo();
+			info.AddActor(Mount, (0,0,0));
+			info.AddActor(Rider, Offset);
+		}
+		else return false;
+		
+		return true;
+	}
+	
+	static bool Dismount(Actor mo, MCMountInfo info = null)
+	{
+		if (!mo)	return false;
+		
+		if (!info)		info = GetMountInfo(mo);
+		return (info) ? info.RemoveActor(mo) : false;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Gets the position of the actor in the array.
+	int GetActorIndex(Actor mo)
+	{
+		if (!mo)	return -1;
+		
+		int size = Container.Size();
+		if (size < 1)	return -1;
+		
+		for (int i = 0; i < size; i++)
+		{
+			if (Container[i].Mo == mo)
+				return i;
+		}
+		
+		return -1;
+	}
+	
+	// Get the actor riding this actor.
+	Actor GetRider(Actor mo)
+	{
+		if (!mo)	return null;
+		
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		if (pos < 0 || pos >= size - 1)	
+			return null; // Actor not present here.
+		
+		return Container[pos + 1].Mo;
+	}
+	// Get the actor being ridden.
+	Actor GetMount(Actor mo)
+	{
+		if (!mo)	return null;
+		
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		if (pos < 1 || pos >= size)	
+			return null; // Actor not present here.
+		
+		return Container[pos - 1].Mo;
+	}
+	
+	private void SetupActor(Actor mo)
+	{
+		mo.SetInventory('MCMount', 1);
+		let inv = MCMount(mo.FindInventory('MCMount', true));
+		if (inv)	inv.MountInfo = self;
+	}
+	
+	protected bool AddActor(Actor mo, Vector3 Offset, int index = -1)
+	{
+		if (!ValidateActor(mo))	return false;
+		
+		Refresh();
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		
+		// Actor not found.
+		if (pos < 0)
+		{
+			let con = MCMountObject.CreateMountObject(mo, Offset);
+			SetupActor(mo);
+			
+			if (index < 0 || index >= size)
+			{
+				Container.Push(con);
+			}
+			else
+			{
+				Container.Insert(index, con);
+			}
+			return true;
+		}
+		// Actor is inside but wants to change spots.
+		else if (index >= 0 && pos != index)
+		{
+			let con = Container[pos];
+			
+			index = max(0, min(index, size - 1));
+			
+			let temp = Container[index];
+			Container[index] = Container[pos];
+			Container[pos] = temp;
+			return true;
+		}
+		return false;
+	}
+	
+	protected bool RemoveActor(Actor mo, bool cleaning = false)
+	{
+		int pos = GetActorIndex(mo);
+		if (pos > -1)
+		{
+			let token = GetMountToken(mo);
+			if (token && token.MountInfo == self)	
+				token.MountInfo = null;
+			
+			if (cleaning)
+			{
+				Container[pos] = null;
+			}
+			else
+			{
+				Container[pos].Destroy();
+				Container.Delete(pos);
+			}
+			return true;
+		}
+		return false;
+	}
+}
+*/

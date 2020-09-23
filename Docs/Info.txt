@@ -1,0 +1,194 @@
+================================================================================
+- Monster Information -
+================================================================================
+Monsters can spawn anywhere and at any time. While they do not combust 
+spontaneously when walking outside, they do take damage from damage floors and
+are instantly killed by crushers. They cannot trigger any line/sector actions
+since they would otherwise break sensitive maps, but they can teleport.
+
+Special DOOM-specific Behaviors included:
+* Die instantly from crushers
+* Take damage from damaging floors (except fire immune) (toggleable)
+* Take fall damage (toggleable)
+* Can drown (toggleable)
+* Do not drop anything if not killed by a player
+* Never triggers line/sector/action specials, and cannot be assigned specials
+
+Any monster will attempt to spawn at a distance from the player. Without certain
+conditions, they will also despawn with a chance that grows the further the player
+is away from them. They will attempt to spawn in safe areas where they cannot
+naturally be damaged, if sector damage is enabled in the option menu. But if it's
+disabled, they can spawn in any sector regardless of the floor having damage or
+not.
+
+--------------------------------------------------------------------------------
+***** Monsters *****
+=== Zombies ===
+= Regular =
+This cumbersome beast is slow moving, yet hits quite hard if his grabby hands
+get around your limbs. As they're undead, they're rather tough with stamina but
+are also bumbling and, well, quite brain dead.
+
++ Slow
++ Weakness: Head (+300% damage)
++ Burns in daylight (regardless of sky texture)
+- Turns into a Drowned if submerged underwater long enough
+- Natural armor: 8% damage reduction
+- Chance to call other zombies to help from all around when damaged
+- Chance to turn into a skeleton when critically hit
+
+= Husk =
+Same as regular but different skin. 
+- Doesn't burn in daylight
+
+= Drowned =
+Zombies that drown become this waterlogged creature.
+
+/ Doesn't burn in daylight but becomes passive instead
+
+
+=== Skeletons ===
+How these things can act without meat is probably demonic in nature. Having shed
+their rotten exoskeleton, these creatures are more nimble but also more brittle
+than their cousin counterparts. Rarely, zombie's can lose their flesh and turn
+into one of these if damage is low enough. They wield bows and prefer to keep
+a distance from their foes, backing away when within a certain range of the enemy.
+
+Differences from Minecraft:
+* They're a bit smarter in this mod. Whenever their arrows hit an unintended
+	target, and the target goes after them in turn, they'll turn their full
+	attention towards them and attempt to finish them off quickly. 
+* Don't let them pick up other weapons! Otherwise, you'll have to deal with these
+	rocket toting monsters... At least until they run out of ammo and then discard
+	the weapon.
+
++ No natural armor/resistance
++ Weakness: Torso (+150% damage)
+- Immune to poison, drowning
+
+--- Creeper ---
+A failed pig-monster with camoflauge green skin and an explosive temper (quite 
+physically), these walking PTSD trigger creatures make like a dog's fart upon 
+arrival: silent, and deadly, save for the soft hiss...
+
+But you're Doomguy! You can outright kill ANYTHING! Right? ...Right?
+
+...Say, what's with the spontaneous lighting strikes outside?
+
++ Weakness: Feet (+100% damage)
++ Weakness: Explosions (+200% damage)
+- Big explosions
+- Silent except for hissing
+- Can explode when dropping over an edge when taking fall damage
+- Always explodes if dying by falling
+
+--- Spider ---
+The itsy bitsy spider crawled up... another damn giant spider and tried to eat
+everyone. They don't have any guns, phew... but they bite hard, leap, and climb
+walls. Crap. 
+
+They are also wide instead of tall, so they can get inside little slits. Beware.
+
++ Becomes passive in bright areas
+- Can leap & climb walls
+
+--- Cave Spider --
+Smaller spiders with a smaller hitbox. Can poison their foes with their bites
+on harder difficulties, but aren't as healthy.
+
++ Low health
++ Weak spot: Eyes (Instant death)
+- Poisonous attack
+
+--- Slime ---
+Rare mobs that hop about. Depending on size is the damage radius and amount.
+Splits into smaller slimes upon death. Skates very fast across water textures.
+
++ Only moves forward predictably and can fall off ledges
++ Burns easily, spreads fire/poison/wither to spawns
+- Heavy damage
+- Tanky
+- No weak spots
+
+--- Endermen ---
+Tall lanky creatures that are passive until attacked or looked at on the head.
+
++ Takes damage from water surfaces, double from slime/lava
++ Negative status effects last twice as long
++ Weak spot: Mouth (+150% damage)
+- Can teleport around to get out of danger and evade combat
+
+
+--- Zombie Pigmen ---
+Pack monsters that are generally neutral and don't attack. Spawns frequently
+with hellish textures or later maps. They spawn in large packs and don't attack
+unless attacked. Considering how big their packs usually are, one should avoid
+hurting them if possible, but they'll forgive the player after a while.
+
+Brandishing golden sword, they faster, hardier and more punishing than regular
+zombies, so its wise to leave them be, but they drop quite a bit of resources 
+if killed by players.
+
++ Neutral mob - doesn't attack anyone unless attacked
++ Drops more resources on death
++ Can forgive players, won't forgive mobs
++ Weak spot: Head (+300% damage)
++ Weak spot: Hand (Disarms when shot hard enough, lowering attack damage)
+- Spawns in large packs
+- ZERG- er, PIG SWARM!!!
+- Immune to Fire
+
+--- Magma Slime ---
+Hellish variants of regular slimes.
+
++ Slower
+- Hops very high
+- Immune to Fire
+
+--- Blaze ---
+Floating monsters that cast infernal charges which sets fire to anything they
+hit. Often spawns in packs, making them dangerous.
+
++ Doesn't move much horizontally
++ Tends to sink to the ground
+- Immune to fire/fall damage
+
+--- Ghast ---
+Floating monsters that are huge and shoot bigger, explosive fireballs.
+
++ Big & slow enemy, easy to hit
++ Reflectable fireballs
++ Weakness: Fireballs (Instant death)
+- Big fireballs that explode and set fire to the area around them
+- Immune to Fire/Falling
+- Can snipe from long ranges away
+
+--- Wither Skeleton ---
+Scorched by countless ages of Hellfire, the souls that infest them know nothing
+but pain, and want nothing more than to share it with living mortal flesh - and
+anyone insolent enough to attack them.
+
++ Weak spot: Head (+100% damage)
+/ Death by weak spot prevents skull from dropping
+- Inflicts Wither effect on attack
+- Immune to Fire/Poison/Fall damage
+
+
+	***** Bosses *****
+	
+--- Wither ---
+A three headed eldritch abomination that attacks by launching floating skulls at
+enemies. Has multiple phases.
+
+PHASE 1
+* Spawns in and generates health up to full, before emitting a massive explosion
+that's guaranteed to be fatal to most enemies. Will attack most other enemies and
+demons, including other undead, while also strafing players. Changes focus to 
+enemies that attack it directly.
+
+PHASE 2
+* Becomes immune to explosion damage and long range projectiles, requiring 
+direct contact damage to be large. Gets up REAL close and personal too, making 
+it harder to dodge skulls.
+
+--- 

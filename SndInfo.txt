@@ -66,7 +66,7 @@ $PitchSet Minecraft/Zombie/Idle2 0.75 1.25
 $PitchSet Minecraft/Zombie/Idle3 0.75 1.25
 
 $PitchSet Minecraft/Zombie/Pain1 0.75 1.25
-$PitchSet Minecraft/Zombie/Pain1 0.75 1.25
+$PitchSet Minecraft/Zombie/Pain2 0.75 1.25
 
 $PitchSet Minecraft/Zombie/Death 0.75 1.25
 
@@ -76,12 +76,15 @@ $random Minecraft/Zombie/Idle
 	Minecraft/Zombie/Idle2
 	Minecraft/Zombie/Idle3
 }
+$PitchSet Minecraft/Zombie/Idle 0.75 1.25
 
 $random Minecraft/Zombie/Pain
 {
 	Minecraft/Zombie/Pain1
 	Minecraft/Zombie/Pain2
 }
+$PitchSet Minecraft/Zombie/Pain 0.75 1.25
+
 $random Minecraft/Zombie/Step
 {
 	Minecraft/Zombie/Step1
@@ -96,6 +99,20 @@ $limit Minecraft/Zombie/Pain 0
 $limit Minecraft/Zombie/Death 0
 $limit Minecraft/Zombie/Step 0
 
+// Baby zombie versions.
+$random Minecraft/ZombieBaby/Idle { Minecraft/Zombie/Idle }
+$random Minecraft/ZombieBaby/Pain { Minecraft/Zombie/Pain }
+$random Minecraft/ZombieBaby/Death { Minecraft/Zombie/Death }
+$PitchSet Minecraft/ZombieBaby/Idle 1.75 2.25
+$PitchSet Minecraft/ZombieBaby/Pain 1.75 2.25
+$PitchSet Minecraft/ZombieBaby/Death 1.75 2.25
+
+$limit Minecraft/ZombieBaby/Idle 0
+$limit Minecraft/ZombieBaby/Pain 0
+$limit Minecraft/ZombieBaby/Death 0
+
+
+
 //==============================================================================
 // Creeper
 //==============================================================================
@@ -107,10 +124,7 @@ Minecraft/Creeper/Death	"Sounds/Minecraft/mob/creeper/death.ogg"
 Minecraft/Creeper/Hiss	"Sounds/Minecraft/random/fuse.ogg"
 
 $PitchSet Minecraft/Creeper/Hiss 0.5;
-$PitchSet Minecraft/Creeper/Pain1 0.75 1.25
-$PitchSet Minecraft/Creeper/Pain2 0.75 1.25
-$PitchSet Minecraft/Creeper/Pain3 0.75 1.25
-$PitchSet Minecraft/Creeper/Pain4 0.75 1.25
+$PitchSet Minecraft/Creeper/Pain 0.75 1.25
 $PitchSet Minecraft/Creeper/Death 0.75 1.25
 
 $random Minecraft/Creeper/Pain
@@ -163,6 +177,11 @@ $random Minecraft/Skeleton/Step
 	Minecraft/Skeleton/Step3
 	Minecraft/Skeleton/Step4
 }
+
+$pitchset Minecraft/Skeleton/Hurt 0.9 1.1
+$pitchset Minecraft/Skeleton/Idle 0.9 1.1
+$pitchset Minecraft/Skeleton/Step 0.9 1.1
+$pitchset Minecraft/Skeleton/Death 0.9 1.1
 
 $limit Minecraft/Skeleton/Death 0
 $limit Minecraft/Skeleton/Hurt 0

@@ -5,16 +5,16 @@ Minecraft/Spider/Idle
 Minecraft/Spider/Step
 
 -Legend-	X		Y		Z		Roll	Pitch	Angle
-
+Back:		-0.6	0.0		2.0	
 Head:		0.6		0.0		2.0			
 Leg:		0.0		~.8		1.9		0.0		35		(Starts at 30, +40 each)
 
 - Gibs -
-Leg:		0.0		~2.2	1.9		
+Back:		-1.8	0.0		2.0		
 Head:		1.4		0.0		2.0
+Leg:		0.0		~2.2	1.9
 
 - Both -
-Back:		-1.8	0.0		2.0
 Thorax:		0.0		0.0		2.0
 
 Frames
@@ -23,11 +23,15 @@ Frames
 
 */
 
-
-		
+	
 		
 Class MCSpider : MinecraftEnemy
 {
+	const _Radius = 1.6 + 1.2 + 2.4;
+	const _Height = 2.0;
+	const RealScale = 9.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
 	enum ELimbs
 	{
 		Head = 0,
@@ -54,10 +58,12 @@ Class MCSpider : MinecraftEnemy
 	
 	Default
 	{
+		Health 80;
+	
 		MCSpider.Type S_Normal;
-		Radius 1.6;
-		Height 2.8;
-		+NONSHOOTABLE // The limbs themselves will be shootable.
+		Radius RealRadius;
+		Height RealHeight;
+		Scale RealScale;
 		ActiveSound "Minecraft/Spider/Idle";
 		PainSound "Minecraft/Spider/Idle";
 		DeathSound "Minecraft/Spider/Death";
@@ -91,8 +97,8 @@ Class MCSpider : MinecraftEnemy
 		}
 		
 		Limb[Head].SetPosOffsets((		 0.6,	 0.0, 2.0));
-		Limb[Back].SetPosOffsets((		-1.8,	 0.0, 2.0));
-		Limb[Thorax].SetPosOffsets((	 0.0,	 1.2, 2.0));
+		Limb[Back].SetPosOffsets((		-0.6,	 0.0, 2.0));
+		Limb[Thorax].SetPosOffsets((	 0.0,	 0.0, 2.0));
 		Limb[LegL1].SetPosOffsets((		 0.0,	-0.8, 1.9));
 		Limb[LegL2].SetPosOffsets((		 0.0, 	-0.8, 1.9));
 		Limb[LegL3].SetPosOffsets((		 0.0,	-0.8, 1.9));
@@ -102,15 +108,43 @@ Class MCSpider : MinecraftEnemy
 		Limb[LegR3].SetPosOffsets((		 0.0, 	 0.8, 1.9));
 		Limb[LegR4].SetPosOffsets((		 0.0, 	 0.8, 1.9));
 		
+		int t = 0;
 		for (int i = LegL1; i < LegL1 + 4; i++)
 		{
-			Limb[i  ].SetAngles( 30 + (i * 40), 35, 0);
-			Limb[i+4].SetAngles(-30 - (i * 40), 35, 0);
+			Limb[i  ].SetPersistantAPROffset(( 30 + (t * 40), 35, 0));
+			Limb[i+4].SetPersistantAPROffset((-30 - (t * 40), 35, 0));
+			t++;
 		}
-		
-		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+		UpdateLimbs();
 	}
-
+	
+	
+	States
+	{
+	Spawn:
+		TNT1 AA 35;
+		Goto IdleMove;
+	Idle:
+		TNT1 A 0 A_Jump(256, random(1, 4));
+		TNT1 AAAAAAAAAA 17 Look();
+	IdleMove:
+		TNT1 A 0 
+		{
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	See:
+		TNT1 A 1 Chase();
+		Wait;
+	Melee:
+		TNT1 A 1 DoMelee(random[rng](20, 25));
+		Goto See;
+	}
 }
 
 Class MCCaveSpider : MCSpider
@@ -123,21 +157,37 @@ Class MCCaveSpider : MCSpider
 	}
 }
 
-Class MCSpiderBack : MCBodyPart
-{
-}
-Class MCSpiderHead : MCBodyPartHead
-{
-}
+//------------------------------------------------------------------------------
+Class MCSpiderBack : MCBodyPart {}
+Class MCSpiderHead : MCBodyPartHead {}
 Class MCSpiderLeg : MCBodyPartLeg
+{	Default	{	MCBodyPart.CurAction 0;	}	}
+Class MCSpiderThorax : MCBodyPart	{}
+
+//------------------------------------------------------------------------------
+// Gibs
+Class MCSpiderThoraxGib : MCBodyPartGib	
 {
 }
-Class MCSpiderThorax : MCBodyPart
+Class MCSpiderBackGib : MCBodyPartGib 
 {
+	Default
+	{
+		MCBodyPartGib.Offsets -1.2, 0, 0;
+	}
 }
-Class MCSpiderHeadGib : MCBodyPartGib
+Class MCSpiderHeadGib : MCBodyPartGib 
 {
+	Default
+	{
+		MCBodyPartGib.Offsets 0.8, 0, 0;
+	}
 }
-Class MCSpiderLegGib : MCBodyPartGib
+Class MCSpiderLegGib : MCBodyPartGib 
 {
+	Default
+	{
+		MCBodyPartGib.EndPitch 0;
+		MCBodyPartGib.Offsets 1.4, 0, 0;
+	}
 }

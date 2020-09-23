@@ -4,9 +4,10 @@ extend class MinecraftHandler
 	private void CreateSpawnList()
 	{
 		SpawnList = MCSpawnList.Create();
-		SpawnList.Add('MCZombie',			3);
-		SpawnList.Add('MCSkeleton',			3);
-		SpawnList.Add('MCCreeper',			1);
+		SpawnList.Add('MCZombie',			25);
+		SpawnList.Add('MCZombieBaby',		05);
+		SpawnList.Add('MCSkeleton',			30);
+		SpawnList.Add('MCCreeper',			10);
 	}
 	
 	private AArray SpawnQueue;
@@ -24,6 +25,8 @@ extend class MinecraftHandler
 		ClsQueuePriority = CAArray.Create();
 	}
 	
+	// Checks all queued classes for peaceful despawning. If they do, removes
+	// them from the queue.
 	private void CheckClassQueues()
 	{
 		CAArray rays[2];
@@ -53,44 +56,71 @@ extend class MinecraftHandler
 	}
 	
 	//==========================================================================
-	//
+	// Performs the countdown to attempt spawning monsters.
+	// 
+	// If peaceful mode is enabled or monster spawning disabled, forces the
+	// timer to 1 second and holds it there until monsters are allowed to spawn.
 	//==========================================================================
-	private void TriggerMapSpawns()
+	private bool WasPeaceful;
+	private void HandleMapSpawns()
 	{
-		int ret = Timer[S_Spawn] + 1;
-		int reset = random[rng](SpawnTimerMin, SpawnTimerMax);
-		
-		MaxMobs = int(round(MCC_Spawns * MCC_SpawnMul));
-		
-		// Peaceful mode. 
-		if (MCC_Peaceful && MCC_PeacefulBehavior <= CV_Stay)
+		if (!MCC_Spawning ||(MCC_Peaceful && MCC_PeacefulBehavior <= CV_Stay))
 		{
-			ret = reset;
+			Timer[S_Spawn] = 35;
 			
 			// Everything Minecraft related must despawn.
 			// Monsters auto-destroy themselves when set to force despawn, so
 			// wipe it all out.
-			if (MCC_PeacefulBehavior <= CV_Despawn)
+			if (MCC_Peaceful && !WasPeaceful)
 			{
-				SpawnQueue.Clear();
-				SpawnQueuePriority.Clear();
-				ClsQueue.Clear();
-				ClsQueuePriority.Clear();
-			}
-			else if (MCC_PeacefulBehavior == CV_Minecraft)
-			{
-				CheckClassQueues();
+				if (MCC_PeacefulBehavior <= CV_Despawn)
+				{
+					SpawnQueue.Clear();
+					SpawnQueuePriority.Clear();
+					ClsQueue.Clear();
+					ClsQueuePriority.Clear();
+				}
+				else if (MCC_PeacefulBehavior == CV_Minecraft)
+				{
+					CheckClassQueues();
+				}
 			}
 		}
-		// Not in peaceful mode, check if spawning is wanted.
-		else if (MCC_Spawning && !level.IsFrozen())
+		else if (--Timer[S_Spawn] < 1)
 		{
-			PrepareSpawnNormal(SpawnQueuePriority, ClsQueuePriority);
-			
-			if (MobCount < MaxMobs)
-				PrepareSpawnNormal(SpawnQueue, ClsQueue);
-			else ret = reset;
+			if (Timer[S_Spawn] == 0)
+			{
+				for (int i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playeringame[i] || !players[i].mo)	continue;
+					let plr = players[i].mo;
+					if (plr && !plr.FindInventory('MCPlayerProtection'))
+						plr.A_GiveInventory('MCPlayerProtection',1);
+				}
+			}
+			TriggerMapSpawns();
 		}
+		WasPeaceful = MCC_Peaceful;
+	}
+	
+	//==========================================================================
+	// Handles the clock for spawning monsters and queued monsters.
+	//==========================================================================
+	private void TriggerMapSpawns()
+	{
+		int ret = Timer[S_Spawn] + 1;
+		
+		int reset = Max(35,
+			Minute * MCC_SpawnDelayMinute + 
+			Second * MCC_SpawnDelaySecond + 
+			Second * random[rng](0,MCC_SpawnDelayRandom));
+		
+		MaxMobs = int(round(MCC_Spawns * MCC_SpawnMul));
+		
+		PrepareSpawnNormal(SpawnQueuePriority, ClsQueuePriority);
+			
+		if (MobCount < MaxMobs)
+			PrepareSpawnNormal(SpawnQueue, ClsQueue);
 		else ret = reset;
 		
 		Timer[S_Spawn] = ret;
@@ -183,6 +213,7 @@ extend class MinecraftHandler
 		// Not exactly player aware but honestly, GZDoom isn't in a state of
 		// multiplayer friendly at the moment so just get the closest player
 		// and spawn around them.
+		MoToSpawn.Deactivate(null);
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i] || !players[i].mo)	continue;
@@ -231,3 +262,134 @@ extend class MinecraftHandler
 		return false;
 	}
 }
+
+//==============================================================================
+// Spawn Lists
+//
+// MCSpawn contains the classname, group it belongs to, and weight of the spawn.
+// The weight behaves exactly like RandomSpawner's.
+//==============================================================================
+Class MCSpawn play
+{
+	Class<Actor> ClassName;
+	Name Group;
+	Int Weight;
+}
+
+Class MCSpawnList play
+{
+	private Array<MCSpawn> Classes;
+	
+	static MCSpawnList Create()
+	{
+		let s = new('MCSpawnList');
+		s.Clear();
+		return s;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Adds a class. Must be valid and weight > 0 or it won't add.
+	// If the class is already existing, update it instead of wasting memory.
+	// Also, only changes the group if not '' (blank). Use 'None' to clear.
+	void Add(Class<Actor> cls, int w, Name g = '')
+	{
+		if (!cls)	return;
+		
+		int size = Classes.Size();
+		
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			if (cls == Classes[i].ClassName)
+			{
+				Classes[i].Weight = w;
+				if (g == 'None')	Classes[i].Group = '';
+				else if (g != '')	Classes[i].Group = g;
+				
+				return;
+			}
+		}
+		
+		let sp = new('MCSpawn');
+		sp.ClassName = cls;
+		sp.Weight = w;
+		sp.Group = (g == 'None') ? '' : g;
+		
+		Classes.Push(sp);
+	}
+	
+	void Clear()	{	Classes.Clear();	}
+	
+	//--------------------------------------------------------------------------
+	// Picks a random monster based on the group it belongs to.
+	// If no group is specified, it'll choose any.
+	//
+	// Arguments
+	//	*group 
+	//		Filters the selection by the group given (whitelist)
+	//	*exclude
+	//		If true, blacklists the group instead of whitelist.
+	Class<Actor> PickRandom(Name group = '', bool exclude = false) const
+	{
+		if (Classes.Size() < 1)
+			return null;
+	
+		bool any = (group == '' || group == 'None');
+		
+		Array<Class<Actor> > Queue;	Queue.Clear();
+		Array<Int> Chances;			Chances.Clear();
+		int Weight = 0;
+		int Size = Classes.Size();
+		
+		// Get all applicable entities.
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			let c = Classes[i];
+			if (!c || !c.ClassName || c.Weight < 1)
+				continue;
+			
+			if (!any)
+				if ((exclude && group == c.Group) || (!exclude && group != c.Group))
+					continue;
+			
+			Queue.Push(c.Classname);
+			Chances.Push(c.Weight);
+			Weight += c.Weight;
+		}
+		
+		Size = Queue.Size();
+		if (Size > 1)
+		{
+			int n = random[rng](0, Weight - 1);
+			
+			for (int i = 0; i <= Size; i++)
+			{
+				if (i >= Size)
+					i = 0;
+					
+				n -= Chances[i];
+				
+				if (n < 0)	return Queue[i];
+			}
+		}
+		else if (Size == 1)
+			return Queue[0];
+		
+		return null;
+	}
+}
+
+/*
+Class MCSpawnGroup play
+{
+	Name GroupName;
+	Array<MCSpawn> Group;
+	
+	static MCSpawnGroup Create(Name g)
+	{
+		let gr = new('MCSpawnGroup');
+		gr.GroupName = g;
+		gr.Group.Clear();
+		return gr;
+	}
+}
+*/

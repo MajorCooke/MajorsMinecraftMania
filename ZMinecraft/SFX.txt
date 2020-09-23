@@ -1,5 +1,8 @@
 Class MCExplosion : MinecraftEntity
 {
+	meta bool Smokeless;
+	
+	Property Smokeless: Smokeless;
 	Default
 	{
 		Radius 1;
@@ -31,9 +34,9 @@ Class MCExplosion : MinecraftEntity
 				double dist = frandom(0.1, 1.0) * Scale.X;
 				A_SpawnItemEx(spr, cos(pitch) * dist, 0, -sin(pitch) * dist, flags: SXF_NOCHECKPOSITION);
 				
-				if (i < oo)
+				if (!Smokeless && i < oo)
 				{
-					double velo = frandom(1.0, 3.0) * frandompick(-1, 1);
+					double velo = frandom(2.0, 4.0);
 					Vector2 AP = (random(0,359),random(-90,90));
 					A_SpawnItemEx("MCExplosionSmoke", 
 						cos(AP.Y) * dist, 0, -sin(AP.Y) * dist,
@@ -43,6 +46,14 @@ Class MCExplosion : MinecraftEntity
 			}
 		}
 		Stop;
+	}
+}
+
+Class MCExplosionSmokeless : MCExplosion
+{
+	Default
+	{
+		MCExplosion.Smokeless true;
 	}
 }
 

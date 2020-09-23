@@ -1,0 +1,86 @@
+extend class MinecraftEnemy
+{
+	enum EMobTypes
+	{
+		M_Normal = 0,
+		M_Undead,
+		M_Anthropod,
+	};
+	const AttackDelayMax = 35;
+	const DefaultDrownTimer = 35 * 30;
+	
+	MinecraftHandler Event;
+	
+	bool OnGround;
+	private Vector3 PrevVel;
+	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
+				DrownTimer, DrownTimerStart, DrownDamage,
+				CurrentTranslation, ActiveSoundDelay, DamageTimer;
+	
+	protected MC_QuatTurner Turner;
+	Array<MCBodyPart> Limb;
+	protected Vector2 PrevScale;
+	protected Vector3 PrevAngs, PrevPos, AngVel, HoldAngs;
+	Vector3 Angs;
+	protected uint PrevTrans;
+	protected int CurStyle, PrevStyle;
+	protected int AttackDelay;
+	protected int SoundDelay;
+	protected bool Passive;
+	protected int IdleTimer, ChaseCheckTimer, LookTimer;
+	protected double SoundPitch, PrevAlpha, OverScale;
+	
+	double FallDmgVel, VelLen, MaxChaseRange;
+	
+	meta bool PeacefulDespawn;
+	meta int MobType;
+	Sound StepSound;
+	
+	Property FallDmgVel:	FallDmgVel;
+	Property StepSound: StepSound;
+	Property DrownTimer: DrownTimerStart;
+	Property PeacefulDespawn: PeacefulDespawn;
+	Property MobType: MobType;
+	Property Passive: Passive;
+	Property MaxChaseRange: MaxChaseRange;
+	Property SoundPitch: SoundPitch;
+	Property OverScale: OverScale;
+	
+	Default
+	{
+		MinecraftEnemy.OverScale 1.0;
+		MinecraftEnemy.SoundPitch 1.0;
+		MinecraftEnemy.FallDmgVel 15.0;
+		MinecraftEnemy.DrownTimer DefaultDrownTimer;
+		MinecraftEnemy.PeacefulDespawn true;
+		MinecraftEnemy.MobType M_Normal;
+		Monster;
+		Health 80;
+		Speed 4;
+		Scale 6;
+		PushFactor 0.3;
+		PainChance 0; // Handled internally.
+		MaxDropoffHeight 64;
+		+NEVERRESPAWN
+		+NEVERFAST
+		-COUNTKILL
+		// Preventing bad behaviors that will screw with the monsters.
+		+DONTMORPH
+		+NOICEDEATH
+		+PUSHABLE
+		+NOTRIGGER // They wander around, so don't allow them to trigger anything.
+		+QUICKTORETALIATE
+		+DONTGIB
+		+DONTCORPSE
+		+ALWAYSTELEFRAG
+		+NOTELESTOMP
+		+NOKILLSCRIPTS
+		+DONTSPLASH
+		
+		DamageFactor "Crush", 2000.0;
+		DamageFactor "CreeperBig", 0.0; //This is only used for non-Minecraft monsters.
+		DamageFactor "Falling", 1.0;
+		DamageFactor "Fire", 1.0;
+		DamageFactor "Slime", 1.0;
+	}
+}

@@ -45,10 +45,31 @@ MCM_HEALTHMUL1_TEXT = "Health Multiplier (0.x)";
 MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in small increments (0.1)";
 
 MCM_HEALTHMUL2_TEXT = "Health Multiplier (x.0)";
-MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in large increments (1.0)";
+MCM_HEALTHMUL2_SUB = "Adjusts health multiplier in large increments (1.0)";
 
 MCM_SPAWNS_TEXT = "Monster Count";
 MCM_SPAWNS_SUB = "# of monsters that can spawn.";
 
 MCM_SPAWNMUL_TEXT = "Monster Multiplier";
 MCM_SPAWNMUL_SUB = "Monster Count * this. Increase at your own risk...";
+
+MCM_SDMINUTE_TEXT = "Minutes";
+MCM_SDMINUTE_SUB = "Delay between spawning monsters (minutes)";
+
+MCM_SDSECOND_TEXT = "Seconds";
+MCM_SDSECOND_SUB = "Delay between spawning monsters (seconds)";
+
+MCM_SDRANDOM_TEXT = "Random Seconds";
+MCM_SDRANDOM_SUB = "Adds between 0 to this many seconds randomly to the delay.";
+
+//==============================================================================
+// Monster specific texts
+//==============================================================================
+
+MCM_CREEPERTWEAKS = "Creeper Tweaks";
+
+MCM_CREEPERBOOMBOOM_TEXT = "Explosions explode creepers";
+MCM_CREEPERBOOMBOOM_SUB = "Non-creeper explosions cause hissing creepers to explode.";
+
+MCM_CREEPERCHAINBOOM_TEXT = "Creeper chain reaction";
+MCM_CREEPERCHAINBOOM_SUB = "Can creepers make other creepers explode?";

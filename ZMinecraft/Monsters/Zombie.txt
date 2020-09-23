@@ -33,8 +33,9 @@ extend class MinecraftEnemy
 {
 	enum EAMFlags
 	{
-		AM_NOPARENT =	1,
-		AM_FORCE =		1 << 1,
+		AM_NOPARENT =		1,
+		AM_FORCE =			1 << 1,
+		AM_FORCEONLYPLR =	1 << 2,
 		
 	//	AM_EXCLUDE =	1 << 1,
 	};
@@ -75,7 +76,8 @@ extend class MinecraftEnemy
 				}
 			}
 			
-			bool change = ((flags & AM_FORCE) || !mo.Target || mo.Target.Health < 1);
+			bool change = ((flags & AM_FORCE) || !mo.Target || mo.Target is 'PlayerPawn' || 
+							mo.Target.Health < 1);
 			if (!change)	continue;
 			
 			mo.bAMBUSH = true;
@@ -87,6 +89,41 @@ extend class MinecraftEnemy
 				return;
 			
 		}
+	}
+}
+
+//==============================================================================
+// Baby Zombie
+// 
+// Smaller, agile and dangerous variants of zombies.
+//
+// The following is in addition to regular zombie strengths/weaknesses.
+// + More vulnerable to explosions, lava & Slime
+// - Much smaller, harder to hit with bullet weaponry
+//==============================================================================
+
+Class MCZombieBaby : MCZombie
+{
+	Default
+	{
+		MinecraftEnemy.OverScale 0.45;
+		ActiveSound "Minecraft/ZombieBaby/Idle";
+		PainSound "Minecraft/ZombieBaby/Pain";
+		DeathSound "Minecraft/ZombieBaby/Death";
+		Tag "Baby Zombie";
+		Speed BabySpeed; // 50% faster.
+		
+		// Much less to melt.
+		DamageFactor "Fire", 2.0;
+		DamageFactor "Slime", 2.0;
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		if (flags & DMG_EXPLOSION)
+			damage *= 2;
+			
+		return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 	}
 }
 
@@ -104,9 +141,11 @@ Class MCZombie : MCUndead
 	const RealScale = 7.0;
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
+	const _Speed = 4.0;
+	const BabySpeed = _Speed * 1.5;
 	
 	private int CurrentAction;
-
+	
 	mixin NormalLimbCount;
 
 	Default
@@ -117,17 +156,17 @@ Class MCZombie : MCUndead
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
-		Health 100;
-		Speed 4;
+		Health 80;
+		Speed _Speed;
 		MeleeRange RealRadius + 8;
+		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
 		
 		ActiveSound "Minecraft/Zombie/Idle";
 		PainSound "Minecraft/Zombie/Pain";
 		DeathSound "Minecraft/Zombie/Death";
 		MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
 		
-		DamageFactor 0.92;
-		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
+		DamageFactor "Normal", 0.92;
 		
 		BloodColor "Black";
 		
@@ -135,11 +174,16 @@ Class MCZombie : MCUndead
 		Obituary "%o joined the 'breeeyynns' club, courtesy of a zombie's invitation.";
 	}
 	
+	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
 		Init(LimbCount);
-		Limb[Head] = MCBodyPart(Spawn('MCZombieHead', pos));
+		
+		if (self is 'MCZombieBaby')
+			Limb[Head] = MCBodyPart(Spawn('MCZombieHeadBaby', pos));
+		else
+			Limb[Head] = MCBodyPart(Spawn('MCZombieHead', pos));
 		Limb[Body] = MCBodyPart(Spawn('MCZombieBody', pos));
 		Limb[ArmR] = MCBodyPart(Spawn('MCZombieArmRight', pos));
 		Limb[ArmL] = MCBodyPart(Spawn('MCZombieArmLeft', pos));
@@ -184,11 +228,12 @@ Class MCZombie : MCUndead
 		if (health < 1 || dmg < 1)	return;
 		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		
-		if (src && src.health > 1)
+		if (src && src.health > 1 && Targetable(src))
 		{
 			RemoveGoal();
 			bool plr = (src is 'PlayerPawn');
-			int flags = (plr) ? AM_NOPARENT : AM_FORCE|AM_NOPARENT;
+			//int flags = (plr) ? AM_NOPARENT : AM_FORCE|AM_NOPARENT;
+			int flags = AM_NOPARENT;
 			if (!plr || random[rng](1,10) == 1)
 				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15), flags);
 		}
@@ -221,14 +266,13 @@ Class MCZombie : MCUndead
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 		
-		int end = 5;
+		int end = 10;
 		for (int i = 0; i < end; i++)
 		{
-			if (random[rng](1, end) == end)
-			{
+			if (random[rng](1, 5) == 1)
 				Event.DropItem(self, 'HealthBonus');
+			if (random[rng](1, 5) == 1)
 				Event.DropItem(self, 'ArmorBonus');
-			}
 		}
 		return true;
 	}
@@ -236,7 +280,8 @@ Class MCZombie : MCUndead
 	States
 	{
 	Spawn:
-		TNT1 A 35;
+		TNT1 AA 35;
+		Goto IdleMove;
 	Idle:
 		TNT1 A 0 A_Jump(256, random(1, 4));
 		TNT1 AAAAAAAAAA 17 Look();
@@ -284,15 +329,8 @@ Class MCZombie : MCUndead
 //==============================================================================
 
 
-Class MCZombieHead : MCBodyPartHead
-{
-	States
-	{
-	Spawn:
-		ASDF A -1;
-		Stop;
-	}
-}
+Class MCZombieHead : MCBodyPartHead	{}
+Class MCZombieHeadBaby : MCZombieHead	{}
 
 Class MCZombieBody : MCBodyPartBody
 {
@@ -343,6 +381,8 @@ Class MCZombieHeadGib : MCBodyPartGib
 		MCBodyPartGib.Offsets 0, 0, 5.6;		//Head
 	}
 }
+
+Class MCZombieHeadBabyGib : MCZombieHeadGib	{}
 
 Class MCZombieArmRightGib : MCBodyPartGib
 {

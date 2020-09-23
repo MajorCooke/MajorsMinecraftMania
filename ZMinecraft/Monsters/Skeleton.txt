@@ -129,13 +129,10 @@ Class MCSkeleton : MCUndead
 		int end = 2;
 		for (int i = 0; i < end; i++)
 		{
-			if (random[rng](1, 5) == 5)
-			{
-				Event.DropItem(self, 'Shell');
-				Event.DropItem(self, 'Clip');
-				Event.DropItem(self, 'RocketAmmo');
-				Event.DropItem(self, 'Cell');
-			}
+			if (random[rng](1, 5) == 5)	Event.DropItem(self, 'Shell');
+			if (random[rng](1, 5) == 5)	Event.DropItem(self, 'Clip');
+			if (random[rng](1, 5) == 5)	Event.DropItem(self, 'RocketAmmo');
+			if (random[rng](1, 5) == 5)	Event.DropItem(self, 'Cell');
 		}
 		return true;
 	}
@@ -208,7 +205,7 @@ Class MCSkeleton : MCUndead
 		}
 	}
 	
-	void FireBow()
+	void FireBow(double accuracy = 0.5)
 	{
 		if (!Targetable(Target)) return;
 		
@@ -226,7 +223,8 @@ Class MCSkeleton : MCUndead
 	States
 	{
 	Spawn:
-		TNT1 A 35;
+		TNT1 AA 35;
+		Goto IdleMove;
 	Idle:
 		TNT1 A 0 
 		{
@@ -302,7 +300,8 @@ Class MCArrowProjectile : MinecraftEntity
 		A_Stop();
 		A_StartSound(DeathSound, CHAN_BODY, CHANF_OVERLAP);
 		
-		if (Tracer && Tracer.Target == Owner && Target == Owner && Owner.Targetable(Tracer)
+		if (Tracer && Owner && 
+			Tracer.Target == Owner && Target == Owner && Owner.Targetable(Tracer)
 				&& !(Tracer is 'PlayerPawn') && Tracer != Target)
 		{
 			// Aim at the tracer and try to finish them off since we know they're

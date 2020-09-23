@@ -1,0 +1,968 @@
+Class MCRelation play
+{
+	Class<Actor> ClassType;
+	int Status, Priority;
+	bool Parent;
+	
+	static MCRelation CreateRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
+	{
+		if (!who)	return null;
+		
+		let r = new('MCRelation');
+		r.ClassType = who;
+		r.Status = _status;
+		r.Priority = _priority;
+		r.Parent = _parent;
+		return r;
+	}
+}
+
+Class MCRelationManager play
+{
+	private Array<MCRelation> Relations;
+	
+	static MCRelationManager Create()
+	{
+		let m = new('MCRelationManager');
+		m.Init();
+		return m;
+	}
+	
+	protected void Init()
+	{
+		Relations.Clear();
+	}
+	
+	
+	/*--------------------------------------------------------------------------
+	Sets a relationship up with another actor type. If one is already established,
+	modifies it instead.
+	
+	*who
+		The class actor to have a custom relation with.
+		
+	*status
+		The type of status to have. Can be one of the following.
+		
+		-Rel_None: Normal relationship. Not an active target but can infight if
+			provoked. Will attack players by default unless friendly.
+		-Rel_Neutral: Like none, but won't attack players set with this.
+		-Rel_Hate: Attack on sight. Priority will take into account if this target
+			is a higher threat.
+		-Rel_Ignored: Doesn't retaliate when attacked.
+		-Rel_Afraid: Runs away from this actor and doesn't attack anything else
+			until it's out of range.
+		
+	*priority
+		Only used by Rel_Hate status. When searching for enemies to target, 
+		the higher priority targets will be searched for first.
+	--------------------------------------------------------------------------*/
+	void SetRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
+	{
+		if (!who) return;
+		
+		int size = Relations.Size();
+		for (int i = 0; i < Relations.Size(); i++)
+		{
+			if (!Relations[i])	continue;
+			if (Relations[i].ClassType == who)
+			{
+				Relations[i].Status = _status;
+				Relations[i].Parent = _parent;
+				Relations[i].Priority = _priority;
+				return;
+			}
+		}
+		
+		let rel = MCRelation.CreateRelation(who, _status, _parent, _priority);
+		if (rel)	Relations.Push(rel);
+	}
+	
+	void RemoveRelation(Class<Actor> who)
+	{
+		for (int i = 0; i < Relations.Size(); i++)
+		{
+			if (Relations[i] && Relations[i].ClassType == who)
+			{
+				Relations[i].Destroy();
+				Relations.Delete(i);
+				return;
+			}
+		}
+	}
+	
+	int FindRelation(Class<Actor> who)
+	{
+		int size = Relations.Size();
+		
+		if (!who || size < 1)	return 0;
+		
+		for (int i = 0; i < size; i++)
+		{
+			let r = Relations[i];
+			if (r && (r.ClassType == who || who is r.ClassType))
+				return r.Status;
+		}
+		return 0;
+	}
+	
+	int Size()	{ return Relations.Size();	}
+	void Clear()	{	Relations.Clear();	}
+}
+
+extend class MinecraftEnemy
+{
+	//==========================================================================
+	// Relation stuff
+	//
+	// Used to determine aggressiveness, passiveness, and neutrality towards
+	// others.
+	//==========================================================================
+	protected MCRelationManager Relations;
+	virtual protected void SetupRelations()	
+	{
+		if (bDESTROYED || health < 1)	return;
+		
+		Relations = MCRelationManager.Create();
+	}
+	
+	int CheckRelation(Class<Actor> mo)
+	{
+		if (!mo || !Relations)	return 0;
+		
+		return Relations.FindRelation(mo);
+	}
+	
+	//==========================================================================
+	// Handles range and calls Targetable to make sure the target is valid.
+	//
+	// *clear
+	//		If the target isn't valid, clears it if true.
+	//
+	// *range
+	//		If > 0, overrides the chase range.
+	//==========================================================================
+	private int OOSTimer; // Out of sight timer
+	const OOSTimeOut = Second * 5;
+	const LookTimerDefault = 17;
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false)
+	{
+		if (!Target)	
+		{
+			if (Tracer)	Target = Tracer;
+			else if (Goal)	Target = Goal;
+			else return false;
+		}
+		
+		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
+		
+		double ChaseRange = (range <= 0) ? MaxChaseRange : range;
+		if (Tracer && Target == Tracer)		ChaseRange *= 2;
+		else if ((Goal && Target == Goal))	ChaseRange = 22767;
+		
+		
+		bool targetable = (Targetable(Target));
+		if (targetable)
+		{
+			if (Distance3DSquared(Target) > ChaseRange ** 2 
+				|| (MCC_SightCheck && chasing && !CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+				)
+			{
+				if (chasing)
+					OOSTimer++;
+				
+				if (!chasing || OOSTimer >= OOSTimeOut)
+				{
+					targetable = false;
+					OOSTimer = 0;
+				}
+			}
+			else OOSTimer = 0;
+		}
+		
+		if (!targetable)
+		{
+			if (clear && !Goal)	
+			{
+				if (Tracer && Tracer == Target)
+					Tracer = null;
+				A_ClearTarget();
+			}
+			
+			OOSTimer = 0;
+		}
+		return targetable;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Handles filtering of applicable targets, including checking the relationship
+	// list.
+	//--------------------------------------------------------------------------
+	override bool OkayToSwitchTarget(Actor other)
+	{
+		if (!Targetable(other))
+			return false;
+			
+		return Super.OkayToSwitchTarget(other);
+	}
+	
+	virtual bool Targetable(Actor mo) const
+	{
+		// Doesn't exist.
+		if (!mo)	
+			return false;
+		
+		// The actor's a goal so yes, it is targetable.
+		if (Goal && mo == Goal)
+			return true;
+		
+		//  Dead, unshootable or not targetable.
+		if (mo.Health < 1 || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY))
+			return false;
+		
+		// Passive or peaceful monsters are not allowed to target players.
+		if ((mo is 'PlayerPawn' && (MCC_Peaceful || Passive)))
+			return false;
+			
+		// Don't target players that are (totally) frozen because this could fuck up
+		// things badly and get them to kill a defenseless palyer.
+		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
+			return false;
+			
+		if (Relations)
+		{
+			int ret = CheckRelation(mo.GetClass());
+			if (ret == Rel_Ignored)	return false;
+		}
+	//	else if (mo == Mount || mo == Rider)
+	//		return false;
+			
+		return true;
+	}
+}
+
+//==============================================================================
+//==============================================================================
+// Mount/Rider Systems
+//
+// This handles all things dealing with mounting and riding others. 
+//==============================================================================
+//==============================================================================
+
+Class MCMountObject play
+{
+	Actor Mo;
+	Vector3 Offset;
+	
+	static MCMountObject CreateMountObject(Actor mo, Vector3 off)
+	{
+		if (!mo || mo.health < 1)
+			return null;
+			
+		let mobj = new('MCMountObject');
+		mobj.Mo = mo;
+		mobj.Offset = off;
+		return mobj;
+	}
+}
+
+Class MCMountInfo : Thinker
+{
+	const CleanTimer = Second;
+	
+	private double TotalHeight; // Height of all combined actors.
+	private int Timer;
+	
+	private Array<MCMountObject> Container;
+//	private Array<Int> Flags;
+
+	static MCMountInfo CreateMountInfo()
+	{
+		let info = new('MCMountInfo');
+		info.Init();
+		return info;
+	}
+	
+	protected void Init() 
+	{
+		Container.Clear();
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		
+		if (++Timer >= CleanTimer)
+		{
+			Timer = 0;
+			Refresh();
+			
+			int size = Container.Size();
+			if (size < 1)
+			{
+				Destroy();
+				return;
+			}
+		}
+	}
+	
+	protected void Refresh()
+	{
+		Timer = 0;
+		
+		Array<MCMountObject> temp; temp.Clear();
+		int size = Container.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let con = Container[i];
+			if (con && con.Mo)
+			{
+				if (con.Mo.Health > 0)
+				{
+					temp.Push(con);
+					continue;
+				}
+				else RemoveActor(con.Mo, true);
+			}
+		}
+		Container.Move(temp);
+	}
+
+	// Bottom-most actor (the one carrying the rest)
+	Actor GetBottom() 	
+	{	
+		int size = Container.Size();
+		if (size < 1)	return null;
+		return Container[0].Mo;
+	}
+	
+	// Top-most actor.
+	Actor GetTop()
+	{	
+		int size = Container.Size();
+		if (size < 1)	return null;
+		return Container[size - 1].Mo;
+	}
+	
+	static bool ValidateActor(Actor mo)
+	{
+		return (mo && mo.health > 0);
+	}
+		
+	// Checks if an actor is already mounted on a chain.
+	static MCMountInfo GetMountInfo(Actor mo)
+	{
+		return null;
+	}
+	
+	//--------------------------------------------------------------------------
+	// DoMount
+	//
+	// Attempts to set a rider atop a mount.
+	//
+	// Parameters:
+	// 
+	// *Rider
+	//	The one to ride atop the Mount.
+	//
+	// *Mount
+	//	The one to be ridden by the Rider.
+	// 
+	// *Offset
+	//	The relative positional offsets (at least for XY).
+	// 
+	// *Flags
+	//	-MTF_TOMOUNT: Moves the Rider to the Mount's chain.
+	//	-MTF_TORIDER: Moves the Mount to the Rider's chain.
+	//--------------------------------------------------------------------------
+	
+	static bool DoMount(Actor Rider, Actor Mount, Vector3 Offset, int flags = MTF_TOMOUNT)
+	{
+		if (!Rider || !Mount)	return false;
+		
+		// Check if the actor is already mounted elsewhere. This requires some
+		// special handling in order to make sure it's properly set up. Flags
+		// determine the chain to attach to.
+		let rinfo = GetMountInfo(Rider);
+		let minfo = GetMountInfo(Mount);
+		
+		bool ToMount = (flags & MTF_TOMOUNT);
+		bool ToRider = (flags & MTF_TORIDER);
+		
+		// Remove them both from their chains and start a new one.
+		if (ToMount && ToRider)
+		{
+			if (minfo)	Dismount(Mount, minfo);
+			if (rinfo)	Dismount(Rider, rinfo);
+			
+			let info = CreateMountInfo();
+			info.AddActor(Mount, (0,0,0));
+			info.AddActor(Rider, Offset);
+		}
+		// Peel the rider off the current and stick it on top of the mount.
+		else if (ToMount)
+		{
+			if (!minfo)	
+			{
+				minfo = CreateMountInfo();
+				minfo.AddActor(Mount, (0,0,0));
+			}
+			if (rinfo != minfo)	Dismount(Rider, rinfo);
+			minfo.AddActor(Rider, Offset, minfo.GetActorIndex(Mount) + 1);
+		}
+		// Take the mount away from their stack and stick'em under the rider.
+		else if (ToRider)
+		{
+			if (!rinfo)
+			{
+				rinfo = CreateMountInfo();
+				rinfo.AddActor(Rider, Offset);
+			}
+			if (rinfo != minfo)	Dismount(Mount, minfo);
+			rinfo.AddActor(Mount, (0,0,0), Max(0, rinfo.GetActorIndex(Rider) - 1));
+		}
+		/*
+		else if (!GetMount(Rider) && !GetRider(Mount))
+		{
+			
+			let info = CreateMountInfo();
+			info.AddActor(Mount, (0,0,0));
+			info.AddActor(Rider, Offset);
+		}
+		*/
+		else return false;
+		
+		return true;
+	}
+	
+	static bool Dismount(Actor mo, MCMountInfo info = null)
+	{
+		if (!mo)	return false;
+		
+		if (!info)		info = GetMountInfo(mo);
+		return (info) ? info.RemoveActor(mo) : false;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Gets the position of the actor in the array.
+	int GetActorIndex(Actor mo)
+	{
+		if (!mo)	return -1;
+		
+		int size = Container.Size();
+		if (size < 1)	return -1;
+		
+		for (int i = 0; i < size; i++)
+		{
+			if (Container[i].Mo == mo)
+				return i;
+		}
+		
+		return -1;
+	}
+	
+	// Get the actor riding this actor.
+	Actor GetRider(Actor mo)
+	{
+		if (!mo)	return null;
+		
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		if (pos < 0 || pos >= size - 1)	
+			return null; // Actor not present here.
+		
+		return Container[pos + 1].Mo;
+	}
+	// Get the actor being ridden.
+	Actor GetMount(Actor mo)
+	{
+		if (!mo)	return null;
+		
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		if (pos < 1 || pos >= size)	
+			return null; // Actor not present here.
+		
+		return Container[pos - 1].Mo;
+	}
+	
+	private void SetupActor(Actor mo)
+	{
+		/*
+		mo.SetInventory('MCMount', 1);
+		let inv = MCMount(mo.FindInventory('MCMount', true));
+		if (inv)	inv.MountInfo = self;
+		*/
+	}
+	
+	protected bool AddActor(Actor mo, Vector3 Offset, int index = -1)
+	{
+		if (!ValidateActor(mo))	return false;
+		
+		Refresh();
+		int size = Container.Size();
+		int pos = GetActorIndex(mo);
+		
+		// Actor not found.
+		if (pos < 0)
+		{
+			let con = MCMountObject.CreateMountObject(mo, Offset);
+			SetupActor(mo);
+			
+			if (index < 0 || index >= size)
+			{
+				Container.Push(con);
+			}
+			else
+			{
+				Container.Insert(index, con);
+			}
+			return true;
+		}
+		// Actor is inside but wants to change spots.
+		else if (index >= 0 && pos != index)
+		{
+			let con = Container[pos];
+			
+			index = max(0, min(index, size - 1));
+			
+			let temp = Container[index];
+			Container[index] = Container[pos];
+			Container[pos] = temp;
+			return true;
+		}
+		return false;
+	}
+	
+	protected bool RemoveActor(Actor mo, bool cleaning = false)
+	{
+		int pos = GetActorIndex(mo);
+		if (pos > -1)
+		{	
+			if (cleaning)
+			{
+				Container[pos] = null;
+			}
+			else
+			{
+				Container[pos].Destroy();
+				Container.Delete(pos);
+			}
+			return true;
+		}
+		return false;
+	}
+}
+
+extend class MinecraftEntity
+{
+	protected bool NoRiders;
+	
+	bool MountActor(Actor mo, Vector3 off = (0,0,0), bool add = true)
+	{
+		return false;
+	}
+	
+	void Dismount(bool reconnect = false, bool allriders = false, bool allmounts = false)
+	{
+		
+	}
+	
+	void Disconnect(bool rider = false, bool mount = true, bool reconnect = false)
+	{
+		
+	}
+	
+	
+	virtual void SpawnRiders()
+	{
+	}
+	
+	
+	void SpawnRider(Class<MinecraftEntity> cls, out double hoff, int chance = 256)
+	{
+		if (NoRiders || !cls || random[rng](1,256) > chance)	return;
+		
+		let mo = MinecraftEntity(Spawn(cls, pos, ALLOW_REPLACE));
+		if (mo)
+		{
+			mo.NoRiders = true;
+			if (mo.MountActor(self, (0,0, hoff)))
+				hoff = mo.Height;
+		}
+	}
+	
+	bool IsBottomMount()
+	{
+		return false;
+	}
+}
+
+/*
+Class MCMount : Inventory
+{
+//	private 
+	Vector3 Offset;
+	
+	protected MCMount RiderInfo, MountInfo;
+	
+	static MCMount GetInfo(Actor mo)
+	{
+		if (!mo)	return null;
+		return MCMount(mo.FindInventory('MCMount', true));
+	}
+	
+	MCMount GetRiderInfo() { return RiderInfo; }
+	MCMount GetMountInfo() { return MountInfo; }
+	
+	static MCMount DoMount(Actor mount, Actor rider, Vector3 off = (0,0,0), bool add = true)
+	{
+		if (!rider || !mount || rider == mount)	return null;
+		
+		MCMount minfo = GetInfo(mount);
+		MCMount rinfo = GetInfo(rider);
+		
+		// First, dismount the rider if mounted.
+		if (rinfo && rinfo != minfo)
+			rinfo.Dismount(true);
+		
+		// Then set up another rider token.
+		rider.SetInventory('MCMount', 1);
+		rinfo = GetInfo(rider);
+		
+		// Something went wrong.
+		if (!rinfo)	return null;
+		
+		rinfo.Offset = off;
+		
+		// If adding to the top, climb all the way to the top-most actor.
+		if (add)
+		{
+			minfo = rinfo.GetTop();
+			minfo.RiderInfo = rinfo;
+			rinfo.MountInfo = minfo;
+			return rinfo;
+		}
+		else // Insert the actor between the current rider and mount if any.
+		{
+			// If not set up, create the token for the mount.
+			if (!minfo)
+			{
+				mount.SetInventory('MCMount', 1);
+				minfo = GetInfo(mount);
+				if (minfo)
+				{
+					minfo.RiderInfo = rinfo;
+					rinfo.MountInfo = minfo;
+					return rinfo;
+				}
+			}
+			
+			// Transfer the RiderInfo from the mount to the rider, and set the previous
+			// rider's mount to this. Effectively, insert itself between.
+			
+			if (minfo)
+			{
+				if (rinfo)
+				{
+					rinfo.Offset = off;
+					rinfo.RiderInfo = minfo.RiderInfo;
+					
+					// Before: Mount <-> OldRider
+					// After: Mount <-> NewRider <-> OldRider
+					
+					if (rinfo.RiderInfo)
+						rinfo.RiderInfo.MountInfo = rinfo; // Inject new rider between the two.
+					rinfo.MountInfo = minfo;
+					minfo.RiderInfo = rinfo;
+					return rinfo;
+				}
+			}
+		}
+		return null;
+	}
+	
+	// Disconnects a rider from a mount, but keeps the rest of the chain.
+	void Disconnect(bool rider = false, bool mount = true, bool reconnect = false)
+	{
+		if (bDESTROYED)	return;
+		
+		if (rider && mount)
+		{
+			if (reconnect)
+			{
+				if (RiderInfo && MountInfo)
+				{
+					RiderInfo.MountInfo = MountInfo;
+					MountInfo.RiderInfo = RiderInfo;		
+				}
+			}
+			Destroy();
+			return;
+		}
+		if (rider && RiderInfo)
+		{
+			if (Riderinfo.MountInfo == self)
+			{
+				RiderInfo.MountInfo = null;
+				RiderInfo = null;
+			}
+		}
+		
+		if (mount && MountInfo)
+		{
+			if (MountInfo.RiderInfo == self)
+			{
+				MountInfo.RiderInfo = null;
+				MountInfo = null;
+			}
+		}
+		
+		if (!RiderInfo && !MountInfo)
+		{
+			Destroy();
+			return;
+		}
+	}
+	
+	// Completely severs all ties with current rider and mount.
+	void Dismount(bool reconnect = false, bool allriders = false, bool allmounts = false)
+	{
+		if (bDESTROYED)
+			return;
+	
+		if (allriders && RiderInfo)
+			RiderInfo.Dismount(reconnect, allriders, allmounts);
+		if (allmounts && MountInfo)
+			MountInfo.Dismount(reconnect, allriders, allmounts);
+		
+		
+		if (allriders || allmounts)
+		{
+			Destroy();
+			return;
+		}
+		
+		if (reconnect)
+		{
+			if (RiderInfo)
+			{
+				RiderInfo.MountInfo = MountInfo;
+			}
+			if (MountInfo)
+			{
+				MountInfo.RiderInfo = RiderInfo;	
+			}
+		}
+		Destroy();
+	}
+	
+	MCMount GetBottom()
+	{
+		if (!MountInfo)	return self;
+		
+		int failsafe = 50;
+		MCMount temp = MountInfo;
+		while (temp != null && --failsafe > 0)
+		{
+			if (temp.MountInfo == temp)
+			{
+				temp.MountInfo = null;
+				return temp;
+			}
+			temp = temp.MountInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return null;
+		}
+		
+		return temp;
+	}
+	
+	MCMount GetTop()
+	{
+		if (!RiderInfo)	return self;
+		
+		MCMount temp = RiderInfo;
+		
+		int failsafe = 50;
+		while (temp != null && --failsafe > 0)
+		{
+			if (temp.RiderInfo == temp)
+			{
+				temp.RiderInfo = null;
+				return temp;
+			}
+			temp = temp.RiderInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return null;
+		}
+		return temp;
+	}
+	
+	// Designed to eliminate infinite loops and sever self-ties.
+	void ValidateChain()
+	{
+		if (bDESTROYED || !Owner)
+			return;
+		
+		
+		int failsafe = 50;
+		MCMount temp = RiderInfo;
+		while (temp && --failsafe > 0)
+		{
+			if (temp == temp.RiderInfo)
+			{
+				temp.RiderInfo = null;
+				break;
+			}
+			temp = temp.RiderInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return;
+		}
+		
+		failsafe = 50;
+		
+		temp = MountInfo;
+		while (temp && --failsafe > 0)
+		{
+			if (temp == temp.MountInfo)
+			{
+				temp.MountInfo = null;
+				break;
+			}
+			temp = temp.MountInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return;
+		}
+	}
+	
+	bool InChainWith(Actor mo)
+	{
+		if (!mo || !Owner)	return false;
+		
+		ValidateChain();
+		
+		int failsafe = 50;
+		
+		MCMount temp = RiderInfo;
+		while (temp && --failsafe > 0)
+		{
+			if (temp.Owner == mo)
+				return true;
+			temp = temp.RiderInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return null;
+		}
+		failsafe = 50;
+		
+		temp = MountInfo;
+		while (temp && --failsafe > 0)
+		{
+			if (temp.Owner == mo)
+				return true;
+			temp = temp.RiderInfo;
+		}
+		
+		if (failsafe < 1)
+		{
+			ThrowAbortException("Infinite loop encountered!");
+			return null;
+		}
+		
+		return false;
+	}
+	
+	void UpdateRiderPos(bool start = true)
+	{
+		if (MountInfo && MountInfo.Owner)
+		{
+			let o = MountInfo.Owner;
+			Vector3 NewPos = MC_Map.GetWarpPos(Level, o.pos, Offset, o.angle);
+			if (Owner)
+			{
+				Owner.SetOrigin(NewPos, true);
+				A_Stop();
+			}
+		}
+		if (RiderInfo)
+			RiderInfo.UpdateRiderPos(false);
+	}
+	
+	override void OwnerDied()
+	{
+		Dismount();
+	}
+}
+
+extend class MinecraftEntity
+{
+	MCMount MRInfo;
+	protected bool NoRiders;
+	
+	bool MountActor(Actor mo, Vector3 off = (0,0,0), bool add = true)
+	{
+		MCMount check = MCMount.DoMount(mo, self, off, add);
+		if (check)	MRInfo = check;
+		return (check != null);
+	}
+	
+	void Dismount(bool reconnect = false, bool allriders = false, bool allmounts = false)
+	{
+		if (MRInfo)	
+		{
+			MRInfo.Dismount(reconnect, allriders, allmounts);
+			MRInfo = null;
+		}
+	}
+	
+	void Disconnect(bool rider = false, bool mount = true, bool reconnect = false)
+	{
+		if (MRInfo)	MRInfo.Disconnect(rider, mount, reconnect);
+	}
+	
+	
+	virtual void SpawnRiders()
+	{
+	}
+	
+	
+	void SpawnRider(Class<MinecraftEntity> cls, out double hoff, int chance = 256)
+	{
+		if (NoRiders || !cls || random[rng](1,256) > chance)	return;
+		
+		let mo = MinecraftEntity(Spawn(cls, pos, ALLOW_REPLACE));
+		if (mo)
+		{
+			mo.NoRiders = true;
+			if (mo.MountActor(self, (0,0, hoff)))
+				hoff = mo.Height;
+		}
+	}
+	
+	bool IsBottomMount()
+	{
+		return (MRInfo && MRInfo.GetBottom() == MRInfo);
+	}
+}
+*/
+

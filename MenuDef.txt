@@ -9,33 +9,17 @@ OptionMenu "MinecraftOptions"
 	Title "$MCM_OPTIONS_TITLE"
 	Position -64
 	
+	Submenu			"Monster Tweaks", "MinecraftMonsterTweaks"
+	StaticText ""
 	StaticText "Difficulty Settings", GOLD
 	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
 	MinecraftOption "$MCM_PEACEFUL_TEXT", "$MCM_PEACEFUL_SUB",			MCC_Peaceful,			"OnOff"
 	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
 	StaticText ""
-	StaticText "Monster Tweaks", GOLD
-	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
-	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
-	MinecraftSlider "$MCM_SPAWNMUL_TEXT", "$MCM_SPAWNMUL_SUB",			MCC_SpawnMul,			0.5, 10.0, 0.1
-	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 10.0, 0.1
-	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 10.0, 1.0
-	StaticText ""
-	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
-	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
-	StaticText ""
-	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
-	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"YesNo", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 		"YesNo", MCC_EnvironmentDamage
-	
-	/*
-	MinecraftOption "$CP_VANILLA_TEXT",			"$CP_VANILLA_SUB",		CP_VanillaMode,		"OnOff"
-	MinecraftOption "$CP_SILENT_ITEMS_TEXT",	"$CP_SILENT_ITEMS_SUB", CP_SilentItems,		"OnOff"
-	MinecraftOption "$CP_RELOAD_TEXT",			"$CP_RELOAD_SUB",		CP_NoReloading,		"NoYes"
-	MinecraftSlider "$CP_CORPSETIMER_TEXT",		"$CP_CORPSETIMER_SUB",	CP_CorpseTimer,		0, 10, 1
-	MinecraftSlider "$CP_ITEMTIMER_TEXT",		"$CP_ITEMTIMER_SUB",	CP_ItemTimer,		0, 10, 1
-	*/
+	StaticText "Spawner Tweaks", GOLD
+	MinecraftSlider "$MCM_SDMINUTE_TEXT", "$MCM_SDMINUTE_SUB",			MCC_SpawnDelayMinute,	0, 10, 1
+	MinecraftSlider "$MCM_SDSECOND_TEXT", "$MCM_SDSECOND_SUB",			MCC_SpawnDelaySecond,	0, 59, 1
+	MinecraftSlider "$MCM_SDRANDOM_TEXT", "$MCM_SDRANDOM_SUB",			MCC_SpawnDelayRandom,	0, 60, 1
 }
 
 OptionValue "DifficultySelection"
@@ -51,4 +35,58 @@ OptionValue "PeacefulBehaviors"
 	1, "Minecraft Peaceful"
 	2, "No (De)Spawning"
 	3, "Allow Spawning"
+}
+
+//==============================================================================
+// Monster Menus
+//==============================================================================
+
+OptionMenu "MinecraftMonsterTweaks"
+{
+	Class "MinecraftMenu"
+	Title "Monster Tweaks"
+	Position -64
+	
+	Submenu "Specific Monsters", "MinecraftSpecificMonsters"
+	StaticText ""
+//	Submenu "Zombie",				"MinecraftZombieMenu"
+//	Submenu "Skeleton",				"MinecraftSkeletonMenu"
+	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
+	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
+	MinecraftSlider "$MCM_SPAWNMUL_TEXT", "$MCM_SPAWNMUL_SUB",			MCC_SpawnMul,			0.5, 10.0, 0.1
+	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 100.0, 0.1
+	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 100.0, 1.0
+	StaticText ""
+	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
+	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
+	StaticText ""
+	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
+	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"YesNo", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 			"YesNo", MCC_EnvironmentDamage
+}
+
+OptionMenu "MinecraftSpecificMonsters"
+{
+	Title "Choose Monster"
+	Submenu "Creeper",				"MinecraftCreeperMenu"
+}
+
+OptionMenu "MinecraftCreeperMenu"
+{
+	//MCC_CreeperBoomBoom
+	//MCC_CreeperChainBoom
+	Class "MinecraftMenu"
+	Title "$MCM_CREEPERTWEAKS"
+	Position -64
+	
+	MinecraftOption "$MCM_CREEPERBOOMBOOM_TEXT",	"$MCM_CREEPERBOOMBOOM_SUB",		MCC_CreeperBoomBoom,	"YesNo"
+	MinecraftOption "$MCM_CREEPERCHAINBOOM_TEXT",	"$MCM_CREEPERCHAINBOOM_SUB",	MCC_CreeperChainBoom,	"CreeperChainBoom"
+}
+
+OptionValue "CreeperChainBoom"
+{
+	0, "Off"
+	1, "Hissing only"
+	2, "On"
 }

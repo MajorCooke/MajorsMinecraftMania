@@ -87,7 +87,7 @@ Model MCCreeperHeadW
 	USEACTORROLL
 	INTERPOLATEDOUBLEDFRAMES
 	Model 0 "Models/Creeper/HeadGib.obj"
-	Scale 1.2 1.2 1.3
+	Scale 1.2 1.2 1.44
 	FrameIndex ASDF A 0 0
 }
 
@@ -192,6 +192,26 @@ Model MCZombieHeadGib
 	INTERPOLATEDOUBLEDFRAMES
 	Model 0 "Models/Zombie/HeadGib.obj"
 	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieHeadBaby
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/Head.obj"
+	Scale 1.5 1.5 1.8
+	FrameIndex ASDF A 0 0
+}
+
+Model MCZombieHeadBabyGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Zombie/HeadGib.obj"
+	Scale 1.5 1.5 1.8
 	FrameIndex ASDF A 0 0
 }
 
@@ -657,6 +677,17 @@ Model MCSpiderBack
 	Skin 0 "Graphics/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
+Model MCSpiderBackGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Back.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
 Model MCSpiderHead
 {
 	USEACTORPITCH
@@ -702,6 +733,17 @@ Model MCSpiderLegGib
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderThorax
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Spider/Thorax.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Graphics/CaveSpider.png"
+	FrameIndex ASDF B 0 0
+}
+Model MCSpiderThoraxGib
 {
 	USEACTORPITCH
 	USEACTORROLL
