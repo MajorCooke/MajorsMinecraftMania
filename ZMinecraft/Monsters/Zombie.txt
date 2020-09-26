@@ -106,7 +106,7 @@ Class MCZombieBaby : MCZombie
 {
 	Default
 	{
-		MinecraftEnemy.OverScale 0.45;
+		MinecraftEnemy.OverScale 0.5;
 		ActiveSound "Minecraft/ZombieBaby/Idle";
 		PainSound "Minecraft/ZombieBaby/Pain";
 		DeathSound "Minecraft/ZombieBaby/Death";

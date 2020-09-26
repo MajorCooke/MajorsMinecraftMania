@@ -60,8 +60,8 @@ Class MCImmunityFrames : PowerProtection
 		if (passive && EffectTics > 0)
 		{
 			if (damage < 1 ||
-				(source is "MinecraftEnemy") || 
-				(inflictor is "MinecraftEnemy"))
+				(source is "MinecraftEntity") || 
+				(inflictor is "MinecraftEntity"))
 				newdamage = -1;
 		}
 	}
@@ -71,8 +71,8 @@ Class MCImmunityFrames : PowerProtection
 		if (EffectTics > 0)
 		{
 			if (damage < 1 ||
-				(source is "MinecraftEnemy") || 
-				(inflictor is "MinecraftEnemy"))
+				(source is "MinecraftEntity") || 
+				(inflictor is "MinecraftEntity"))
 				newdamage = -1;
 		}
 	}

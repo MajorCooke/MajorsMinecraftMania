@@ -4,8 +4,8 @@ extend class MinecraftHandler
 	private void CreateSpawnList()
 	{
 		SpawnList = MCSpawnList.Create();
-		SpawnList.Add('MCZombie',			25);
-		SpawnList.Add('MCZombieBaby',		05);
+		SpawnList.Add('MCZombie',			28);
+		SpawnList.Add('MCZombieBaby',		02);
 		SpawnList.Add('MCSkeleton',			30);
 		SpawnList.Add('MCCreeper',			10);
 	}

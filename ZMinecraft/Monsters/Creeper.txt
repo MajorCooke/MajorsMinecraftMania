@@ -325,10 +325,10 @@ Class MCCreeper : MinecraftEnemy
 		// Deal 256 damage to players and minecraft monsters.
 		Explode(true,	 256, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
 		
-		// Deal 2k damage to everything else, making them very useful for clearing
+		// Deal damage to everything else, making them very useful for clearing
 		// out crowds of enemies. The player is given an immunity powerup to stop
 		// Creeper damagetype from hurting them.
-		Explode(false,	2000, ExploRange, ExploRange, 0, 0, 0, XF_NOTMISSILE, 0, false, 'CreeperBig');
+		Explode(false,	1000, ExploRange, ExploRange, 0, 0, 0, XF_NOTMISSILE, 0, false, 'CreeperBig');
 	}
 	
 	protected void DestroyXLimbs()

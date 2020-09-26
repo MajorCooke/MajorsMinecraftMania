@@ -69,6 +69,9 @@ Class MCSpider : MinecraftEnemy
 		DeathSound "Minecraft/Spider/Death";
 		Tag "Spider";
 		Obituary "%o's became a living host for spider breeding.";
+		
+		MeleeRange RealRadius + 8;
+		MaxTargetRange 768;
 	}
 	override void PostBeginPlay()
 	{
@@ -118,6 +121,7 @@ Class MCSpider : MinecraftEnemy
 		UpdateLimbs();
 	}
 	
+	private int LeapTimer;
 	
 	States
 	{
