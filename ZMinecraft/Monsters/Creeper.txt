@@ -274,7 +274,7 @@ Class MCCreeper : MinecraftEnemy
 		if (!Charging && ChargeTimer > 0)
 			ChargeTimer--;
 		
-		if (ValidateTarget(false, HissingRange))
+		if (ValidateTarget(false, HissingRange) && CheckSight(Target, CSFlags))
 		{
 			if (!OnGround && Vel.Z < -9.0)
 				SetExplosionCounting(true, true);
@@ -290,8 +290,7 @@ Class MCCreeper : MinecraftEnemy
 			// As a result, it will never call WorldThingDied on purpose.
 			if (Charging && ChargeTimer >= MaxCharge)
 			{
-				if ((ChargeFall && OnGround && InExploRange(null, true)) ||
-					(!ChargeFall && InExploRange(null, false)))
+				if (InExploRange(Target))
 				{
 					Kaboom();
 					SetState(ResolveState("Death"));
@@ -379,7 +378,7 @@ Class MCCreeper : MinecraftEnemy
 	//	ChargeFall = (on) ? fall : false;
 	}
 	
-	bool InExploRange(Actor mo = null, bool _2d = false)
+	bool InExploRange(Actor mo = null, bool _2d = false, double dist = -1.0)
 	{
 		if (!mo)	
 		{
@@ -388,13 +387,15 @@ Class MCCreeper : MinecraftEnemy
 			if (!mo)	return false;
 		}
 		
-		double Range = (Charging) ? HissingRange : ExploRange;
+		if (ChargeFall && OnGround)	return true;
 		
-		if (ChargeFall && !OnGround)	return true;
+		if (dist < 0.0)
+			dist = (Charging) ? HissingRange : ExploRange;
 		
-		return (mo && 
-				((!_2d && Distance3DSquared(mo) <= (Range ** 2)) ||
-				(_2d && Distance2DSquared(mo) <= (Range ** 2))));
+		
+		return 	(mo && 
+				((!_2d && Distance3DSquared(mo) <= (dist ** 2)) ||
+				(_2d && Distance2DSquared(mo) <= (dist ** 2))));
 	}
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
@@ -427,8 +428,7 @@ Class MCCreeper : MinecraftEnemy
 	Idle:
 		TNT1 A 0 
 		{
-			if (!ChargeFall || (ChargeFall && OnGround))
-				SetExplosionCounting(false);
+			SetExplosionCounting(false);
 			return A_Jump(256, random(1, 4));
 		}
 		TNT1 AAAAAAAAAA 17 Look();
@@ -448,17 +448,19 @@ Class MCCreeper : MinecraftEnemy
 		{
 			SetExplosionCounting(false);
 			Chase('Melee', null, 0, 30, true);
+			
+			bDROPOFF = (Target && Target.Pos.Z < Pos.Z && InExploRange(Target, true, HissingRange));
 		}
 		Wait;
 	Melee:
 		TNT1 A AlterTics
 		{
-			SetExplosionCounting(true);
+			SetExplosionCounting(true, pos.z > floorz);
 		}
 		TNT1 A AlterTics
 		{
 			StateLabel next = null;
-			if (OnGround && !InExploRange())
+			if (OnGround && (!InExploRange() || !CheckSight(Target, CSFlags)))
 			{
 				SetExplosionCounting(false);
 				next = "See";
@@ -469,13 +471,6 @@ Class MCCreeper : MinecraftEnemy
 	
 	Death.Falling:
 	Death.Suicide:
-		TNT1 A 1;
-		TNT1 A 15
-		{
-			if (Charging)
-				Kaboom();
-		}
-		Stop;
 		
 	// This damagetype is only set in Die(). 
 	Death.Creeper:

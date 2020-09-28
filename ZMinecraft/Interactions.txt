@@ -1,15 +1,34 @@
-Class MCRelation play
+Class MCClassRelation play
 {
 	Class<Actor> ClassType;
 	int Status, Priority;
 	bool Parent;
 	
-	static MCRelation CreateRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
+	static MCClassRelation CreateRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
 	{
 		if (!who)	return null;
 		
-		let r = new('MCRelation');
+		let r = new('MCClassRelation');
 		r.ClassType = who;
+		r.Status = _status;
+		r.Priority = _priority;
+		r.Parent = _parent;
+		return r;
+	}
+}
+
+Class MCActorRelation play
+{
+	Actor mo;
+	int Status, Priority;
+	bool Parent;
+	
+	static MCActorRelation CreateRelation(Actor who, int _status, bool _parent = false, int _priority = 0)
+	{
+		if (!who)	return null;
+		
+		let r = new('MCActorRelation');
+		r.mo = who;
 		r.Status = _status;
 		r.Priority = _priority;
 		r.Parent = _parent;
@@ -19,7 +38,8 @@ Class MCRelation play
 
 Class MCRelationManager play
 {
-	private Array<MCRelation> Relations;
+	private Array<MCClassRelation> Classes;
+	private Array<MCActorRelation> Actors;
 	
 	static MCRelationManager Create()
 	{
@@ -30,7 +50,8 @@ Class MCRelationManager play
 	
 	protected void Init()
 	{
-		Relations.Clear();
+		Actors.Clear();
+		Classes.Clear();
 	}
 	
 	
@@ -57,57 +78,105 @@ Class MCRelationManager play
 		Only used by Rel_Hate status. When searching for enemies to target, 
 		the higher priority targets will be searched for first.
 	--------------------------------------------------------------------------*/
-	void SetRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
+	void SetClassRelation(Class<Actor> who, int status, bool parent = false, int priority = 0)
 	{
 		if (!who) return;
 		
-		int size = Relations.Size();
-		for (int i = 0; i < Relations.Size(); i++)
+		int size = Classes.Size();
+		for (int i = 0; i < Classes.Size(); i++)
 		{
-			if (!Relations[i])	continue;
-			if (Relations[i].ClassType == who)
+			if (!Classes[i])	continue;
+			if (Classes[i].ClassType == who)
 			{
-				Relations[i].Status = _status;
-				Relations[i].Parent = _parent;
-				Relations[i].Priority = _priority;
+				Classes[i].Status = status;
+				Classes[i].Parent = parent;
+				Classes[i].Priority = priority;
 				return;
 			}
 		}
 		
-		let rel = MCRelation.CreateRelation(who, _status, _parent, _priority);
-		if (rel)	Relations.Push(rel);
+		let rel = MCClassRelation.CreateRelation(who, status, parent, priority);
+		if (rel)	Classes.Push(rel);
 	}
 	
-	void RemoveRelation(Class<Actor> who)
+	void RemoveClassRelation(Class<Actor> who)
 	{
-		for (int i = 0; i < Relations.Size(); i++)
+		for (int i = 0; i < Classes.Size(); i++)
 		{
-			if (Relations[i] && Relations[i].ClassType == who)
+			if (Classes[i] && Classes[i].ClassType == who)
 			{
-				Relations[i].Destroy();
-				Relations.Delete(i);
+				Classes[i].Destroy();
+				Classes.Delete(i);
 				return;
 			}
 		}
 	}
 	
-	int FindRelation(Class<Actor> who)
+	int FindClassRelation(Class<Actor> who)
 	{
-		int size = Relations.Size();
+		if (!who || Classes.Size() < 1)	return 0;
 		
-		if (!who || size < 1)	return 0;
-		
-		for (int i = 0; i < size; i++)
+		for (int i = 0; i < Classes.Size(); i++)
 		{
-			let r = Relations[i];
+			let r = Classes[i];
 			if (r && (r.ClassType == who || who is r.ClassType))
 				return r.Status;
 		}
 		return 0;
 	}
 	
-	int Size()	{ return Relations.Size();	}
-	void Clear()	{	Relations.Clear();	}
+	//--------------------------------------------------------------------------
+	// Actor variant
+	//--------------------------------------------------------------------------
+	
+	void SetActorRelation(Actor who, int status, bool parent, int priority)
+	{
+		if (!who) return;
+		
+		int size = Actors.Size();
+		for (int i = 0; i < Actors.Size(); i++)
+		{
+			if (!Actors[i])	continue;
+			if (Actors[i].mo == who)
+			{
+				Actors[i].Status = status;
+				Actors[i].Parent = parent;
+				Actors[i].Priority = priority;
+				return;
+			}
+		}
+		
+		let rel = MCActorRelation.CreateRelation(who, status, parent, priority);
+		if (rel)	Actors.Push(rel);
+	}
+	
+	void RemoveActorRelation(Actor who)
+	{
+		for (int i = 0; i < Actors.Size(); i++)
+		{
+			if (Actors[i] && Actors[i].mo == who)
+			{
+				Actors[i].Destroy();
+				Actors.Delete(i);
+				return;
+			}
+		}
+	}
+	
+	int FindActorRelation(Actor who)
+	{
+		if (!who || Actors.Size() < 1)	return 0;
+		
+		for (int i = 0; i < Actors.Size(); i++)
+		{
+			let r = Actors[i];
+			if (r && (who == r.mo))
+				return r.Status;
+		}
+		return 0;
+	}
+	int Size(bool act = false)		{ 	return (act) ? Actors.Size() : Classes.Size();	}
+	void Clear()					{	Actors.Clear(); Classes.Clear();	}
 }
 
 extend class MinecraftEnemy
@@ -130,7 +199,7 @@ extend class MinecraftEnemy
 	{
 		if (!mo || !Relations)	return 0;
 		
-		return Relations.FindRelation(mo);
+		return Relations.FindClassRelation(mo);
 	}
 	
 	//==========================================================================

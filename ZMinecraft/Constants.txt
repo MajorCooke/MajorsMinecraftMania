@@ -2,6 +2,8 @@
 
 enum EMinecraftConst
 {
+	CSFlags = SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY,
+	
 	// Difficulty settings
 	Dif_Easy = 0,
 	Dif_Normal,
@@ -18,7 +20,7 @@ enum EMinecraftConst
 	E_Swing =	1 << 2,
 	
 	// Relations
-	Rel_None =	0,
+	Rel_None =	1,
 	Rel_Neutral,
 	Rel_Hate,
 	Rel_Ignored,

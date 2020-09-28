@@ -233,7 +233,7 @@ Class MCZombie : MCUndead
 			RemoveGoal();
 			bool plr = (src is 'PlayerPawn');
 			//int flags = (plr) ? AM_NOPARENT : AM_FORCE|AM_NOPARENT;
-			int flags = AM_NOPARENT;
+			int flags = 0;
 			if (!plr || random[rng](1,10) == 1)
 				AlertMonsters(MaxTargetRange * 2, target, GetClass(), random[rng](10,15), flags);
 		}

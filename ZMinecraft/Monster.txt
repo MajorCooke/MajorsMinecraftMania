@@ -314,31 +314,59 @@ Class MinecraftEnemy : MinecraftEntity
 	//private MC_LineContainer CurLines;
 	//bool FromDmgSector;
 	/*
-	override bool CanCrossLine(Line crossing, int side)
+	override bool CanCrossLine(Line crossing, int side, Vector3 Next)
 	{
-		// Already in a sector that's burning the monster, and may need to
-		// cross over some in order to reach ground without it, so allow it.
-		if (CurSector.DamageAmount > 0)
+		if (!MCC_EnvironmentDamage || !MCC_SectorDamage || ValidateTarget())	return true;
+	
+		if (Next ~== pos)
 			return true;
 		
-		Line l = crossing;
+		Vector2 RH = (radius, height);
 		
-		double ang = VectorAngle(l.delta.x, l.delta.y) + 90;
-		double delta = AbsAngle(ang, angle);
+		let osec = MC_Map.GetIntersectingSectors(self, RH);
+		if (!osec)	return true;
+		int size = osec.Size();
+		if (size < 1)	return true;
 		
-		if (l.frontsector.DamageAmount < 1 && delta >= 90)
-			return true;
-		if (l.backsector.DamageAmount < 1 && delta <= 90)
-			return true;
+		// If we're standing in a damaging sector, allow getting out of it.
+		for (int i = 0; i < size; i++)
+		{
+			Sector s = osec.Sectors[i].sec;
+			if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
+				return true;
+		}
 		
-		// Crossing over the front side, so check the back sector.
-		if (side == Line.Front)
-			return (l.backsector.DamageAmount < 1);
+		// Now check if we're entering a damaging sector from a non-damaging sector.
+		// If so, don't cross.
+		let nsec = MC_Map.GetIntersectingSectors(self, RH, usepos: true, Next + Vel);
+		if (!nsec)	return true;
 		
-		// Vice versa.
-		return (l.frontsector.DamageAmount < 1);
+		size = nsec.Size();
+		if (size < 1) return true;
+		
+		for (int i = 0; i < size; i++)
+		{
+			Sector s = nsec.Sectors[i].sec;
+			if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
+				return false;
+		}
+		return true;
 	}
 	*/
+	//--------------------------------------------------------------------------
+	
+	int GetDamageFactor(Name type, int damage)
+	{
+		if (damage < 1)	return damage;
+		
+		int dmg = damage;
+		dmg = ApplyDamageFactor(type, dmg);
+		
+		if (dmg > 0)
+			dmg = GetModifiedDamage(type, dmg, true);
+			
+		return dmg;
+	}
 	
 	protected void PreDie(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
 	{
@@ -427,8 +455,9 @@ Class MCGoal : MinecraftEntity
 {
 	Default
 	{
-		+NOINTERACTION
-		+NOBLOCKMAP
+		+NOGRAVITY
+		+THRUACTORS
+		+DONTTHRUST
 		+NOTONAUTOMAP
 		+DONTBLAST
 	}

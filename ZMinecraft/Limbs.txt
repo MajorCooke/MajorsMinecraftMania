@@ -147,6 +147,7 @@ Class MCBodyPart : MinecraftEntity
 		+NOBLOCKMAP
 		+NOTRIGGER
 		+NOTONAUTOMAP
+		+SEEINVISIBLE
 	}
 	
 	override void Activate(Actor activator)
@@ -336,21 +337,6 @@ Class MCBodyPart : MinecraftEntity
 			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
 			Attachment.SetOrigin(origin, true);
 		}
-		
-		/*
-		Vector3 NP = MC_Map.GetWarpPos(level, Owner.Pos, PosOff, CurAng.X);
-		Vector3 px, py, pz, origin;
-		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-		origin = NP + RelOff.x * px + RelOff.Y * py + RelOff.Z * pz;
-		SetOrigin(origin, true);
-		if (Attachment)
-		{
-			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
-			Attachment.SetOrigin(origin, true);
-		}
-		*/
-		
 	}	
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
@@ -441,7 +427,7 @@ Class MCBodyPart : MinecraftEntity
 	virtual void DoMotion()		
 	{
 		if (Destroyed() || !Owner)	return;
-		if (CurAction > 0)
+		if (CurAction > 0 && !Owner.bDORMANT)
 		{
 			if (MCC_IdleSway && (CurAction & E_Sway))
 			{
@@ -453,7 +439,7 @@ Class MCBodyPart : MinecraftEntity
 				AngOff.Y += Swing.NextSwing(Owner.VelLen);
 			}
 		}
-		if (!doSpring)
+		if (!doSpring || Owner.bDORMANT)
 		{
 		//	VelAng = NextAng + MainAng;
 			CurAng = NextAng + MainAng;
@@ -623,7 +609,10 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	private int LifeTime;
 	private double Timer, StartPitch, VelLen;
 	protected double EndPitch, EndRoll;
+	private bool DualSideRoll, DualSidePitch;
 	
+	Property DualSideRoll: DualSideRoll;
+	Property DualSidePitch: DualSidePitch;
 	Property Offsets: OffX, OffY, OffZ;
 	Property LifeTime: LifeTime;
 	Property EndPitch: EndPitch;
@@ -675,6 +664,7 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		if (Timer ~== 0.0)
 		{
 			HoldAng = (Pitch, Roll);
+		//	if (DualSidePitch)	
 		}
 		Timer += Timing;
 		double sn = abs(cos(90 + Timer));
