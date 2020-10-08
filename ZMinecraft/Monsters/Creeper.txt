@@ -80,7 +80,7 @@ Class MCCreeper : MinecraftEnemy
 		Tag "Creeper";
 		Obituary "A creeper blasted %o sky high, Team Rocket style.";
 	}
-	
+
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -98,20 +98,24 @@ Class MCCreeper : MinecraftEnemy
 		LimbX[LegFR] = MCBodyPart(Spawn('MCCreeperLegFrontW', pos));
 		LimbX[LegBL] = MCBodyPart(Spawn('MCCreeperLegBackW', pos));
 		LimbX[LegBR] = MCBodyPart(Spawn('MCCreeperLegBackW', pos));
-		
+				
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i])
+			let Lim = Limb[i];
+			if (Lim)
 			{
-				Limb[i].Master = self;
-				Limb[i].Owner = self;
+				if (i <= Body)	Lim.Master = self;
+				else			Lim.Master = Limb[Body];
+				Lim.Owner = self;
 			}
-			if (LimbX[i])
+			Lim = LimbX[i];
+			if (Lim)
 			{
-				LimbX[i].Master = self;
-				LimbX[i].Owner = self;
-				LimbX[i].bINVISIBLE = true;
-				LimbX[i].A_FadeOut(1.0, 0);
+				if (i <= Body)	Lim.Master = self;
+				else			Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.bINVISIBLE = true;
+				Lim.A_FadeOut(1.0, 0);
 			}
 		}
 		
@@ -127,6 +131,7 @@ Class MCCreeper : MinecraftEnemy
 		
 		LimbX[Head].SetPosOffsets((0.0,0.0,4.0));
 		LimbX[Body].SetPosOffsets((0.0,0.0,2.4));
+		
 		LimbX[LegFR].SetPosOffsets((0.8,0.4,0.6));
 		LimbX[LegFL].SetPosOffsets((0.8,-.4,0.6));
 		LimbX[LegBR].SetPosOffsets((-.8,0.4,0.6));
@@ -303,9 +308,9 @@ Class MCCreeper : MinecraftEnemy
 	
 	protected void Kaboom(bool ClearLimbs = true)
 	{
-		if (!bKilled)
+		if (!bCORPSE)
 		{
-			bKilled = true;
+			bCORPSE = true;
 			Health = min(0, Health);
 			
 			for (let probe = inv; probe; probe = probe.inv)
@@ -390,8 +395,12 @@ Class MCCreeper : MinecraftEnemy
 		if (ChargeFall && OnGround)	return true;
 		
 		if (dist < 0.0)
-			dist = (Charging) ? HissingRange : ExploRange;
-		
+		{
+			if (mo is 'PlayerPawn')
+				dist = (Charging) ? HissingRange : ExploRange;
+			else
+				dist = ExploRange + 4;
+		}
 		
 		return 	(mo && 
 				((!_2d && Distance3DSquared(mo) <= (dist ** 2)) ||
@@ -428,6 +437,7 @@ Class MCCreeper : MinecraftEnemy
 	Idle:
 		TNT1 A 0 
 		{
+			
 			SetExplosionCounting(false);
 			return A_Jump(256, random(1, 4));
 		}
@@ -446,7 +456,8 @@ Class MCCreeper : MinecraftEnemy
 	See:
 		TNT1 A 1 
 		{
-			SetExplosionCounting(false);
+			if (OnGround)
+				SetExplosionCounting(false);
 			Chase('Melee', null, 0, 30, true);
 			
 			bDROPOFF = (Target && Target.Pos.Z < Pos.Z && InExploRange(Target, true, HissingRange));

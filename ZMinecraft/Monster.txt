@@ -18,6 +18,7 @@ Class MinecraftEnemy : MinecraftEntity
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
+		AttackDamagers = true;
 		SetupRelations();
 		PrevScale = Scale;
 		PrevAngs = (Angle, Pitch, Roll);
@@ -29,7 +30,6 @@ Class MinecraftEnemy : MinecraftEntity
 		DrownTimer = DrownTimerStart;
 		FallDmgVel = -abs(FallDmgVel);
 		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
-		Damager.Clear();
 		DmgInfo.Used = true;
 		SetOverScale(OverScale);
 	}
@@ -59,14 +59,12 @@ Class MinecraftEnemy : MinecraftEntity
 		
 		Super.Deactivate(activator);
 	}
-	
+	/*
 	override bool CanCollideWith(Actor other, bool passive)
 	{
-	
-		bPUSHABLE = (!other || other is "PlayerPawn" || other is "MinecraftEnemy");
-		return true;
+		return !(other && Distance2DSquared(other) > (radius + other.radius + 1) ** 2);
 	}
-	
+	*/
 	override bool CanResurrect(Actor other, bool passive)
 	{	return false;	}
 	private int Lifetime;
@@ -93,7 +91,7 @@ Class MinecraftEnemy : MinecraftEntity
 		if (IsFrozen() || health < 1)
 			return;
 			
-		
+		if (!Target)	Pitch = 0;
 		
 		if (!bDORMANT)
 		{
@@ -101,7 +99,7 @@ Class MinecraftEnemy : MinecraftEntity
 			if (!DmgInfo.Used)
 			{
 				DmgInfo.used = true;
-				DamageReact(DmgInfo.I, DmgInfo.S, DmgInfo.damage, DmgInfo.dmg, DmgInfo.mod, DmgInfo.flags, DmgInfo.angle);
+				DamageReact(DmgInfo.I, DmgInfo.S, DmgInfo.damage, DmgInfo.dmg, DmgInfo.mod, DmgInfo.flags, DmgInfo.angle, DmgInfo.secdmg);
 			}
 			//----------------------------------------------------------------------
 			// Fall/Slime/Lava/Drowning damage handling.
@@ -139,7 +137,11 @@ Class MinecraftEnemy : MinecraftEntity
 						++SectorDamageTimer >= DmgInt)
 					{
 						if (DmgAmt < 0)	GiveBody(DmgAmt);
-						else			DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
+						else			
+						{
+							DmgInfo.secdmg = true;
+							DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
+						}
 						
 						if (health < 1)	return;
 						
@@ -156,7 +158,9 @@ Class MinecraftEnemy : MinecraftEntity
 				{
 					DrownDamage++;
 					DrownTimer = Second - 1;
+					DmgInfo.secdmg = true;
 					DamageMobj(null, null, min(DrownDamage, TELEFRAG_DAMAGE - 1), "Drowning", DMG_NO_ARMOR);
+					
 				}
 			}
 			else if (DrownTimer < DrownTimerStart)
@@ -199,15 +203,14 @@ Class MinecraftEnemy : MinecraftEntity
 		//----------------------------------------------------------------------
 		Angs = (Angle, Pitch, Roll);		
 		
-		if (!(vel ~== (0,0,0)) || !(Pos ~== PrevPos))
+		if (!bDORMANT && (!(vel ~== (0,0,0)) || !(Pos ~== PrevPos)))
 			VelLen = vel.Length() + level.Vec3Diff(PrevPos, Pos).Length();
 		else VelLen = 0;
 		
 		CurStyle = GetRenderStyle();
 		
 		if ((LifeTime < 5) ||
-			!(vel ~== (0,0,0)) ||
-			PrevPos != pos ||
+			!(VelLen ~== 0) ||
 			PrevAngs != Angs ||
 			PrevAlpha != alpha || 
 			PrevStyle != CurStyle || 
@@ -226,7 +229,7 @@ Class MinecraftEnemy : MinecraftEntity
 	}
 	
 	private LastDamaged DmgInfo;
-	private Array<Actor> Damager;
+	private Array<Actor> Damagers;
 	private uint TempTranslation;
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
@@ -237,9 +240,9 @@ Class MinecraftEnemy : MinecraftEntity
 		bool painless = ((flags & DMG_NO_PAIN) || (i && i.bNOPAIN) || (!i && s && s.bNOPAIN));
 		bool dopain = !painless && (i && (i.bFORCEPAIN));
 		
-		if (dmg > 0 && source && Damager.Find(source) >= Damager.Size())
+		if (dmg > 0 && source && Damagers.Find(source) >= Damagers.Size())
 		{
-			Damager.Push(source);
+			Damagers.Push(source);
 		}
 		
 		if (MCC_Debug == 1 && s && !(s is 'PlayerPawn'))
@@ -256,6 +259,14 @@ Class MinecraftEnemy : MinecraftEntity
 			(s && (s.bCAUSEPAIN || s.bFORCEPAIN))) ||
 			(damage > 0 && bALLOWPAIN)))
 		{
+			if (Targetable(source, false))
+			{
+				int rel = CheckClassRelation(source.GetClass()); //CheckRelation(source);
+				if (rel <= Rel_None || rel == Rel_Neutral || rel == Rel_Hated)
+				{
+					SetActorRelation(source, Rel_Hated);
+				}
+			}
 			if (DamageTimer < 1)
 			{
 				DamageTimer = 17;
@@ -382,10 +393,22 @@ Class MinecraftEnemy : MinecraftEntity
 		
 		Dismount();
 		
-		if (!(source is 'PlayerPawn') && Damager.Size() < 1)
+		if (!(source is 'PlayerPawn'))
 		{
-			bNOINTERACTION = true;
-			A_ChangeLinkFlags(1);
+			bool Drops = false;
+			for (int i = 0; i < Damagers.Size(); i++)
+			{
+				if (Damagers[i] is 'PlayerPawn')
+				{
+					Drops = true;
+					break;
+				}
+			}
+			if (!Drops)
+			{
+				bNOINTERACTION = true;
+				A_ChangeLinkFlags(1);
+			}
 		}
 		
 		A_NoBlocking(false);
@@ -395,7 +418,7 @@ Class MinecraftEnemy : MinecraftEntity
 	
 	protected void PostDie(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
 	{
-		if (Damager.Size() > 0)
+		if (Damagers.Size() > 0)
 		{
 			bNOINTERACTION = true;
 		}

@@ -4,7 +4,7 @@ Struct LastDamaged
 	int damage, dmg, flags;
 	Name mod;
 	double angle;
-	bool used;
+	bool used, secdmg;
 }
 
 
@@ -24,19 +24,21 @@ extend class MinecraftEnemy
 	//--------------------------------------------------------------------------
 	
 	transient private GDDTracer Trc;
-	double TraceDistance(Actor mo, double dist = 0, double ang = 0, double zz = -1)
+	double TraceDistance(Actor mo, double dist = 0, double zz = -1)
 	{
-		if (dist <= 0 || !Targetable(Target))	return -1;
+		if (dist <= 0 || !Targetable(mo))	return -1;
+				
+		if (zz < 0.0)	//zz = MissileHeight;
+			zz = Clamp(mo.pos.z, pos.z, pos.z + height);
 		
-		if (zz < 0.0)	zz = MissileHeight;
 		
-		Vector3 mpos = Vec3Angle(radius, angle, 0) + (0,0,height * zz),
-				tpos = Target.pos + (0,0,Target.height * 0.5);
+		Vector3 mpos = Vec2OffsetZ(0,0,zz),
+				tpos = mo.pos;
 		
 		Vector3 APR = level.Vec3Diff(mpos, tpos);
 		
 		if (!Trc)	Trc = new('GDDTracer');
-		Trc.trg = Target;
+		Trc.trg = mo;
 		Trc.Trace(mpos, cursector, APR, dist, 0);
 		
 		if (Trc.Results.HitType == TRACE_HitActor)
@@ -50,7 +52,7 @@ extend class MinecraftEnemy
 	{
 		if (health < 1 || bDORMANT)	return;
 		
-		Damager.Clear();
+		Damagers.Clear();
 		Array<Powerup> Powers; Powers.Clear();
 		Array<Inventory> Items; Items.Clear();
 		for (let probe = inv; probe; probe = probe.inv)
@@ -74,7 +76,7 @@ extend class MinecraftEnemy
 
 	// This is never called if the actor is dead. Used by monsters to try and
 	// move out of damaging sectors.
-	virtual void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags = 0, double angle = 0)
+	virtual void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags = 0, double angle = 0, bool secdmg = false)
 	{
 		
 	}
@@ -83,13 +85,13 @@ extend class MinecraftEnemy
 	{
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i] && !Limb[i].Destroyed())
+			if (Limb[i])
 			{
 				Vector3 NA = Angs;
 				if (!(Limb[i] is 'MCBodyPartHead'))
 					NA.Y -= Pitch;
 				
-				Limb[i].UpdatePosition(self, WARPF_INTERPOLATE);
+				Limb[i].UpdatePosition(Limb[i].Master, WARPF_INTERPOLATE);
 				Limb[i].UpdateScales(OverScale, Scale);
 				Limb[i].SetNextAngles(NA);
 				Limb[i].A_SetRenderStyle(alpha, CurStyle);
@@ -106,8 +108,8 @@ extend class MinecraftEnemy
 	// as needed, such as the creeper and skeleton special drops.
 	virtual protected bool DropItems(Actor src, Actor inf, Name mod)
 	{
-		for (int i = 0; i < Damager.Size(); i++)
-			if (Damager[i] is 'PlayerPawn')	return true;
+		for (int i = 0; i < Damagers.Size(); i++)
+			if (Damagers[i] is 'PlayerPawn')	return true;
 		return (src is 'PlayerPawn');
 	}
 	
@@ -153,7 +155,7 @@ extend class MinecraftEnemy
 		if (bNOGRAVITY || bFLOAT || GetGravity() <= 0.0 || waterlevel >= 3)
 			return false;
 			
-		int dmg = Clamp((abs(PrevVel.z) - FallDmgVel + 1), 0, TELEFRAG_DAMAGE - 1);
+		int dmg = Clamp(abs(PrevVel.z) - FallDmgVel, 0, TELEFRAG_DAMAGE - 1);
 		if (dmg < 1)	return false;
 	//	Console.Printf("Velocity: %d -- Damage: %d", PrevVel.Z, dmg);
 		return (DamageMobj(null, null, dmg, 'Falling') > 0);
@@ -232,7 +234,16 @@ extend class MinecraftEnemy
 		}
 	}
 	
-	
+	void CleanDamagers()
+	{
+		Array<Actor> Temp; Temp.Clear();
+		for (int i = 0; i < Damagers.Size(); i++)
+		{
+			let mo = Damagers[i];
+			if (mo && mo.health > 0)	Temp.Push(mo);
+		}
+		Damagers.Move(Temp);
+	}
 	
 	//--------------------------------------------------------------------------
 	// Customized looking algorithm.
@@ -245,6 +256,42 @@ extend class MinecraftEnemy
 	// Tracer takes top-most priority, used whenever the customized AlertMonsters 
 	// function is called.
 	//--------------------------------------------------------------------------
+	
+	protected virtual void CustomLook(bool close = false)
+	{
+		if (Passive)	return;
+		
+		if (!Relations)
+		{
+			A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
+		}
+		else
+		{
+			Array<Actor> mon; mon.Clear();
+			SearchActors(mon, (MaxTargetRange, MaxTargetRange), 360);
+			
+			Actor closest = null;
+			double dist = (32767.0 ** 2.0);
+			for (int i = 0; i < mon.Size(); i++)
+			{
+				Actor mo = mon[i];
+				bool rel = CheckRelationTarget(mo);
+				if (!rel)	continue;
+				
+				if (!close)	{	Target = mo;	return;		}
+				else
+				{
+					double dis = Distance3DSquared(mo);
+					if (!closest || dis < dist)
+					{
+						closest = mo;
+						dis = dist;
+					}
+				}
+			}
+			if (closest)	Target = closest;
+		}
+	}
 	
 	protected void Look(bool time = false)
 	{
@@ -261,38 +308,20 @@ extend class MinecraftEnemy
 				A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
 			else
 			{
-				bool save = false;
-				Actor saved[3];
-				for (int i = 0; i < saved.Size(); i++)
-					saved[i] = null;
-				
-				if (Goal && Target == Goal)
-				{
-					save = true;
-					saved[0] = Target;
-					saved[1] = LastHeard;
-					saved[2] = LastEnemy;
-					A_ClearTarget();
-				}
-				
-				A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
-				
-				if (save)
-				{
-					if (!Target)
-						Target = saved[0];
-					LastHeard = saved[1];
-					LastEnemy = saved[2];
-				}
+				Tracer = null;
+				CustomLook(true);
 			}
 			
 			if (ValidateTarget())
 			{
-				if (!bAMBUSH || CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+				if (!bAMBUSH || CheckSight(Target, CSFlags))
 					SetState(ResolveState("See"));
 			}
 			else
+			{
+				if (Tracer == Target)	Tracer = null;
 				A_ClearTarget();
+			}
 			
 		}
 	}
@@ -304,62 +333,92 @@ extend class MinecraftEnemy
 	}
 	
 	virtual void SetPassive(bool on)	{	Passive = on;	}
+	virtual void SetNeutral(bool on)	{	Neutral = on;	}
+	private int ChaseTics;
+	
+	bool CheckFear(Actor mo)
+	{
+		if (!mo)	
+		{
+			mo == Target;
+			if (!mo)	return false;
+		}
+		if (CheckRelationTarget(mo) == Rel_Afraid)
+			return true;
+		
+		return (!bNOFEAR && (bFRIGHTENED || mo.bFRIGHTENING));
+	}
+	
+	// 
+	virtual void ChaseExtra() {}
 	
 	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0, bool _3dmelee = false, double range = 0)
 	{
 		if (health < 1)
 			return;
 		
-	//	bool InMount = MRInfo && (MRInfo.GetRiderInfo() || MRInfo.GetMountInfo());
-	//	bool NotBottomMount = (InMount && !IsBottomMount());
 		bool NotBottomMount = false;
 	
 		int newflags = CHF_NOPLAYACTIVE;
-	//	if (InMount && !BottomMount)
-	//		newflags |= CHF_DONTMOVE;
-		int chflags = SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY;
 		
 		// Get a target if invalid.
 		if (!ValidateTarget(false, range, true))
 		{
 			if (!Goal)
 			{
+				Array<Actor> Temp; Temp.Clear();
+				for (int i = 0; i < Damagers.Size(); i++)
+					if (Damagers[i] && Damagers[i].Health > 0)
+						Temp.Push(Damagers[i]);
+				Damagers.Move(Temp);
+				
+				if (Tracer == Target)	Tracer = null;
 				A_ClearTarget();
-				A_Chase(null, null);
 				SetState(ResolveState("Idle"));
 				return;
 			}
 			else Target = Goal;
 		}
 		
-		if (Target && Target == Goal)
-		{
-			Look(true);
-		}
+		if (ChaseTics > 0)
+			ChaseTics--;
 		
 		bool good = false;
-		if (NotBottomMount || CheckSight(Target, chflags)) // Use regular A_Chase if cannot see.
+		// Use regular A_Chase if cannot see.
+		bool sight = CheckSight(Target, CSFlags);
+		if (ChaseTics < 1 && (NotBottomMount || CheckSight(Target, CSFlags))) 
 		{
 			
 			if (Target)
 			{
 				// Turning handled by the inventory item itself if mounted.
 				if (NotBottomMount)
-				{
 					good = true;
-				}
 				else
 				{
 					HoldAngs = (Angle, Pitch, Roll);
-					A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
-					if (bFLOAT)
-					{	
+					
+					double ang = AngleTo(Target);
+					bool fear = CheckFear(Target);
+					if (fear)
+					{
+						ang += 180;
+						melee = missile = null;
 						
+					}
+					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
+					
+					if (flags & CHF_DONTMOVE)
+					{
+						good = true;
+					}
+					else if (bFLOAT)
+					{
 						double c = cos(Pitch) * Speed;
 						double s = -sin(Pitch) * Speed;
 						
 						Vector3 old = pos;
-						Vector2 new = Vec2Angle(Speed, AngleTo(Target));
+						Vector2 new = Vec2Angle(Speed, ang);
 						
 						SetZ(pos.z + s);
 						if (TryMove(new, bDROPOFF))
@@ -367,14 +426,16 @@ extend class MinecraftEnemy
 						else 
 						{
 							SetOrigin(old, false);
+							ChaseTics = Second;
 						}
-						
 					}
 					else if (pos.z <= floorz)
 					{
-						Vector2 nmpos = Vec2Angle(speed, AngleTo(Target));
+						Vector2 nmpos = Vec2Angle(speed, ang);
 						if (TryMove(nmpos, bDROPOFF))
 							good = true;
+						else
+							ChaseTics = Second;
 					}
 					else newflags |= CHF_DONTMOVE;
 				}
@@ -403,7 +464,6 @@ extend class MinecraftEnemy
 		}
 		if (!good && (angle % 45 != 0.0))
 			AlignMoveDir();
-		
 		if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
 		{
 			let s = ResolveState(melee);
@@ -411,7 +471,7 @@ extend class MinecraftEnemy
 			{
 				// TO DO: Convert to use a trace function.
 				double rad = (Target.Radius + MeleeRange) ** 2;
-				if (Distance3DSquared(Target) <= rad && CheckSight(Target, chflags))
+				if (Distance3DSquared(Target) <= rad && sight)
 				{
 					bJUSTATTACKED = true;
 					SetState(s);
@@ -460,7 +520,7 @@ extend class MinecraftEnemy
 	
 	virtual bool DoMelee(int damage = -1)
 	{
-		if (!Target || Target.Health < 1 || AttackDelay > 0 || !CheckMeleeRange())
+		if (!Target || Target.Health < 1 || AttackDelay > 0 || !TraceDistance(Target, MeleeRange))
 			return false;
 		
 		if (damage < 0)	

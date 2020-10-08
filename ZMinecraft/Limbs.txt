@@ -292,14 +292,43 @@ Class MCBodyPart : MinecraftEntity
 		DestroyMe = true;
 	}
 	bool Destroyed() { return bDESTROYED || DestroyMe;	}
-	void SetPosOffsets(Vector3 Off)
+	
+	
+	
+	
+	void SetPosOffsets(Vector3 Off, bool interp = true)
 	{
 		if (Destroyed())	return;
 		PosOff = Off;
 		OffX = Off.X;
 		OffY = Off.Y;
 		OffZ = Off.Z;
-		UpdatePosition(Master);
+		UpdateScales(OverScale, Scale);
+		UpdatePosition(Master, interp);
+	}
+	virtual void UpdatePosition(Actor who, bool interp = true)
+	{
+		if (!Owner || Destroyed())	return;
+		
+		if (!who)	
+		{
+			who = Master;
+			if (!who)	who = Owner;
+			if (!who)	return;
+		}
+		
+		Vector3 NP = MC_Map.GetWarpPos(level, Master.Pos, PosOff, CurAng.X);
+		NP.Z = Owner.Pos.Z + PosOff.Z;
+		Vector3 px, py, pz, origin;
+		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
+		origin = NP; + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+		SetOrigin(origin, interp);
+		if (Attachment)
+		{
+			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y, CurAng.X, CurAng.Z);
+			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
+			Attachment.SetOrigin(origin, interp);
+		}
 	}
 	
 	// Updates the scale of all vectors based on scale so their limbs grow
@@ -307,6 +336,9 @@ Class MCBodyPart : MinecraftEntity
 	virtual void UpdateScales(double OverScale, Vector2 Scale)
 	{
 		if (Destroyed())	return;
+		
+		bool NoResize = (self.Overscale ~== Overscale && self.Scale ~== Scale);
+		
 		self.OverScale = OverScale;
 		Scale = Scale * OverScale;
 		self.Scale = Scale;
@@ -317,27 +349,13 @@ Class MCBodyPart : MinecraftEntity
 		AttachPos.XY = (AttX, AttY) * Scale.X;
 		AttachPos.Z  = AttZ * Scale.Y;
 		Swing.Scale = OverScale;
-		A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
+		
+		if (!NoResize)
+			A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
 		
 		if (Attachment)	Attachment.UpdateScales(OverScale, Scale);
 	}
 	
-	virtual void UpdatePosition(Actor who, int flags = 0)
-	{
-		if (!who || Destroyed())	return;
-		
-		Vector3 NP = MC_Map.GetWarpPos(level, Owner.Pos, PosOff, CurAng.X);
-		Vector3 px, py, pz, origin;
-		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-		origin = NP; + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
-		SetOrigin(origin, true);
-		if (Attachment)
-		{
-			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y, CurAng.X, CurAng.Z);
-			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
-			Attachment.SetOrigin(origin, true);
-		}
-	}	
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
 		if (!Master || Destroyed())	return;
@@ -501,6 +519,7 @@ Class MCBodyPartHead : MCBodyPart
 		
 		// If the enemy is a player, look at the camera.
 		Target = (Owner.Target != Owner.Goal) ? Owner.Target : null;
+		
 		if (Target is 'PlayerPawn')
 		{
 			flag = FAF_BOTTOM;
@@ -536,13 +555,16 @@ Class MCBodyPartHead : MCBodyPart
 		{
 			Angle = Owner.Angle;
 			Pitch = 0;
-			A_Face(Target, 90, 45, 0, 0, flag, zof);
-			NextAng = (Angle, Pitch, Roll);
-			Angle = CurAng.X;
-			Pitch = CurAng.Y;
-			Roll =	CurAng.Z;
+			
+			if (bNOFEAR || (!Owner.bFRIGHTENED && !Target.bFRIGHTENING))
+			{
+				A_Face(Target, 90, 45, 0, 0, flag, zof);
+				NextAng = (Angle, Pitch, Roll);
+				Angle = CurAng.X;
+				Pitch = CurAng.Y;
+				Roll =	CurAng.Z;
+			}
 		}
-		
 		Super.DoMotion();
 	}
 }

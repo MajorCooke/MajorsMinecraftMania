@@ -613,6 +613,16 @@ Model MCEndermanBody
 	FrameIndex ASDF A 0 0
 }
 
+Model MCEndermanBodyGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Enderman/Body.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
 Model MCEndermanHead
 {
 	USEACTORPITCH
@@ -633,6 +643,7 @@ Model MCEndermanHeadGib
 	Model 0 "Models/Enderman/HeadGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
+	FrameIndex ASDF B 0 0
 }
 Model MCEndermanLegRight
 {

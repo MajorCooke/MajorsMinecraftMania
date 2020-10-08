@@ -99,12 +99,14 @@ Class MCSkeleton : MCUndead
 		Limb[LegL] = MCBodyPart(Spawn('MCSkeletonLegLeft', pos));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i])
+			let Lim = Limb[i];
+			if (Lim)
 			{
-				Limb[i].Master = self;
-				Limb[i].Owner = self;
-				Limb[i].Scale = Scale;
-				Limb[i].Frame = Type;
+				if (i <= Body)	Lim.Master = self;
+				else			Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.Scale = Scale;
+				Lim.Frame = Type;
 			}
 		}
 		
@@ -378,7 +380,7 @@ Class MCSkeletonArm : MCBodyPartArm
 	Default
 	{
 		MCBodyPart.Gib 'MCSkeletonArmGib';
-		MCBodyPart.CurAction E_Swing|E_Sway;
+		MCBodyPart.CurAction (E_Swing|E_Sway);
 		Radius 0.8;
 		Height 2.0;
 	}
@@ -396,7 +398,7 @@ Class MCSkeletonArm : MCBodyPartArm
 	States
 	{
 	Spawn:
-		ASDF A -1
+		ASDF A -1 NoDelay
 		{
 			CurAction = (E_Swing|E_Sway);
 			SetYaw(0);

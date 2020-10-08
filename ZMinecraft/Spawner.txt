@@ -108,7 +108,7 @@ extend class MinecraftHandler
 	//==========================================================================
 	private void TriggerMapSpawns()
 	{
-		int ret = Timer[S_Spawn] + 1;
+		int ret = -1;
 		
 		int reset = Max(35,
 			Minute * MCC_SpawnDelayMinute + 
@@ -254,6 +254,7 @@ extend class MinecraftHandler
 					MoToSpawn.bNODROPOFF = MoToSpawn.Default.bNODROPOFF;
 					MoToSpawn.Angle = random(0,359);
 					MoToSpawn.Activate(null);
+					MoToSpawn.AlignMoveDir();
 					MoToSpawn = null;
 					return true;
 				}

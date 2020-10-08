@@ -26,7 +26,7 @@ extend class MinecraftEnemy
 	protected int CurStyle, PrevStyle;
 	protected int AttackDelay;
 	protected int SoundDelay;
-	protected bool Passive;
+	protected bool Passive, Neutral;
 	protected int IdleTimer, ChaseCheckTimer, LookTimer;
 	protected double SoundPitch, PrevAlpha, OverScale;
 	
@@ -76,10 +76,11 @@ extend class MinecraftEnemy
 		+NOTELESTOMP
 		+NOKILLSCRIPTS
 		+DONTSPLASH
+		+FORCEINFIGHTING
 		
 		DamageFactor "Crush", 2000.0;
 		DamageFactor "CreeperBig", 0.0; //This is only used for non-Minecraft monsters.
-		DamageFactor "Falling", 1.0;
+		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
 		DamageFactor "Slime", 1.0;
 	}

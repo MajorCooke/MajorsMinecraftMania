@@ -49,6 +49,8 @@ extend class MinecraftEnemy
 			else		return;
 		}
 		
+		if (targ is GetClass())	return;
+		
 		if (targ.health < 1 || !targ.bSHOOTABLE ||
 			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
 			return;
@@ -84,7 +86,11 @@ extend class MinecraftEnemy
 			mo.CopyFriendliness(self, change, false);
 			
 			let mon = MinecraftEnemy(mo);
-			if (mon)	mon.Tracer = mo.Target;
+			if (mon)	
+			{
+				mon.Tracer = mo.Target;
+				mon.SetActorRelation(Tracer, Rel_Hated);
+			}
 			if (count > 0 && --count < 1)
 				return;
 			
@@ -174,7 +180,6 @@ Class MCZombie : MCUndead
 		Obituary "%o joined the 'breeeyynns' club, courtesy of a zombie's invitation.";
 	}
 	
-	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -191,11 +196,13 @@ Class MCZombie : MCUndead
 		Limb[LegL] = MCBodyPart(Spawn('MCZombieLegLeft', pos));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i])
+			let Lim = Limb[i];
+			if (Lim)
 			{
-				Limb[i].Master = self;
-				Limb[i].Owner = self;
-				Limb[i].Scale = Scale;
+				if (i <= Body)		Lim.Master = self;
+				else				Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.Scale = Scale;
 			}
 		}
 		

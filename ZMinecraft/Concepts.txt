@@ -641,3 +641,145 @@ Class MCMountInfo : Thinker
 	}
 }
 */
+
+
+
+
+
+
+
+
+
+/*
+	Array<MCClassRelation> ClassRelations;
+	Array<MCActorRelation> ActorRelations;
+	
+	virtual protected void SetupRelations()	
+	{
+		ClearRelations();
+	}
+	
+	int CheckRelation(Class<Actor> cls, Actor mo = null)
+	{	
+		if (cls)
+		{
+			int size = ClassRelations.Size();
+			
+			for (int i = 0; i < size; i++)
+			{
+				let rel = ClassRelations[i];
+				if (rel && (cls == rel.ClassType || (rel.Parent && cls is rel.ClassType)))
+					return rel.Status;
+			}
+		}
+		if (mo)
+		{
+			int size = Relations.Size();
+			
+			for (int i = 0; i < size; i++)
+			{
+				let rel = Relations[i];
+				if (rel && (cls == rel.Mo || (rel.Parent && mo is rel.Mo.GetClass())))
+					return rel.Status;
+			}
+		}
+		return 0;
+	}
+	
+	void SetClassRelation(Class<Actor> mo, int status, bool parent = false, int priority = 0)
+	{
+		if (!mo)	return;
+		
+		int size = ClassRelations.Size();
+		
+		for (int i = 0; i < size; i++)
+		{
+			let rel = ClassRelations[i];
+			if (rel && rel.ClassType == mo)
+			{
+				if (status == 0 || status >= Rel_Max)
+				{
+					rel.Destroy();
+					ClassRelations.Delete(i);
+					return;
+				}
+				rel.Update(mo, status, parent, priority);
+				return;
+			}
+		}
+		
+		let rel = MCClassRelation.CreateRelation(mo, status, parent, priority);
+		if (rel)	ClassRelations.Push(rel);
+	}
+	
+	void SetActorRelation(Actor mo, int status, int priority = 0)
+	{
+		if (!mo)	return;
+		
+		int size = ActorRelations.Size();
+		
+		for (int i = 0; i < size; i++)
+		{
+			let rel = ActorRelations[i];
+			if (rel && rel.mo == mo)
+			{
+				if (status == 0 || status >= Rel_Max)
+				{
+					rel.Destroy();
+					ActorRelations.Delete(i);
+					return;
+				}
+				rel.Update(mo, status, parent, priority);
+				return;
+			}
+		}
+		
+		let rel = MCActorRelation.CreateRelation(mo, status, priority);
+		if (rel)	ActorRelations.Push(rel);
+	}
+	
+	void ClearRelations(bool actors = false)
+	{
+		if (actors)	
+		{
+			for (int i = 0; i < ActorRelations.Size(); i++)
+			if (ActorRelations[i])	ActorRelations[i].Destroy();
+				ActorRelations.Clear();
+			ActorRelations.Clear();
+		}
+		else
+		{
+			for (int i = 0; i < ClassRelations.Size(); i++)
+				if (ClassRelations[i])	ClassRelations[i].Destroy();
+			ClassRelations.Clear();
+		}
+	}
+	
+	void CleanRelations(bool actors = true)
+	{
+		if (actors)
+		{
+			Array<MCActorRelation> Temp; Temp.Clear();
+			for (int i = 0; i < ActorRelations.Size(); i++)
+			{
+				let rel = ActorRelations[i];
+				if (rel && rel.mo && rel.mo.health > 0)
+					Temp.Push(rel);
+				else if (rel)	rel.Destroy();
+			}
+			ActorRelations.Move(Temp);
+		}
+		else
+		{
+			Array<MCClassRelation> Temp; Temp.Clear();
+			for (int i = 0; i < ClassRelations.Size(); i++)
+			{
+				let rel = ClassRelations[i];
+				if (rel && rel.ClassType)
+					Temp.Push(rel);
+				else if (rel)	rel.Destroy();
+			}
+			ClassRelations.Move(Temp);
+		}
+	}
+	*/

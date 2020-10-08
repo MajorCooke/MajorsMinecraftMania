@@ -4,54 +4,84 @@ Class MCClassRelation play
 	int Status, Priority;
 	bool Parent;
 	
-	static MCClassRelation CreateRelation(Class<Actor> who, int _status, bool _parent = false, int _priority = 0)
+	static MCClassRelation CreateRelation(Class<Actor> who, int status, bool parent = false, int priority = 0)
 	{
 		if (!who)	return null;
 		
 		let r = new('MCClassRelation');
-		r.ClassType = who;
-		r.Status = _status;
-		r.Priority = _priority;
-		r.Parent = _parent;
+		r.Update(who, status, parent, priority);
 		return r;
+	}
+	
+	void Update(Class<Actor> who, int status, bool parent = false, int priority = 0)
+	{
+		if (!who)	return;
+		
+		self.ClassType = who;
+		self.Status = status;
+		self.Priority = priority;
+		self.Parent = parent;
 	}
 }
 
 Class MCActorRelation play
 {
-	Actor mo;
+	Actor Mo;
 	int Status, Priority;
 	bool Parent;
 	
-	static MCActorRelation CreateRelation(Actor who, int _status, bool _parent = false, int _priority = 0)
+	
+	static MCActorRelation CreateRelation(Actor who, int status, int priority = 0)
 	{
-		if (!who)	return null;
+		if (!ValidateActor(who))	return null;
 		
 		let r = new('MCActorRelation');
-		r.mo = who;
-		r.Status = _status;
-		r.Priority = _priority;
-		r.Parent = _parent;
+		r.Update(who, status, priority);
 		return r;
+	}
+	
+	protected static bool ValidateActor(Actor mon)
+	{
+		return (mon && mon.health > 0);
+	}
+	
+	bool Update(Actor who, int status, int priority = 0)
+	{
+		if (!ValidateActor(who))	return false;
+		
+		self.Mo = who;
+		self.Status = status;
+		self.Priority = priority;
+		return true;
 	}
 }
 
 Class MCRelationManager play
 {
+	private Actor Owner;
+	bool OnlyListed;
 	private Array<MCClassRelation> Classes;
 	private Array<MCActorRelation> Actors;
 	
-	static MCRelationManager Create()
+	static MCRelationManager Create(Actor mo)
 	{
+		if (!mo || mo.bDESTROYED)	return null;
 		let m = new('MCRelationManager');
-		m.Init();
+		m.Init(mo);
 		return m;
 	}
 	
-	protected void Init()
+	protected void Init(Actor mo)
 	{
-		Actors.Clear();
-		Classes.Clear();
+		Owner = mo;
+		Clear();
+	}
+	
+	Actor GetOwner() const { return Owner; }
+	bool SetOwner(Actor mo) 
+	{ 
+		if (!mo)	return false;	
+		Owner = mo;	return true; 
 	}
 	
 	
@@ -112,24 +142,42 @@ Class MCRelationManager play
 		}
 	}
 	
-	int FindClassRelation(Class<Actor> who)
+	int FindClassRelation(Class<Actor> who) const
 	{
 		if (!who || Classes.Size() < 1)	return 0;
 		
 		for (int i = 0; i < Classes.Size(); i++)
 		{
 			let r = Classes[i];
-			if (r && (r.ClassType == who || who is r.ClassType))
+			if (r && (r.ClassType == who || (r.Parent && who is r.ClassType)))
 				return r.Status;
 		}
 		return 0;
+	}
+	
+	void CleanClasses()
+	{
+		int size = Classes.Size();
+		if (size < 1)	return;
+		
+		Array<MCClassRelation> temp; temp.Clear();
+		for (int i = 0; i < size; i++)
+		{
+			if (Classes[i])
+			{
+				if (Classes[i].ClassType)
+					temp.Push(Classes[i]);
+				else Classes[i].Destroy();
+			}
+		}
+		Classes.Move(temp);
 	}
 	
 	//--------------------------------------------------------------------------
 	// Actor variant
 	//--------------------------------------------------------------------------
 	
-	void SetActorRelation(Actor who, int status, bool parent, int priority)
+	void SetActorRelation(Actor who, int status, int priority = 0)
 	{
 		if (!who) return;
 		
@@ -140,17 +188,16 @@ Class MCRelationManager play
 			if (Actors[i].mo == who)
 			{
 				Actors[i].Status = status;
-				Actors[i].Parent = parent;
 				Actors[i].Priority = priority;
 				return;
 			}
 		}
 		
-		let rel = MCActorRelation.CreateRelation(who, status, parent, priority);
+		let rel = MCActorRelation.CreateRelation(who, status, priority);
 		if (rel)	Actors.Push(rel);
 	}
 	
-	void RemoveActorRelation(Actor who)
+	void RemoveActorRelation(Actor who) 
 	{
 		for (int i = 0; i < Actors.Size(); i++)
 		{
@@ -163,21 +210,141 @@ Class MCRelationManager play
 		}
 	}
 	
-	int FindActorRelation(Actor who)
+	int FindActorRelation(Actor who) const
 	{
 		if (!who || Actors.Size() < 1)	return 0;
 		
 		for (int i = 0; i < Actors.Size(); i++)
 		{
 			let r = Actors[i];
-			if (r && (who == r.mo))
-				return r.Status;
+			if (r)
+			{
+				if (who == r.mo || (r.Parent && who is r.mo.GetClass()))
+					return r.Status;
+			}
 		}
 		return 0;
 	}
-	int Size(bool act = false)		{ 	return (act) ? Actors.Size() : Classes.Size();	}
-	void Clear()					{	Actors.Clear(); Classes.Clear();	}
+	
+	void CleanActors()
+	{
+		int size = Actors.Size();
+		if (size < 1)	return;
+		
+		Array<MCActorRelation> temp; temp.Clear();
+		for (int i = 0; i < size; i++)
+		{
+			if (Actors[i])
+			{
+				let mo = Actors[i].mo;
+				if (mo && mo.health > 1)
+					temp.Push(Actors[i]);
+				else Actors[i].Destroy();
+			}
+		}
+		
+		Actors.Move(temp);
+	}
+	//==========================================================================
+	// Both
+	//==========================================================================
+	
+	//--------------------------------------------------------------------------
+	// Passes all recorded actor/classes if they have the status type.
+	
+	bool CheckStatusType(int status)
+	{
+		if (status <= Rel_None || status > Rel_Max || 
+			(Classes.Size() < 1 && Actors.Size() < 1))
+			return false;
+		
+		// Just search for any type that has the desired status.
+		int size = Actors.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let r = Actors[i];
+			if (r && r.Mo && r.Status == status)
+				return true;
+		}
+		
+		size = Classes.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let r = Classes[i];
+			if (r && r.ClassType && r.Status == status)
+				return true;
+		}
+		return false;
+	}
+	
+	void FindStatusActor(int status, out Array<MCActorRelation> act)
+	{
+		act.Clear();
+		
+		if (status < 1 || status >= Rel_Max)	return;
+		
+		int size = Actors.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let rel = Actors[i];
+			if (rel && rel.Status == status && rel.mo)
+				act.Push(rel);
+		}
+	}
+	
+	void FindStatusClass(int status, out Array<MCClassRelation> cls)
+	{
+		cls.Clear();
+		
+		if (status < 1 || status >= Rel_Max)	return;
+		
+		int size = Classes.Size();
+		for (int i = 0; i < size; i++)
+		{
+			let rel = Classes[i];
+			if (rel && rel.Status == status && rel.ClassType)
+				cls.Push(rel);
+		}
+	}
+	
+	int Size(int whom = Res_Both)
+	{ 	
+		Switch(whom)
+		{
+			Case 1:	return Actors.Size();
+			Case 2: return Classes.Size();
+			Default: return Actors.Size() + Classes.Size();
+		}
+		return 0;
+	}
+	void Clear(int whom = Res_Both)
+	{
+		if (whom != Res_Classes)
+		{
+			for (int i = 0; i < Actors.Size(); i++)
+				if (Actors[i])	Actors[i].Destroy();
+			Actors.Clear(); 
+		}
+		if (whom != Res_Actors)
+		{
+			for (int i = 0; i < Classes.Size(); i++)
+				if (Classes[i])	Classes[i].Destroy();
+			Classes.Clear();
+		}
+	}
 }
+
+
+
+
+
+
+
+//==============================================================================
+//==============================================================================
+
+//==============================================================================
+//==============================================================================
 
 extend class MinecraftEnemy
 {
@@ -188,18 +355,93 @@ extend class MinecraftEnemy
 	// others.
 	//==========================================================================
 	protected MCRelationManager Relations;
-	virtual protected void SetupRelations()	
-	{
-		if (bDESTROYED || health < 1)	return;
-		
-		Relations = MCRelationManager.Create();
+	protected bool OnlyListed, AttackDamagers;
+	
+	virtual protected void SetupRelations(bool create = false)
+	{	
+		if (create)
+		{
+			if (Relations)	Relations.Clear();
+			else Relations = MCRelationManager.Create(self);
+		}
 	}
 	
-	int CheckRelation(Class<Actor> mo)
+	int CheckClassRelation(Class<Actor> mo)
+	{	return (!mo || !Relations) ? 0 : Relations.FindClassRelation(mo);	}
+	
+	int CheckActorRelation(Actor mo)
+	{	return (!mo || !Relations) ? 0 : Relations.FindActorRelation(mo);	}
+	
+	int CheckRelation(Actor mo, Class<Actor> cls = null)
 	{
-		if (!mo || !Relations)	return 0;
+		if (!Relations || (!mo && !cls))	return 0;
 		
-		return Relations.FindClassRelation(mo);
+		if (mo && !cls)	cls = mo.GetClass();
+		
+		int AR = Relations.FindActorRelation(mo);
+		if (AR >= Rel_None)	return AR;
+		
+		return Relations.FindClassRelation(cls);
+	}
+	
+	void SetClassRelation(Class<Actor> mo, int status, bool parent = false, int priority = 0)
+	{
+		if (mo && Relations)
+			Relations.SetClassRelation(mo, status, parent, priority);
+	}
+	
+	void SetActorRelation(Actor mo, int status, int priority = 0)
+	{
+		if (mo && Relations)
+			Relations.SetActorRelation(mo, status, priority);
+	}
+	
+	void ClearRelations(int whom = Res_Both)
+	{
+		if (Relations) Relations.Clear(whom);
+	}
+	
+	void CleanActors()
+	{
+		if (Relations) Relations.CleanActors();
+	}
+	
+	bool CheckStatusType(int status)
+	{
+		if (!Relations || status <= Rel_None || status >= Rel_Max)
+			return false;
+			
+		return Relations.CheckStatusType(status);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Searches for potential actors to target.
+	bool SearchActors(out Array<Actor> Acts, Vector2 RH, double fov = 90, 
+		bool sight = true)
+	{
+		Acts.Clear();
+		
+		if (!CheckStatusType(Rel_Hated) && !CheckStatusType(Rel_Afraid))
+			return false;
+		
+		let it = BlockThingsIterator.CreateFromPos(
+			pos.x, pos.y, pos.z - RH.X, RH.Y + RH.X * 2, RH.X, false);
+			
+		Actor mo = null;
+		
+		while (it.Next())
+		{
+			mo = it.thing;
+			if (!mo || !Targetable(mo))
+				continue;
+			
+			if (sight && (!CheckSight(mo, CSFlags) ||
+				(!bLOOKALLAROUND && fov < 360 && DeltaAngle(Angle, AngleTo(mo)) < fov)))
+				continue;
+			
+			Acts.Push(mo);
+		}
+		return true;
 	}
 	
 	//==========================================================================
@@ -214,7 +456,7 @@ extend class MinecraftEnemy
 	private int OOSTimer; // Out of sight timer
 	const OOSTimeOut = Second * 5;
 	const LookTimerDefault = 17;
-	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false)
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, bool relate = true)
 	{
 		if (!Target)	
 		{
@@ -223,18 +465,23 @@ extend class MinecraftEnemy
 			else return false;
 		}
 		
+		if (Target == self)
+		{
+			A_ClearTarget();
+			return false;
+		}
+		
 		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
 		
 		double ChaseRange = (range <= 0) ? MaxChaseRange : range;
 		if (Tracer && Target == Tracer)		ChaseRange *= 2;
 		else if ((Goal && Target == Goal))	ChaseRange = 22767;
 		
-		
-		bool targetable = (Targetable(Target));
+		bool targetable = (Targetable(Target, relate));
 		if (targetable)
 		{
 			if (Distance3DSquared(Target) > ChaseRange ** 2 
-				|| (MCC_SightCheck && chasing && !CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+				|| (chasing && !CheckSight(Target, CSFlags))
 				)
 			{
 				if (chasing)
@@ -253,9 +500,7 @@ extend class MinecraftEnemy
 		{
 			if (clear && !Goal)	
 			{
-				if (Tracer && Tracer == Target)
-					Tracer = null;
-				A_ClearTarget();
+				ClearTarget();
 			}
 			
 			OOSTimer = 0;
@@ -264,21 +509,25 @@ extend class MinecraftEnemy
 	}
 	
 	//--------------------------------------------------------------------------
-	// Handles filtering of applicable targets, including checking the relationship
-	// list.
+	// Handles filtering of applicable targets, including checking the 
+	// relationship list.
 	//--------------------------------------------------------------------------
 	override bool OkayToSwitchTarget(Actor other)
 	{
-		if (!Targetable(other))
-			return false;
-			
-		return Super.OkayToSwitchTarget(other);
+		Actor OldTarget = Target;
+		Target = other;	
+		if (Super.OkayToSwitchTarget(other) && Targetable(other))
+			return true;
+		
+		Target = OldTarget;
+		return false;
 	}
 	
-	virtual bool Targetable(Actor mo) const
+	protected bool Afraid;
+	virtual bool Targetable(Actor mo, bool relate = true) const
 	{
 		// Doesn't exist.
-		if (!mo)	
+		if (!mo || mo == self || passive)	
 			return false;
 		
 		// The actor's a goal so yes, it is targetable.
@@ -289,24 +538,75 @@ extend class MinecraftEnemy
 		if (mo.Health < 1 || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY))
 			return false;
 		
-		// Passive or peaceful monsters are not allowed to target players.
-		if ((mo is 'PlayerPawn' && (MCC_Peaceful || Passive)))
+		// Peaceful mode disallows targeting players.
+		if (mo is 'PlayerPawn' && MCC_Peaceful)
 			return false;
 			
 		// Don't target players that are (totally) frozen because this could fuck up
-		// things badly and get them to kill a defenseless palyer.
+		// things badly and get them to kill a defenseless player.
 		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
 			return false;
-			
-		if (Relations)
+		
+		
+		return (!relate || CheckRelationTarget(mo));
+	}
+	
+	bool CheckRelationTarget(Actor mo) const
+	{
+		if (!mo)		return false;
+		if (mo == Goal)	return true;
+		
+		if (Relations && Relations.Size() > 0)
 		{
-			int ret = CheckRelation(mo.GetClass());
-			if (ret == Rel_Ignored)	return false;
-		}
-	//	else if (mo == Mount || mo == Rider)
-	//		return false;
+			int ret = CheckRelation(mo);
 			
+			Switch(ret)
+			{
+				// Afraid of the other
+				Case Rel_Afraid:
+				// Hates the actor, will pursue
+				Case Rel_Hate:		return true;
+				// Akin to having NEVERTARGET.
+				Case Rel_Ignored:	return false;
+				// 
+				Case Rel_Neutral:
+				Case Rel_None:
+				{
+					if (IsTeamMate(mo))
+						return false;
+					
+					if (ret == Rel_Neutral)
+						return CheckActorDamager(mo);
+					if (ret <= Rel_None)
+					{
+						if (bFRIENDLY && mo.bFRIENDLY)
+							return true;
+						else if ((mo is 'PlayerPawn'))	return true;
+					}
+				}
+				Default:
+					return CheckActorDamager(mo);
+			}
+			return false;
+		}
 		return true;
+	}
+	
+	bool CheckActorDamager(Actor mo) const
+	{	return mo && (mo == Target || mo == Tracer || (AttackDamagers && Damagers.Find(mo) < Damagers.Size()));	}
+	
+	protected void ClearTarget(Actor mo = null)
+	{
+		if (!mo)	
+		{
+			mo = Target;
+			if (!mo)	return;
+		}
+		
+		if (Tracer == mo)
+			Tracer = null;
+		SetActorRelation(mo, Rel_None);
+		A_ClearTarget();
 	}
 }
 
@@ -666,372 +966,3 @@ extend class MinecraftEntity
 		return false;
 	}
 }
-
-/*
-Class MCMount : Inventory
-{
-//	private 
-	Vector3 Offset;
-	
-	protected MCMount RiderInfo, MountInfo;
-	
-	static MCMount GetInfo(Actor mo)
-	{
-		if (!mo)	return null;
-		return MCMount(mo.FindInventory('MCMount', true));
-	}
-	
-	MCMount GetRiderInfo() { return RiderInfo; }
-	MCMount GetMountInfo() { return MountInfo; }
-	
-	static MCMount DoMount(Actor mount, Actor rider, Vector3 off = (0,0,0), bool add = true)
-	{
-		if (!rider || !mount || rider == mount)	return null;
-		
-		MCMount minfo = GetInfo(mount);
-		MCMount rinfo = GetInfo(rider);
-		
-		// First, dismount the rider if mounted.
-		if (rinfo && rinfo != minfo)
-			rinfo.Dismount(true);
-		
-		// Then set up another rider token.
-		rider.SetInventory('MCMount', 1);
-		rinfo = GetInfo(rider);
-		
-		// Something went wrong.
-		if (!rinfo)	return null;
-		
-		rinfo.Offset = off;
-		
-		// If adding to the top, climb all the way to the top-most actor.
-		if (add)
-		{
-			minfo = rinfo.GetTop();
-			minfo.RiderInfo = rinfo;
-			rinfo.MountInfo = minfo;
-			return rinfo;
-		}
-		else // Insert the actor between the current rider and mount if any.
-		{
-			// If not set up, create the token for the mount.
-			if (!minfo)
-			{
-				mount.SetInventory('MCMount', 1);
-				minfo = GetInfo(mount);
-				if (minfo)
-				{
-					minfo.RiderInfo = rinfo;
-					rinfo.MountInfo = minfo;
-					return rinfo;
-				}
-			}
-			
-			// Transfer the RiderInfo from the mount to the rider, and set the previous
-			// rider's mount to this. Effectively, insert itself between.
-			
-			if (minfo)
-			{
-				if (rinfo)
-				{
-					rinfo.Offset = off;
-					rinfo.RiderInfo = minfo.RiderInfo;
-					
-					// Before: Mount <-> OldRider
-					// After: Mount <-> NewRider <-> OldRider
-					
-					if (rinfo.RiderInfo)
-						rinfo.RiderInfo.MountInfo = rinfo; // Inject new rider between the two.
-					rinfo.MountInfo = minfo;
-					minfo.RiderInfo = rinfo;
-					return rinfo;
-				}
-			}
-		}
-		return null;
-	}
-	
-	// Disconnects a rider from a mount, but keeps the rest of the chain.
-	void Disconnect(bool rider = false, bool mount = true, bool reconnect = false)
-	{
-		if (bDESTROYED)	return;
-		
-		if (rider && mount)
-		{
-			if (reconnect)
-			{
-				if (RiderInfo && MountInfo)
-				{
-					RiderInfo.MountInfo = MountInfo;
-					MountInfo.RiderInfo = RiderInfo;		
-				}
-			}
-			Destroy();
-			return;
-		}
-		if (rider && RiderInfo)
-		{
-			if (Riderinfo.MountInfo == self)
-			{
-				RiderInfo.MountInfo = null;
-				RiderInfo = null;
-			}
-		}
-		
-		if (mount && MountInfo)
-		{
-			if (MountInfo.RiderInfo == self)
-			{
-				MountInfo.RiderInfo = null;
-				MountInfo = null;
-			}
-		}
-		
-		if (!RiderInfo && !MountInfo)
-		{
-			Destroy();
-			return;
-		}
-	}
-	
-	// Completely severs all ties with current rider and mount.
-	void Dismount(bool reconnect = false, bool allriders = false, bool allmounts = false)
-	{
-		if (bDESTROYED)
-			return;
-	
-		if (allriders && RiderInfo)
-			RiderInfo.Dismount(reconnect, allriders, allmounts);
-		if (allmounts && MountInfo)
-			MountInfo.Dismount(reconnect, allriders, allmounts);
-		
-		
-		if (allriders || allmounts)
-		{
-			Destroy();
-			return;
-		}
-		
-		if (reconnect)
-		{
-			if (RiderInfo)
-			{
-				RiderInfo.MountInfo = MountInfo;
-			}
-			if (MountInfo)
-			{
-				MountInfo.RiderInfo = RiderInfo;	
-			}
-		}
-		Destroy();
-	}
-	
-	MCMount GetBottom()
-	{
-		if (!MountInfo)	return self;
-		
-		int failsafe = 50;
-		MCMount temp = MountInfo;
-		while (temp != null && --failsafe > 0)
-		{
-			if (temp.MountInfo == temp)
-			{
-				temp.MountInfo = null;
-				return temp;
-			}
-			temp = temp.MountInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return null;
-		}
-		
-		return temp;
-	}
-	
-	MCMount GetTop()
-	{
-		if (!RiderInfo)	return self;
-		
-		MCMount temp = RiderInfo;
-		
-		int failsafe = 50;
-		while (temp != null && --failsafe > 0)
-		{
-			if (temp.RiderInfo == temp)
-			{
-				temp.RiderInfo = null;
-				return temp;
-			}
-			temp = temp.RiderInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return null;
-		}
-		return temp;
-	}
-	
-	// Designed to eliminate infinite loops and sever self-ties.
-	void ValidateChain()
-	{
-		if (bDESTROYED || !Owner)
-			return;
-		
-		
-		int failsafe = 50;
-		MCMount temp = RiderInfo;
-		while (temp && --failsafe > 0)
-		{
-			if (temp == temp.RiderInfo)
-			{
-				temp.RiderInfo = null;
-				break;
-			}
-			temp = temp.RiderInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return;
-		}
-		
-		failsafe = 50;
-		
-		temp = MountInfo;
-		while (temp && --failsafe > 0)
-		{
-			if (temp == temp.MountInfo)
-			{
-				temp.MountInfo = null;
-				break;
-			}
-			temp = temp.MountInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return;
-		}
-	}
-	
-	bool InChainWith(Actor mo)
-	{
-		if (!mo || !Owner)	return false;
-		
-		ValidateChain();
-		
-		int failsafe = 50;
-		
-		MCMount temp = RiderInfo;
-		while (temp && --failsafe > 0)
-		{
-			if (temp.Owner == mo)
-				return true;
-			temp = temp.RiderInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return null;
-		}
-		failsafe = 50;
-		
-		temp = MountInfo;
-		while (temp && --failsafe > 0)
-		{
-			if (temp.Owner == mo)
-				return true;
-			temp = temp.RiderInfo;
-		}
-		
-		if (failsafe < 1)
-		{
-			ThrowAbortException("Infinite loop encountered!");
-			return null;
-		}
-		
-		return false;
-	}
-	
-	void UpdateRiderPos(bool start = true)
-	{
-		if (MountInfo && MountInfo.Owner)
-		{
-			let o = MountInfo.Owner;
-			Vector3 NewPos = MC_Map.GetWarpPos(Level, o.pos, Offset, o.angle);
-			if (Owner)
-			{
-				Owner.SetOrigin(NewPos, true);
-				A_Stop();
-			}
-		}
-		if (RiderInfo)
-			RiderInfo.UpdateRiderPos(false);
-	}
-	
-	override void OwnerDied()
-	{
-		Dismount();
-	}
-}
-
-extend class MinecraftEntity
-{
-	MCMount MRInfo;
-	protected bool NoRiders;
-	
-	bool MountActor(Actor mo, Vector3 off = (0,0,0), bool add = true)
-	{
-		MCMount check = MCMount.DoMount(mo, self, off, add);
-		if (check)	MRInfo = check;
-		return (check != null);
-	}
-	
-	void Dismount(bool reconnect = false, bool allriders = false, bool allmounts = false)
-	{
-		if (MRInfo)	
-		{
-			MRInfo.Dismount(reconnect, allriders, allmounts);
-			MRInfo = null;
-		}
-	}
-	
-	void Disconnect(bool rider = false, bool mount = true, bool reconnect = false)
-	{
-		if (MRInfo)	MRInfo.Disconnect(rider, mount, reconnect);
-	}
-	
-	
-	virtual void SpawnRiders()
-	{
-	}
-	
-	
-	void SpawnRider(Class<MinecraftEntity> cls, out double hoff, int chance = 256)
-	{
-		if (NoRiders || !cls || random[rng](1,256) > chance)	return;
-		
-		let mo = MinecraftEntity(Spawn(cls, pos, ALLOW_REPLACE));
-		if (mo)
-		{
-			mo.NoRiders = true;
-			if (mo.MountActor(self, (0,0, hoff)))
-				hoff = mo.Height;
-		}
-	}
-	
-	bool IsBottomMount()
-	{
-		return (MRInfo && MRInfo.GetBottom() == MRInfo);
-	}
-}
-*/
-

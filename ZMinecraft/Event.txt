@@ -32,7 +32,7 @@ Class MinecraftHandler : EventHandler
 		S_Max
 	};
 	
-	private int MobCount;
+	private int MobCount, EndermanCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
 	private MCSpawnList SpawnList;
@@ -127,6 +127,9 @@ Class MinecraftHandler : EventHandler
 			mo.Health *= Max(0.5, MCC_HealthMul);;
 			Monsters.Push(mo);
 			MobCount++;
+			
+			if (mo is 'MCEnderman')
+				EndermanCount++;
 		}
 	}
 	
@@ -137,13 +140,21 @@ Class MinecraftHandler : EventHandler
 		{
 			MobCount--;
 			Monsters.Delete(mo);
+			
+			if (mo is 'MCEnderman')
+				EndermanCount--;
 		}
 	}
 	
 	override void WorldThingDestroyed(WorldEvent e)
 	{
 		let mo = MinecraftEnemy(e.Thing);
-		if (mo && !mo.bKILLED) MobCount--;
+		if (mo && !mo.bKILLED) 
+		{
+			MobCount--;
+			if (mo is 'MCEnderman')
+				EndermanCount--;
+		}
 	}
 	
 	override void WorldThingDamaged(WorldEvent e)
@@ -172,6 +183,7 @@ Class MinecraftHandler : EventHandler
 		}
 	}
 	
+	
 	override void WorldTick()
 	{
 		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap')
@@ -192,6 +204,8 @@ Class MinecraftHandler : EventHandler
 			}
 		}
 		
+		DoEnderTrace();
+		
 		if (++Timer[S_Clean] >= CleanTimer)
 		{
 			Timer[S_Clean] = 0;
@@ -200,6 +214,21 @@ Class MinecraftHandler : EventHandler
 			SpawnQueuePriority.Clean();
 			ClsQueue.Clean();
 			ClsQueuePriority.Clean();
+			
+			MobCount = 0;
+			EndermanCount = 0;
+			for (int i = 0; i < Monsters.Size(); i++)
+			{
+				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				if (mo && mo.health > 0)
+				{
+					mo.CleanActors();
+					mo.CleanDamagers();
+					MobCount++;
+					if (mo is 'MCEnderman')
+						EndermanCount++;
+				}
+			}
 		}
 		
 		// Spawn monsters spherically around players.

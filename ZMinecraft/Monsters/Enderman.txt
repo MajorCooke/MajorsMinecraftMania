@@ -21,27 +21,48 @@ Legs:			0.0		~.4		3.0
 
 */
 
+
+
+//
+const EndermanTargetDistance = 2048.0;
 Class MCEnderman : MinecraftEnemy
 {
-	const HeadHeight = 8.6;
-	mixin NormalLimbCount;
+	const _Radius = 1.2;
+	const _Height = 9.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
 
+	const NormalSpeed = 3.0;
+	const AngerSpeed = 7.0;
+	
+	mixin NormalLimbCount;
+	private Array<CVector3> LimbVec;
+	
 	Default
 	{
-		Scale 6;
-		Radius 1.6;
-		Height 9.4;
+		Health 150;
+		Mass 200;
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		Speed NormalSpeed;
+		MaxStepHeight 64;
+		BloodColor "Purple";
 		ActiveSound "Minecraft/Enderman/Idle";
 		PainSound "Minecraft/Enderman/Hit";
 		DeathSound "Minecraft/Enderman/Death";
 		
 		Tag "Enderman";
 		Obituary "%o blinked. Then an Enderman ate %p eyes.";
+		
+		MaxTargetRange EndermanTargetDistance;
 	}
 	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
+		AttackDamagers = false;
 		Init(LimbCount);
 		Limb[Head] = MCBodyPart(Spawn('MCEndermanHead', pos));
 		Limb[Body] = MCBodyPart(Spawn('MCEndermanBody', pos));
@@ -51,58 +72,528 @@ Class MCEnderman : MinecraftEnemy
 		Limb[LegL] = MCBodyPart(Spawn('MCEndermanLegLeft', pos));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i])
+			let lim = Limb[i];
+			if (Lim)
 			{
-				Limb[i].Master = self;
-				Limb[i].Owner = self;
-				Limb[i].Scale = Scale;
+				if (i <= Body)		Lim.Master = self;
+				else				Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.Scale = Scale;
+			}
+		}
+		/*
+		Limb[Head].SetPosOffsets((0.0, 0.0, 7.8));
+		Limb[Body].SetPosOffsets((0.0, 0.0, 6.6));
+		Limb[ArmR].SetPosOffsets((0.0, 1.0, 7.6));
+		Limb[ArmL].SetPosOffsets((0.0,-1.0, 7.6));
+		Limb[LegR].SetPosOffsets((0.0, 0.4, 5.8));
+		Limb[LegL].SetPosOffsets((0.0,-0.4, 5.8));
+		*/
+		LimbVec.Clear();
+		LimbVec.Reserve(Limb.Size());
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			let vec = CVector3.Create((0,0,0));
+			LimbVec[i] = vec;
+		}
+		
+		LimbVec[Head].v = (0.0,	 0.0, 7.8);
+		LimbVec[Body].v = (0.0,  0.0, 6.6);
+		LimbVec[ArmR].v = (0.0,  1.0, 7.6);
+		LimbVec[ArmL].v = (0.0, -1.0, 7.6);
+		LimbVec[LegR].v = (0.0,  0.4, 5.8);
+		LimbVec[LegL].v = (0.0, -0.4, 5.8);
+		
+		
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].SetPosOffsets(LimbVec[i].v);
+		
+		
+		UpdateLimbs();
+	}
+	
+	override void SetupRelations()
+	{
+		Super.SetupRelations(true);
+		SetClassRelation('PlayerPawn', Rel_Neutral, true);
+	}
+	
+	private bool Angry, WasAngry, StaredAt;
+	private int MoveWait, StareTimer, StareCount;
+	private Actor StaredBy;
+	private Array<Actor> Staring;
+		
+	void Stared(Actor at)
+	{
+		if (!Angry)
+			Staring.Push(at);
+		StaredAt = true;		
+	}
+	
+	private void HandleStares()
+	{
+		if (Staring.Size() < 1)	return;
+		
+		if (Angry)
+		{
+			Staring.Clear();
+			return;
+		}
+		Actor closest = null;
+		double distance = EndermanTargetDistance ** 2;
+		
+		for (int i = 0; i < Staring.Size(); i++)
+		{
+			if (Staring[i] && Targetable(Staring[i]))
+			{
+				double dist = Distance3DSquared(Staring[i]);
+				if (dist >= distance)	continue;
+				
+				closest = Staring[i];
+				distance = dist;
+			}
+		}
+		Staring.Clear();
+		
+		if (closest != StaredBy)
+		{
+			StaredBy = Closest;
+			StareCount = 0;
+		}
+		
+		if (Closest)
+		{
+			StareTimer = 5;
+			if (StareCount > 7)
+				SetAngry(closest, true, true);
+			else StareCount++;
+		}
+	}
+	
+	void ClearStare()
+	{
+		StaredAt = false;
+		StareTimer = StareCount = 0;
+		StaredBy = null;
+	}
+	
+	bool IsAngry() { return Angry; }
+	
+	void SetAngry(Actor at, bool snd = false, bool stare = false)
+	{
+		if (at)
+		{
+			bool trg = Targetable(Target);
+			if (trg && stare)
+			{
+				if (at == Target)
+					MoveWait = 2;
+				
+				return;
+			}
+			Angry = Targetable(at);
+		}
+		else Angry = false;
+		
+		
+		if (Angry)	
+		{
+			Target = at;
+			if (!WasAngry && snd)
+				A_StartSound("Minecraft/Enderman/Stare", 9, CHANF_OVERLAP, 1, ATTN_NONE);
+			ActiveSound = "Minecraft/Enderman/Scream";
+			if (Limb[Head])	Limb[Head].Frame = Fr_B;
+			Speed = AngerSpeed;
+			SetState(ResolveState("See"));
+		}
+		else
+		{
+			A_ClearTarget();
+			ActiveSound = Default.ActiveSound;
+			if (Limb[Head])	Limb[Head].Frame = Fr_A;
+			Speed = NormalSpeed;
+		}
+	}
+	
+	override void Tick()
+	{
+		
+		if (health < 1 || IsFrozen() || bDESTROYED)
+		{
+			Super.Tick();
+			return;
+		}
+		
+		if (MoveWait > 0)	MoveWait--;
+		/*
+		if (Angry)
+		{
+			if (StaredAt)	MoveWait = 2;
+		}
+		else if (StaredAt)
+		{
+			HandleStares();
+		}
+		*/
+		StaredAt = false;
+			
+		
+		
+		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
+		{
+			if (Angry)
+			{
+				double r = 2.0 / (Scale.Y * OverScale);
+				Vector3 jiggle = (frandom(-r, r), frandom(-r, r), 0);
+				
+				for (int i = 0; i < Limb.Size(); i++)
+				{
+					let Lim = Limb[i];
+					if (!Lim)	continue;
+					
+					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
+					else			Lim.UpdatePosition(Lim.Master, false);				
+				}
+			}
+			else if (WasAngry)
+			{
+				
+				for (int i = 0; i < Limb.Size(); i++)
+				{
+					let Lim = Limb[i];
+					if (!Lim)	continue;
+					
+					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
+					else			Lim.UpdatePosition(Lim.Master, false);
+				}
+			}
+		}
+		WasAngry = Angry;
+		
+		Super.Tick();
+	}
+	
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
+	{
+		if (dmg < 1)	return;
+		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
+		{
+			ClearRelations(Res_Actors);
+			SetAngry(src);
+			DoTeleport(false, secdmg);
+			return;
+		}
+		SetAngry(src);
+		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
+		
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		return (InTeleport && !(flags & DMG_FORCED)) ? 0 : Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (InTeleport)
+		{
+			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
+				return false;
+		}
+		return true;
+	}
+	
+	private bool InTeleport;
+	bool DoTeleport(bool enemy = false, bool secdmg = false)
+	{
+		if (secdmg)
+		{
+		//	let Lines = GetIntersectingLines(self, (1024, 1024));
+			int i, j, k, l,
+				iter = 32,
+				half = iter / 2;
+			double tile = 32;
+			k = random(-half,half);
+			L = random(-half,half);
+			for (i = 0; i < iter; i++)
+			{
+				k = ((k + i) % iter) - half;
+				for (j = 0; j < iter; j++)
+				{
+					l = ((l + j) % iter) - half;
+					
+					//pos.z = Level.PointInSector(pos.xy).floorplane.ZatPoint(pos.xy);
+					Vector3 off = (pos.x + iter * k, pos.y + iter * l, pos.z);
+					Sector s = Level.PointInSector(off.xy);
+					
+					if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
+						continue;
+					
+					off.z = s.floorplane.ZatPoint(off.xy);
+					if (!Level.IsPointInLevel(off) || 
+						off.z > pos.z + double(32 * iter) || 
+						off.z < pos.z - double(32 * iter))
+						continue;
+					
+					double curz = pos.Z;
+					SetZ(off.Z);
+					if (CheckPosition(off.XY))
+					{
+						SetOrigin(off, true);
+						A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+	
+		/*
+		int steps = random(30,60);
+		
+		bool MBF = bMBFBOUNCER;
+		double steph = MaxStepHeight;
+		double dropo = MaxDropOffHeight;
+		double sped = Speed;
+		
+		InTeleport = true;
+		bMBFBOUNCER = true;
+		MaxStepHeight = 1024;
+		MaxDropOffHeight = 1024;
+		Speed = Radius;
+		
+		Vector3 current = pos, pre = pos;
+		bool safe = false;
+		for (int i = 0; i < steps; i++)
+		{
+			A_Wander();
+			if (pos.z > floorz)
+				SetZ(floorz);
+				
+			safe = (CurSector.DamageAmount < 1 || ApplyDamageFactor(CurSector.DamageType, CurSector.DamageAmount) < 1);
+			
+			if (!secdmg)
+			{
+				if (safe)	current = pos;
+				else		SetOrigin(current, false);
+			}
+			else
+			{
+				if (safe)
+					break;
 			}
 		}
 		
-		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
-		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
-		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
-		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
-		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
-		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		prev = pre;
 		
-		Limb[ArmR].SetPitch(-90);
-		Limb[ArmL].SetPitch(-90);
-		A_SetSize(Radius * Scale.X, Height * Scale.Y);
+		bMBFBOUNCER = MBF;
+		MaxStepHeight = steph;
+		MaxDropOffHeight = dropo;
+		Speed = sped;
+		InTeleport = false;
+		*/
+		return true;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 AA 35;
+		Goto IdleMove;
+	Idle:
+		TNT1 A 0 
+		{
+			SetAngry(null);
+			return A_Jump(256, random(1, 4));
+		}
+		TNT1 AAAAAAAAAA 17 Look();
+	IdleMove:
+		TNT1 A 0 
+		{
+			SetAngry(null);
+			LookTimer = 0;
+			return A_Jump(256, random(1, 35*2));
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
+		Goto Idle;
+	See:
+		TNT1 A 1 
+		{
+			int flag = (MoveWait > 0) ? CHF_DONTMOVE : 0;
+			Chase(flags: flag|CHF_NOPLAYACTIVE);
+		}
+		Wait;
+	Melee:
+		TNT1 A 1 DoMelee(random[rng](20, 25));
+		Goto See;
 	}
 }
 
-Class MCEndermanArmRight : MCBodyPartArm
+//==============================================================================
+//==============================================================================
+// Enderman Tracer
+//
+// This is called whenever an enederman is present, in order to get all players
+// information at what they're looking at. In this case, if looking at an
+// Enderman's upper boundary box where the head is, provided he's passive,
+// trigger the beast.
+//==============================================================================
+//==============================================================================
+
+
+extend class MinecraftHandler
 {
-}
-Class MCEndermanArmLeft : MCBodyPartArm
-{
+	transient private EnderTracer etrc;
+	void DoEnderTrace()
+	{
+		if (EndermanCount < 1)	return;
+		
+		if (!etrc)	etrc = new('EnderTracer');
+		etrc.Endermen.Clear();
+		
+		MCEnderman mo = null;
+		Array<Actor> Staring; Staring.Clear();
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || !players[i].mo)
+				continue;
+			
+			Actor plr = players[i].mo;
+			if (!plr)	continue;
+			
+		
+			
+			double angle = plr.angle;
+			double pitch = plr.pitch;
+			Vector3 ang = (cos(angle)*cos(pitch), sin(angle)*cos(pitch), -sin(pitch));
+			Vector3 pos = plr.Vec2OffsetZ(0,0,plr.player.viewz);
+			
+			bool Pushed = false;
+			etrc.Endermen.Clear();
+			do
+			{
+				etrc.Trace(pos, plr.CurSector, ang, EndermanTargetDistance, 0);
+				mo = MCEnderman(etrc.Results.HitActor);
+				if (mo)
+				{
+					etrc.Endermen.Push(mo);
+					if (mo.Health > 0 && !mo.CheckFear(plr))
+					{
+						Vector3 hitpos = etrc.Results.HitPos;
+						let head = mo.GetHead();
+						if (head)
+						{
+							if (hitpos.z >= head.pos.z)
+								mo.SetAngry(plr, true, true);
+							//	mo.Stared(plr);
+						}
+					}	
+				}
+			} while (etrc.Results.HitType == TRACE_HitActor);
+		}
+	}
 }
 
-Class MCEndermanBody : MCBodyPart
+Class EnderTracer : LineTracer
 {
+	Array<Actor> Endermen;
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			case TRACE_HitActor:
+			{
+				Actor mo = Results.HitActor;
+				if (mo is 'MCEnderman')
+				{
+					int size = Endermen.Size();
+					if (size < 1 || Endermen.Find(mo) >= size)
+						return TRACE_Stop;
+				}
+				return TRACE_Skip;
+			}
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKING | Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+					return TRACE_Stop;
+				
+				if (Results.Tier == TIER_Middle && (hf & Line.ML_BLOCKING) && (hf & Line.ML_TWOSIDED))
+					return TRACE_Skip;
+				
+			}
+		}
+		return TRACE_Skip;
+	}
 }
 
-Class MCEndermanHead : MCBodyPartHead
+Class MCEndermanArm : MCBodyPartArm
 {
+	Default
+	{
+		MCBodyPart.Gib 'MCEndermanArmGib';
+		MCBodyPart.CurAction (E_Swing|E_Sway);
+		Radius 0.2;
+		Height 6.0;
+	}
 }
 
-Class MCEndermanLegRight : MCBodyPartLeg
-{
+Class MCEndermanArmRight : MCEndermanArm
+{	
+	Default	
+	{	
+		MCBodyPart.SineOffset 180, 180, 180;
+		MCBodyPart.VelSineOffset 180;
+	}
 }
 
-Class MCEndermanLegLeft : MCBodyPartLeg
+Class MCEndermanArmLeft : MCEndermanArm {}
+
+Class MCEndermanBody : MCBodyPart	{}
+
+Class MCEndermanHead : MCBodyPartHead	{}
+
+Class MCEndermanLeg : MCBodyPartLeg
 {
+	Default
+	{
+		MCBodyPart.Gib 'MCEndermanLegGib';
+		Radius 0.2;
+		Height 6.0;
+	}
 }
+
+Class MCEndermanLegRight : MCEndermanLeg {}
+
+Class MCEndermanLegLeft : MCEndermanLeg
+{	
+	Default
+	{
+		MCBodyPart.Gib 'MCEndermanLegGib';
+		MCBodyPart.SineOffset 180, 180, 180;
+		MCBodyPart.VelSineOffset 180;
+	}
+}
+
+Class MCEndermanBodyGib : MCBodyPartGib	{}
 
 Class MCEndermanHeadGib : MCBodyPartGib
-{
-}
+{	Default {	MCBodyPartGib.Offsets 0, 0, 1.6;	}	}
 
-Class MCEndermanArmGib : MCBodyPart
-{
-}
+Class MCEndermanArmGib : MCBodyPartGib
+{	Default {	MCBodyPartGib.Offsets 0, 0, -2.8;	}	}
 
 Class MCEndermanLegGib : MCBodyPartGib
-{
-}
+{	Default {	MCBodyPartGib.Offsets 0, 0, -2.8;	}	}

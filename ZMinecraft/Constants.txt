@@ -20,12 +20,18 @@ enum EMinecraftConst
 	E_Swing =	1 << 2,
 	
 	// Relations
-	Rel_None =	1,
+	Rel_None =	0,
 	Rel_Neutral,
-	Rel_Hate,
+	Rel_Hate, Rel_Hated = Rel_Hate, Rel_Hostile = Rel_Hate,
 	Rel_Ignored,
-	Rel_Afraid,
+	Rel_Afraid, Rel_Fear = Rel_Afraid,
+	Rel_Follower,
+	Rel_Leader,
+	Rel_Max,
 	
+	Res_Both = 0,
+	Res_Actors,
+	Res_Classes
 };
 
 enum EMinecraftMountConst

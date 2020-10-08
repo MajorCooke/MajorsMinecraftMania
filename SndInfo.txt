@@ -374,3 +374,8 @@ $limit Minecraft/Enderman/Hit 0
 $limit Minecraft/Enderman/Idle 0
 $limit Minecraft/Enderman/Portal 0
 $limit Minecraft/Enderman/Scream 0
+
+$PitchSet Minecraft/Enderman/Hit 0.9 1.1
+$PitchSet Minecraft/Enderman/Idle 0.9 1.1
+$PitchSet Minecraft/Enderman/Death 0.9 1.1
+$PitchSet Minecraft/Enderman/Scream 0.9 1.1
