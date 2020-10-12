@@ -257,12 +257,14 @@ extend class MinecraftEnemy
 	// function is called.
 	//--------------------------------------------------------------------------
 	
+	
 	protected virtual void CustomLook(bool close = false)
 	{
 		if (Passive)	return;
 		
 		if (!Relations)
 		{
+			
 			A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
 		}
 		else
@@ -289,7 +291,11 @@ extend class MinecraftEnemy
 					}
 				}
 			}
-			if (closest)	Target = closest;
+			if (closest)	
+			{
+				if (!LastEnemy && Target)	LastEnemy = Target;
+				Target = LastHeard = closest;
+			}
 		}
 	}
 	

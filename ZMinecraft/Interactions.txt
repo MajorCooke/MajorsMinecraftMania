@@ -452,13 +452,23 @@ extend class MinecraftEnemy
 	//
 	// *range
 	//		If > 0, overrides the chase range.
+	
+	// *chasing
+	//		Only set to true when called by Chase, otherwise this can cause issues.
+	// 
+	// *relate
+	//		If true, checks if targetable via relationships.
+	// 
+	// *TargetOnly
+	//		If true, ignores Last<Heard/Enemy/LookActor> pointers.
 	//==========================================================================
 	private int OOSTimer; // Out of sight timer
 	const OOSTimeOut = Second * 5;
 	const LookTimerDefault = 17;
-	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, bool relate = true)
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, bool relate = true, bool TargetOnly = false)
 	{
-		if (!Target)	
+	
+		if (!Target)
 		{
 			if (Tracer)	Target = Tracer;
 			else if (Goal)	Target = Goal;
@@ -478,6 +488,24 @@ extend class MinecraftEnemy
 		else if ((Goal && Target == Goal))	ChaseRange = 22767;
 		
 		bool targetable = (Targetable(Target, relate));
+		
+		if (!TargetOnly && !targetable)
+		{
+			Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
+			
+			for (int i = 0; i < temp.Size(); i++)
+			{
+				targetable = (Targetable(temp[i], relate));
+				if (targetable)
+				{
+					Target = temp[i];
+					break;
+				}
+			}
+		}
+		
+		// We have a target. If the actor's out of sight/range for more than
+		// the timeout (5 seconds), clear the target.
 		if (targetable)
 		{
 			if (Distance3DSquared(Target) > ChaseRange ** 2 
@@ -516,17 +544,15 @@ extend class MinecraftEnemy
 	{
 		Actor OldTarget = Target;
 		Target = other;	
-		if (Super.OkayToSwitchTarget(other) && Targetable(other))
-			return true;
-		
+		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
 		Target = OldTarget;
-		return false;
+		return ret;
 	}
 	
 	protected bool Afraid;
 	virtual bool Targetable(Actor mo, bool relate = true) const
 	{
-		// Doesn't exist.
+		// Doesn't exist, is self or is passive.
 		if (!mo || mo == self || passive)	
 			return false;
 		
@@ -543,10 +569,9 @@ extend class MinecraftEnemy
 			return false;
 			
 		// Don't target players that are (totally) frozen because this could fuck up
-		// things badly and get them to kill a defenseless player.
+		// scripts badly and get them to kill a defenseless player.
 		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
 			return false;
-		
 		
 		return (!relate || CheckRelationTarget(mo));
 	}
