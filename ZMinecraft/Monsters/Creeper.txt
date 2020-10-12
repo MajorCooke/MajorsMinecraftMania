@@ -399,7 +399,7 @@ Class MCCreeper : MinecraftEnemy
 			if (mo is 'PlayerPawn')
 				dist = (Charging) ? HissingRange : ExploRange;
 			else
-				dist = ExploRange + 4;
+				dist = (ExploRange + HissingRange) * 0.5;
 		}
 		
 		return 	(mo && 
@@ -460,7 +460,7 @@ Class MCCreeper : MinecraftEnemy
 				SetExplosionCounting(false);
 			Chase('Melee', null, 0, 30, true);
 			
-			bDROPOFF = (Target && Target.Pos.Z < Pos.Z && InExploRange(Target, true, HissingRange));
+			bDROPOFF = (Target && Target.Pos.Z + Target.Height < Pos.Z && InExploRange(Target, true, HissingRange));
 		}
 		Wait;
 	Melee:
