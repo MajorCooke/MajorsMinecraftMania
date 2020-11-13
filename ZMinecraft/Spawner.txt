@@ -4,29 +4,39 @@ extend class MinecraftHandler
 	private void CreateSpawnList()
 	{
 		SpawnList = MCSpawnList.Create();
-		SpawnList.Add('MCZombie',			28);
-		SpawnList.Add('MCZombieBaby',		02);
-		SpawnList.Add('MCSkeleton',			30);
-		SpawnList.Add('MCCreeper',			10);
+		
+		// Actor name, easy, normal, hard, dimension, and group.
+		SpawnList.Add('MCZombie',			300, 300, 300);
+		SpawnList.Add('MCZombieBaby',		025, 050, 075);
+		SpawnList.Add('MCSkeleton',			300, 300, 300);
+		SpawnList.Add('MCSpider',			075, 100, 125);
+		SpawnList.Add('MCCreeper',			075, 150, 250);
+		SpawnList.Add('MCEnderman',			005, 010, 015,	Dim_Overworld|Dim_Hell|Dim_End,	'Big');
+		SpawnList.Add('MCGhast',			001, 005, 010,	Dim_Hell,	'Big');
+		
 	}
 	
-	private AArray SpawnQueue;
-	private AArray SpawnQueuePriority;
-	private CAArray ClsQueue;
-	private CAArray ClsQueuePriority;
-	private MinecraftEnemy MoToSpawn;
+	const MaxQueue = 10;
+	
+//	private AArray SpawnQueue, SpawnQueuePriority;
+//	private CAArray ClsQueue, ClsQueuePriority, ClsQueueBlacklist;
+	private MCSpawnList SpawnList;
 	private int MaxMobs;
 	
 	private void InitQueues()
 	{
+		/*
 		SpawnQueue = AArray.Create();
 		SpawnQueuePriority = AArray.Create();
 		ClsQueue = CAArray.Create();
 		ClsQueuePriority = CAArray.Create();
+		ClsQueueBlacklist = CAArray.Create();
+		*/
 	}
 	
 	// Checks all queued classes for peaceful despawning. If they do, removes
 	// them from the queue.
+	/*
 	private void CheckClassQueues()
 	{
 		CAArray rays[2];
@@ -35,6 +45,8 @@ extend class MinecraftHandler
 		
 		for (int i = 0; i < rays.Size(); i++)
 		{
+			if (!rays[i])	continue;
+			
 			Array<Class<Actor> > temp; temp.Clear();
 			// CAArray has a Size() function to get the Classes[index].Size().
 			for (int j = 0; j < rays[i].Size(); j++)
@@ -54,6 +66,9 @@ extend class MinecraftHandler
 			rays[i].Classes.Move(temp);
 		}
 	}
+	*/
+	
+	
 	
 	//==========================================================================
 	// Performs the countdown to attempt spawning monsters.
@@ -68,6 +83,7 @@ extend class MinecraftHandler
 		{
 			Timer[S_Spawn] = 35;
 			
+			/*
 			// Everything Minecraft related must despawn.
 			// Monsters auto-destroy themselves when set to force despawn, so
 			// wipe it all out.
@@ -75,16 +91,17 @@ extend class MinecraftHandler
 			{
 				if (MCC_PeacefulBehavior <= CV_Despawn)
 				{
-					SpawnQueue.Clear();
-					SpawnQueuePriority.Clear();
-					ClsQueue.Clear();
-					ClsQueuePriority.Clear();
+					SpawnQueue.Clear(true);
+					SpawnQueuePriority.Clear(true);
+					ClsQueue.Clear(true);
+					ClsQueuePriority.Clear(true);
 				}
 				else if (MCC_PeacefulBehavior == CV_Minecraft)
 				{
 					CheckClassQueues();
 				}
 			}
+			*/
 		}
 		else if (--Timer[S_Spawn] < 1)
 		{
@@ -101,6 +118,17 @@ extend class MinecraftHandler
 			TriggerMapSpawns();
 		}
 		WasPeaceful = MCC_Peaceful;
+		
+		if (MCC_AIDifficulty_Prev != MCC_AIDifficulty)
+		{
+			MCC_AIDifficulty_Prev = MCC_AIDifficulty;
+			for (int i = 0; i < Monsters.Size(); i++)
+			{
+				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				if (mo && !mo.bKILLED && !mo.bDESTROYED)
+					mo.AdjustDifficulty();
+			}
+		}
 	}
 	
 	//==========================================================================
@@ -113,154 +141,158 @@ extend class MinecraftHandler
 		int reset = Max(35,
 			Minute * MCC_SpawnDelayMinute + 
 			Second * MCC_SpawnDelaySecond + 
-			Second * random[rng](0,MCC_SpawnDelayRandom));
+			Second * irandom(0,MCC_SpawnDelayRandom));
 		
 		MaxMobs = int(round(MCC_Spawns * MCC_SpawnMul));
 		
-		PrepareSpawnNormal(SpawnQueuePriority, ClsQueuePriority);
-			
 		if (MobCount < MaxMobs)
-			PrepareSpawnNormal(SpawnQueue, ClsQueue);
-		else ret = reset;
+		{
+			PrepareSpawnNormal();
+		//	Console.Printf("%d", MobCount);
+		}
+		else 
+		{
+		//	Console.Printf("%d", MobCount);
+			SpawnFails = 0;
+			ret = reset;
+		}
 		
 		Timer[S_Spawn] = ret;
 	}
-	
-	
-	
 	//==========================================================================
 	// Attempts a normal map spawn via timer, and prepares it for creation.
 	// Only attempts to create 10 monsters at a time in order to keep a lid on
 	// performance issues.
 	//==========================================================================
 	
-	const MaxQueue = 10;
-	private bool PrepareSpawnNormal(out AArray Cue, out CAArray ClsCue)
-	{
+	
+	private void PrepareSpawnNormal()
+	{	
 		if (!SpawnList)	CreateSpawnList();
-		
-		if (!Cue)		Cue = AArray.Create();
-		if (!ClsCue)	ClsCue = CAArray.Create();
-		
-		// Go through the specified class queue and try to spawn as many of the
-		// monsters as possible, settinng them all as dormant.
-		if (Cue.Size() < 1)
-		{
-			bool Finished = true;
-			for (int i = 0; i < ClsCue.Size(); i++)
-			{
-				if (!ClsCue.Classes[i])	continue;
 				
-				let mon = MinecraftEnemy(Actor.Spawn(ClsCue.Classes[i], (0,0,0), ALLOW_REPLACE));
-				if (mon)
-				{
-					mon.bNODROPOFF = true;
-					mon.Deactivate(null);
-					Cue.Push(mon);
-					
-					// Only spawn so many.
-					if (Cue.Size() >= MaxQueue && Cue.Clean() >= MaxQueue)
-					{
-						Finished = false;
-						break;
-					}
-				}
+		// Go through the specified class queue and try to spawn as many of the
+		// monsters as possible, setting them all as dormant.
+		if (!MoCue)
+		{
+			Class<Actor> cls = SpawnList.PickRandom();
+			MoCue = MinecraftEnemy(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
+			if (MoCue)
+			{
+				MoCue.bNODROPOFF = true;
+				MoCue.Deactivate(null);
 			}
-			if (Finished)
-				ClsCue.Clear();
+			else return;
 		}
+		
 		
 		//----------------------------------------------------------------------
 		// Now try to position them one at a time for activating.
-		if (!MoToSpawn)	
+		
+		AttemptMonsterPlacement();
+		if (MoCue)
 		{
-			for (int i = 0; i < Cue.Size(); i++)
+			if (++SpawnFails >= 10)
 			{
-				if (!Cue.Actors[i])	continue;
-			
-				MoToSpawn = MinecraftEnemy(Cue.Actors[i]);
-				if (MoToSpawn)	
-				{
-					Cue.Actors[i] = MoToSpawn;
-					break;
-				}
-				
-			}
-			
-			// The queue is empty, so generate a random mob.
-			if (!MoToSpawn)
-			{
-				Class<Actor> mo = SpawnList.PickRandom();
-				if (!mo)	return false;
-				
-				MoToSpawn = MinecraftEnemy(Actor.Spawn(mo, (0,0,0), ALLOW_REPLACE));
-				if (MoToSpawn)
-				{
-					MoToSpawn.bNODROPOFF = true;
-					MoToSpawn.Deactivate(null);
-				}
-				else return false;
+				MoCue.Destroy();
+				MoCue = null;
 			}
 		}
-			
-		return AttemptMonsterPlacement();
 	}
 	
-	bool AttemptMonsterPlacement()
+	private MinecraftEnemy MoCue;
+	private int SpawnFails;
+	void AttemptMonsterPlacement()
 	{
-		if (!MoToSpawn)	return false;
-	
+		
 		// Not exactly player aware but honestly, GZDoom isn't in a state of
-		// multiplayer friendly at the moment so just get the closest player
-		// and spawn around them.
-		MoToSpawn.Deactivate(null);
+		// multiplayer friendly at the moment so just get the closest player and
+		// spawn around them.
+			
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i] || !players[i].mo)	continue;
 			Actor plr = players[i].mo;
 			if (!plr)	continue;
-			
-			
-			
+				
+				
 			double inc = 30;
 			double div = 360 / inc;
-			double ang = random[rng](0,12) * inc;
+			double ang = irandom(0,div) * inc;
 			
-			int j = random[rng](0,inc);
+			int j = random(0,inc);
 			
 			for (int k = 0; k < inc; k++)
 			{
 				j = (j + 1) % inc;
-				ang = random(0, inc) * j;
-				double dist = random[rng](32, 128) * 32;
+				ang = irandom(0, inc) * j;
+				int dist = irandom(MoCue.SpawnRangeMin, MoCue.SpawnRangeMax);
 				Vector3 next; next.XY = plr.Vec2Angle(dist, ang);
-				next.Z = MoToSpawn.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
-				if (!level.IsPointInLevel(next) || level.Vec3Diff(next, plr.pos).Length() > 4096)
+				
+				next.Z = MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
+				
+				if (!level.IsPointInLevel(next))
 					continue;
 					
 				Sector s = Level.PointInSector(next.XY);
 				
-				if (MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
-					MoToSpawn.ApplyDamageFactor(s.DamageType, s.DamageAmount) > 0)
+				if (MCC_SpawnConditions && MCC_EnvironmentDamage && MCC_SectorDamage && 
+					s.DamageAmount > 0 &&
+					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)
 					continue;
-					
-				MoToSpawn.SetOrigin(next, false);
-				MoToSpawn.SetZ(MoToSpawn.FloorZ);
+				/*
+				double fz = s.FloorPlane.ZAtPoint(next.XY); //MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR|GZF_CEILING);
+				double cz = s.CeilingPlane.ZAtPoint(next.XY);
 				
 				
-				
-				if (MoToSpawn.TryMove(MoToSpawn.pos.XY, false))
+				if (s.Get3DFloorCount() > 0)
 				{
-					MoToSpawn.bNODROPOFF = MoToSpawn.Default.bNODROPOFF;
-					MoToSpawn.Angle = random(0,359);
-					MoToSpawn.Activate(null);
-					MoToSpawn.AlignMoveDir();
-					MoToSpawn = null;
-					return true;
+					Array<Double> PoZ;	PoZ.Clear();	PoZ.Push(fz);
+					Array<Double> CeZ;	CeZ.Clear();	CeZ.Push(cz);
+					
+					double	prevfz = fz,
+							iter = fz,
+							nc = cz;
+					do
+					{
+						prevfz = iter;
+						nc = NextHighestCeilingAt(next.X, next.Y, iter, iter + MoCue.Height);
+						iter = NextLowestFloorAt(next.X, next.Y, nc + 1, 0, MoCue.MaxStepHeight);
+						
+						PoZ.Push(iter);
+						CeZ.Push(nc);
+					}
+					while (!(prevfz ~== iter));
+				}
+				else
+				{
+					if (level.Vec3Diff(next, plr.pos).Length() > 4096)
+						continue;
+				}
+				*/
+				if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
+					continue;
+				MoCue.SetOrigin(next, false);
+				
+				if (MoCue.bSPAWNFLOAT)
+					next.Z = ffrandom(MoCue.FloorZ, MoCue.CeilingZ - MoCue.Height);
+				else
+					next.Z = MoCue.FloorZ;
+					
+				MoCue.SetZ(next.Z);
+				
+				if (MoCue.TryMove(MoCue.Pos.XY, false))
+				{
+					MoCue.ClearInterpolation();
+					MoCue.bNODROPOFF = MoCue.Default.bNODROPOFF;
+					MoCue.Angle = irandom(0,359);
+					MoCue.AlignMoveDir();
+					MoCue.Activate(null);
+					MoCue = null;
+					SpawnFails = 0;
+					return;
 				}
 			}
 		}
-		return false;
 	}
 }
 
@@ -274,11 +306,12 @@ Class MCSpawn play
 {
 	Class<Actor> ClassName;
 	Name Group;
-	Int Weight;
+	Int Weight[3], Dimension;
 }
 
 Class MCSpawnList play
 {
+	mixin TM_FastRNG;
 	private Array<MCSpawn> Classes;
 	
 	static MCSpawnList Create()
@@ -292,19 +325,19 @@ Class MCSpawnList play
 	// Adds a class. Must be valid and weight > 0 or it won't add.
 	// If the class is already existing, update it instead of wasting memory.
 	// Also, only changes the group if not '' (blank). Use 'None' to clear.
-	void Add(Class<Actor> cls, int w, Name g = '')
+	void Add(Class<Actor> cls, int easy, int med, int hard, int dim = Dim_Overworld, Name g = '')
 	{
-		if (!cls)	return;
-		
 		int size = Classes.Size();
 		
 		for (int i = 0; i < Classes.Size(); i++)
 		{
 			if (cls == Classes[i].ClassName)
 			{
-				Classes[i].Weight = w;
-				if (g == 'None')	Classes[i].Group = '';
-				else if (g != '')	Classes[i].Group = g;
+				Classes[i].Weight[Dif_Easy] = easy;
+				Classes[i].Weight[Dif_Normal] = med;
+				Classes[i].Weight[Dif_Hard] = hard;
+				if (g == 'None' || !cls)	Classes[i].Group = '';
+				else if (g != '')			Classes[i].Group = g;
 				
 				return;
 			}
@@ -312,7 +345,10 @@ Class MCSpawnList play
 		
 		let sp = new('MCSpawn');
 		sp.ClassName = cls;
-		sp.Weight = w;
+		sp.Weight[Dif_Easy] = easy;
+		sp.Weight[Dif_Normal] = med;
+		sp.Weight[Dif_Hard] = hard;
+		sp.Dimension = dim;
 		sp.Group = (g == 'None') ? '' : g;
 		
 		Classes.Push(sp);
@@ -325,57 +361,65 @@ Class MCSpawnList play
 	// If no group is specified, it'll choose any.
 	//
 	// Arguments
+	//	*blacklist
+	//		
 	//	*group 
 	//		Filters the selection by the group given (whitelist)
 	//	*exclude
 	//		If true, blacklists the group instead of whitelist.
-	Class<Actor> PickRandom(Name group = '', bool exclude = false) const
+	Class<Actor>, Name PickRandom(CAArray Blacklist = null, Name group = '', 
+		bool exclude = false) const
 	{
 		if (Classes.Size() < 1)
-			return null;
+			return null, '';
 	
 		bool any = (group == '' || group == 'None');
 		
-		Array<Class<Actor> > Queue;	Queue.Clear();
-		Array<Int> Chances;			Chances.Clear();
+		Array<MCSpawn> Queue;	Queue.Clear();
 		int Weight = 0;
 		int Size = Classes.Size();
+		int Diff = MCC_Difficulty;
 		
 		// Get all applicable entities.
 		for (int i = 0; i < Classes.Size(); i++)
 		{
 			let c = Classes[i];
-			if (!c || !c.ClassName || c.Weight < 1)
+			if (!c || !c.Classname || c.Weight[Diff] < 1)
+				continue;
+				
+			// Skip blacklisted actors.
+			if (BlackList && BlackList.Find(c.Classname) < BlackList.Size())
 				continue;
 			
-			if (!any)
-				if ((exclude && group == c.Group) || (!exclude && group != c.Group))
-					continue;
+			// Skip non-matching groups.
+			if (!any && ((exclude && group == c.Group) || (!exclude && group != c.Group)))
+				continue;
 			
-			Queue.Push(c.Classname);
-			Chances.Push(c.Weight);
-			Weight += c.Weight;
+			Queue.Push(c);
+			Weight += c.Weight[diff];
 		}
 		
+		// Now that we have our list of valid classes, choose one for spawning.
 		Size = Queue.Size();
 		if (Size > 1)
 		{
-			int n = random[rng](0, Weight - 1);
+			int n = irandom(0, Weight - 1);
 			
 			for (int i = 0; i <= Size; i++)
 			{
 				if (i >= Size)
 					i = 0;
 					
-				n -= Chances[i];
+				n -= Queue[i].Weight[Diff];
 				
-				if (n < 0)	return Queue[i];
+				if (n < 0)	
+					return Queue[i].Classname, Queue[i].Group;
 			}
 		}
 		else if (Size == 1)
-			return Queue[0];
+			return Queue[0].Classname, Queue[0].Group;
 		
-		return null;
+		return null, '';
 	}
 }
 

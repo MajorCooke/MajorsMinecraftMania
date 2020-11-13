@@ -250,8 +250,8 @@ Class MCRelationManager play
 	//==========================================================================
 	
 	//--------------------------------------------------------------------------
-	// Passes all recorded actor/classes if they have the status type.
-	
+	// Passes all recorded actors/classes if they have the status type.
+	// At least one is needed to return true. Any at all.
 	bool CheckStatusType(int status)
 	{
 		if (status <= Rel_None || status > Rel_Max || 
@@ -416,11 +416,13 @@ extend class MinecraftEnemy
 	
 	//--------------------------------------------------------------------------
 	// Searches for potential actors to target.
+	// Takes an actor array and pushes viable actors into it that have a status.
 	bool SearchActors(out Array<Actor> Acts, Vector2 RH, double fov = 90, 
 		bool sight = true)
 	{
 		Acts.Clear();
 		
+		// 
 		if (!CheckStatusType(Rel_Hated) && !CheckStatusType(Rel_Afraid))
 			return false;
 		
@@ -463,9 +465,10 @@ extend class MinecraftEnemy
 	//		If true, ignores Last<Heard/Enemy/LookActor> pointers.
 	//==========================================================================
 	private int OOSTimer; // Out of sight timer
-	const OOSTimeOut = Second * 5;
+	protected int OOSTimeOut;
 	const LookTimerDefault = 17;
-	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, bool relate = true, bool TargetOnly = false)
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, 
+	bool relate = true, bool TargetOnly = false)
 	{
 	
 		if (!Target)
@@ -477,7 +480,7 @@ extend class MinecraftEnemy
 		
 		if (Target == self)
 		{
-			A_ClearTarget();
+			ClearTarget();
 			return false;
 		}
 		
@@ -508,12 +511,11 @@ extend class MinecraftEnemy
 		// the timeout (5 seconds), clear the target.
 		if (targetable)
 		{
-			if (Distance3DSquared(Target) > ChaseRange ** 2 
-				|| (chasing && !CheckSight(Target, CSFlags))
-				)
+			bool sight = CheckSight(Target, CSFlags);
+			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
+				(chasing && !sight))
 			{
-				if (chasing)
-					OOSTimer++;
+				OOSTimer++;
 				
 				if (!chasing || OOSTimer >= OOSTimeOut)
 				{
@@ -526,10 +528,9 @@ extend class MinecraftEnemy
 		
 		if (!targetable)
 		{
-			if (clear && !Goal)	
-			{
+			if (clear)	
 				ClearTarget();
-			}
+			
 			
 			OOSTimer = 0;
 		}
@@ -604,9 +605,9 @@ extend class MinecraftEnemy
 						return CheckActorDamager(mo);
 					if (ret <= Rel_None)
 					{
-						if (bFRIENDLY && mo.bFRIENDLY)
+						if (bFRIENDLY && !mo.bFRIENDLY)
 							return true;
-						else if ((mo is 'PlayerPawn'))	return true;
+						else if (mo is 'PlayerPawn')	return true;
 					}
 				}
 				Default:
@@ -618,7 +619,7 @@ extend class MinecraftEnemy
 	}
 	
 	bool CheckActorDamager(Actor mo) const
-	{	return mo && (mo == Target || mo == Tracer || (AttackDamagers && Damagers.Find(mo) < Damagers.Size()));	}
+	{	return mo && ((AttackDamagers && Damagers.Find(mo) < Damagers.Size()));	}
 	
 	protected void ClearTarget(Actor mo = null)
 	{
@@ -627,7 +628,7 @@ extend class MinecraftEnemy
 			mo = Target;
 			if (!mo)	return;
 		}
-		
+		LastEnemy = null;
 		if (Tracer == mo)
 			Tracer = null;
 		SetActorRelation(mo, Rel_None);
@@ -975,7 +976,7 @@ extend class MinecraftEntity
 	
 	void SpawnRider(Class<MinecraftEntity> cls, out double hoff, int chance = 256)
 	{
-		if (NoRiders || !cls || random[rng](1,256) > chance)	return;
+		if (NoRiders || !cls || irandom(1,256) > chance)	return;
 		
 		let mo = MinecraftEntity(Spawn(cls, pos, ALLOW_REPLACE));
 		if (mo)

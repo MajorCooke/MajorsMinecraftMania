@@ -86,8 +86,11 @@ Struct LimbSwing play
 
 Class MCBodyPart : MinecraftEntity
 {
+	const StepWait = 8;
+
 	private bool DestroyMe;
-	
+	private int StepDelay;
+	protected bool ForceIdleSway;
 	protected int CurAction;
 	protected double LimbLength, OverScale;
 	protected MCBodyPartAttachment Attachment;
@@ -106,6 +109,7 @@ Class MCBodyPart : MinecraftEntity
 	protected MC_QuatTurner Turner;
 	protected Class<MCBodyPartGib> Gib;
 	
+	int		CopyFrames;
 	bool	InvertInvis;
 	double	OffX, OffY, OffZ,
 			ROfX, ROfY, ROfZ,
@@ -116,12 +120,19 @@ Class MCBodyPart : MinecraftEntity
 			SDX, SDY, SDZ, 
 			SSX, SSY, SSZ,
 			SwingAmp,
-			SwingAngleCap;
+			SwingAngleCap,
+			StepVolume;
+	
+	Sound	StepSound;
 	
 	LimbSway Sway;
 	LimbSwing Swing;
 	MinecraftEnemy Owner;
 	
+	Property CopyFrames: CopyFrames;
+	Property ForceIdleSway: ForceIdleSway;
+	Property StepSound: StepSound;
+	Property StepVolume: StepVolume;
 	Property InvertInvis: InvertInvis;
 	Property CurAction : CurAction;			// See Constants.txt
 	Property LimbLength: LimbLength;
@@ -139,8 +150,10 @@ Class MCBodyPart : MinecraftEntity
 	
 	Default
 	{
+		MCBodyPart.ForceIdleSway false;
 		MCBodyPart.SwingAngleCap 80;
 		MCBodyPart.SwingAmp SineWavePerSecond * 0.3;
+		MCBodyPart.StepVolume 1.0;
 		Radius 4;
 		Height 8;
 		+NOINTERACTION
@@ -168,13 +181,18 @@ Class MCBodyPart : MinecraftEntity
 	{
 		if (bKILLED || Destroyed() || !Master)	return;
 		if (Attachment)	Attachment.Deactivate(activator);
+		bDONTINTERPOLATE = true;
 		bINVISIBLE = true;
 		bDORMANT = true;
 	}
 	
 	override void Tick()
 	{
-		if (!Master || IsFrozen() || Destroyed() || bDORMANT)	return;
+		if (!Master || IsFrozen() || bDESTROYED || bDORMANT)	
+		{
+			Super.Tick();
+			return;
+		}
 		
 		if (DestroyMe)
 		{
@@ -264,7 +282,11 @@ Class MCBodyPart : MinecraftEntity
 			String gname = GetClassName().."Gib";
 			Gib = gname;
 			
-			if (!Gib)	return;
+			if (!Gib)	
+			{
+				DestroyMe = true;
+				return;
+			}
 		}
 		
 		let g = MCBodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
@@ -284,7 +306,7 @@ Class MCBodyPart : MinecraftEntity
 			bINVISIBLE = true;
 			
 			// Apply a random velocity in the event there's little speed.
-			g.Vel3DFromAngle(frandom(3.0,6.0), random(0,359), random(-90, 45));
+			g.Vel3DFromAngle(ffrandom(3.0,6.0), irandom(0,359), irandom(-90, 45));
 			if (Owner) g.Vel += Owner.Vel;
 		}
 		
@@ -322,13 +344,21 @@ Class MCBodyPart : MinecraftEntity
 		Vector3 px, py, pz, origin;
 		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
 		origin = NP; + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
-		SetOrigin(origin, interp);
+		
+		if (!(origin ~== pos))
+			SetOrigin(origin, interp);
+		
 		if (Attachment)
 		{
-			[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y, CurAng.X, CurAng.Z);
+			[px, py, pz] = MC_CoordUtil.GetAxes(
+				CurAng.Y + AngOff.Y, 
+				CurAng.X + AngOff.X, 
+				CurAng.Z + AngOff.Z);
 			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
-			Attachment.SetOrigin(origin, interp);
+			if (!(origin ~== Attachment.Pos))
+				Attachment.SetOrigin(origin, interp);
 		}
+		
 	}
 	
 	// Updates the scale of all vectors based on scale so their limbs grow
@@ -359,13 +389,25 @@ Class MCBodyPart : MinecraftEntity
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
 		if (!Master || Destroyed())	return;
+		
+		if (StepDelay < 1 && StepSound != "" && self is 'MCBodyPartLeg')
+		{
+			if (pitch < 0.0 && pitch + Next.Y + AngOff.Y >= 0.0)
+			{
+				StepDelay = StepWait;
+				A_StartSound(StepSound, CHAN_BODY, CHANF_OVERLAP, StepVolume);
+			}
+		}
+		
 		A_SetAngle(Next.X + AngOff.X, turnflags);
 		A_SetPitch(Next.Y + AngOff.Y, turnflags);
 		A_SetRoll(Next.Z + AngOff.Z, turnflags);
 		
+		
+		
 		if (Attachment)	
 		{
-			Attachment.UpdateAngles(Next, turnflags);
+			Attachment.UpdateAngles(Next + AngOff, turnflags);
 		}
 	}
 	
@@ -436,6 +478,7 @@ Class MCBodyPart : MinecraftEntity
 	virtual void DoPreMotion()	
 	{
 		if (Destroyed())	return;
+		if (StepDelay > 0)	StepDelay--;
 		// Counteract the MainAng and AngOff. We don't want it part of the
 		// calculations or it won't work correctly.
 		CurAng = (Angle, Pitch, Roll) - AngOff;
@@ -447,7 +490,7 @@ Class MCBodyPart : MinecraftEntity
 		if (Destroyed() || !Owner)	return;
 		if (CurAction > 0 && !Owner.bDORMANT)
 		{
-			if (MCC_IdleSway && (CurAction & E_Sway))
+			if ((MCC_IdleSway || ForceIdleSway) && (CurAction & E_Sway))
 			{
 				AngOff = Turner.GetTurn((0,0,0), Sway.NextSway());
 			}
@@ -459,7 +502,6 @@ Class MCBodyPart : MinecraftEntity
 		}
 		if (!doSpring || Owner.bDORMANT)
 		{
-		//	VelAng = NextAng + MainAng;
 			CurAng = NextAng + MainAng;
 			doSpring = true;
 		}
@@ -502,17 +544,26 @@ Class MCBodyPart : MinecraftEntity
 
 Class MCBodyPartHead : MCBodyPart 
 {
+	meta bool NoAim;
+	Property NoAim: NoAim;
 	Default
 	{
+		MCbodyPartHead.NoAim false;
 		Radius 1.6;
 		Height 1.6;
 	}
-	
+
 	MinecraftEnemy Trg;
 	MCBodyPartHead TargetHead;
 	override void DoMotion()
 	{
 		if (!Owner)	return;
+		
+		if (NoAim)
+		{
+			Super.DoMotion();
+			return;
+		}
 		
 		int flag = FAF_TOP;
 		double zof = 0;
@@ -524,10 +575,8 @@ Class MCBodyPartHead : MCBodyPart
 		{
 			flag = FAF_BOTTOM;
 			if (Target.Player)
-			{
-				double camz = Target.Player.ViewZ - Target.Pos.Z;
-				zof = camz;
-			}
+				zof = Target.Player.ViewZ - Target.Pos.Z;
+			
 			else
 				zof = 0.8;
 		}
@@ -666,9 +715,9 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		VelLen = vel.Length();
 		double velo = min(VelLen * 0.2, 20.0);
 		Turning = (
-			frandom(-2.0, 2.0) * velo,
-			frandom(-2.0, 2.0) * velo,
-			frandom(-2.0, 2.0) * velo);
+			ffrandom(-2.0, 2.0) * velo,
+			ffrandom(-2.0, 2.0) * velo,
+			ffrandom(-2.0, 2.0) * velo);
 	}
 	
 	void Turn()

@@ -5,8 +5,11 @@ MCM_RELEASE_DATE = "September 26, 2020";
 
 MCM_OPTIONS_TITLE = "Minecraft Options";
 
-MCM_DIFFICULTY_TEXT = "Difficulty";
-MCM_DIFFICULTY_SUB = "Adjusts the difficulty of the monsters, unrelated to Doom's skills.\n See Readme for more info.";
+MCM_DIFFICULTY_TEXT = "Spawn Difficulty";
+MCM_DIFFICULTY_SUB = "Adjusts the spawn rate of more difficult monsters (creeper, endermen, ghasts, etc)";
+
+MCM_AIDIFFICULTY_TEXT = "Behavior Difficulty";
+MCM_AIDIFFICULTY_SUB = "Adjusts the behavior of the monsters, unrelated to Doom's skills.\n See Readme for more info.";
 
 MCM_PEACEFUL_TEXT = "Peaceful Mode";
 MCM_PEACEFUL_SUB = "Pacifies or despawns monsters based on Peaceful Behavior.";
@@ -62,11 +65,17 @@ MCM_SDSECOND_SUB = "Delay between spawning monsters (seconds)";
 MCM_SDRANDOM_TEXT = "Random Seconds";
 MCM_SDRANDOM_SUB = "Adds between 0 to this many seconds randomly to the delay.";
 
+MCM_SPAWNCONDITIONS_TEXT = "Conditional Spawning";
+MCM_SPAWNCONDITIONS_SUB = "Monsters won't spawn in lava/slime/etc if environment damage is on.";
+
 //==============================================================================
 // Monster specific texts
 //==============================================================================
 
 MCM_CREEPERTWEAKS = "Creeper Tweaks";
+
+MCM_CREEPERALWAYSBOOM_TEXT = "Creepers Always Explode";
+MCM_CREEPERALWAYSBOOM_SUB = "Takes priority over other explosion options.";
 
 MCM_CREEPERBOOMBOOM_TEXT = "Explosions explode creepers";
 MCM_CREEPERBOOMBOOM_SUB = "Non-creeper explosions cause hissing creepers to explode.";

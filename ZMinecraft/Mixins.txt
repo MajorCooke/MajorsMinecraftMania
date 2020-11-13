@@ -11,3 +11,25 @@ mixin Class NormalLimbCount
 		LimbCount
 	};
 }
+
+mixin Class TM_FastRNG
+{
+	private S7_FastRNG FRNG;
+	double FFRandom(double min, double max)
+	{
+		if (!FRNG)	FRNG = S7_FastRNG.Create();
+		return FRNG.GetFloat(min, max);
+	}
+	
+	int IFRandom(int min, int max)
+	{
+		if (!FRNG)	FRNG = S7_FastRNG.Create();
+		return FRNG.GetInt(min, max);
+	}
+	
+	int IRandom(int min, int max)
+	{
+		if (!FRNG)	FRNG = S7_FastRNG.Create();
+		return FRNG.GetInt(min, max);
+	}
+}

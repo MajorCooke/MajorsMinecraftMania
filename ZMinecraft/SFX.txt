@@ -1,10 +1,12 @@
 Class MCExplosion : MinecraftEntity
 {
 	meta bool Smokeless;
-	
+	meta bool Silent;
+	Property Silent: Silent;
 	Property Smokeless: Smokeless;
 	Default
 	{
+		MCExplosion.Silent false;
 		Radius 1;
 		Height 1;
 		Scale 256;
@@ -19,22 +21,35 @@ Class MCExplosion : MinecraftEntity
 	States
 	{
 	Spawn:
-		TNT1 A 0 NoDelay A_StartSound("Minecraft/Explode");
+		TNT1 A 0 NoDelay 
+		{
+			if (!Silent)	A_StartSound("Minecraft/Explode");
+		}
 		TNT1 A 10
 		{
 			
-			int mm = int(ceil(2 * Scale.X)); //Main explosion
+			int mm = int(ceil(Scale.X)); //Main explosion
 			int nn = int(round(0.5 * Scale.X)); //
-			int oo = int(round(0.5 * Scale.X));
 			for (int i = 0; i < mm; i++)
 			{
-				Class<Actor> spr = (i < nn) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
-				Angle = random(0,359);
-				Pitch = frandom(-90, 90);
-				double dist = frandom(0.1, 1.0) * Scale.X;
+				Class<Actor> spr = (i <= nn) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
+				Angle = irandom(0,359);
+				Pitch = ffrandom(-90, 90);
+				double dist = ffrandom(0.1, 1.0) * Scale.X;
+				
 				A_SpawnItemEx(spr, cos(pitch) * dist, 0, -sin(pitch) * dist, flags: SXF_NOCHECKPOSITION);
 				
-				if (!Smokeless && i < oo)
+				if (!Smokeless && (i <= nn))
+				{
+					double velo = ffrandom(2.0, 4.0);
+					Vector2 AP = (ffrandom(0,359),ffrandom(-90,90));
+					A_SpawnItemEx("MCExplosionSmoke", 
+						cos(pitch) * dist, 0, -sin(pitch) * dist, 
+						cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
+						AP.X, SXF_NOCHECKPOSITION, 128);
+				}		
+				/*
+				if (!Smokeless && i < nn)
 				{
 					double velo = frandom(2.0, 4.0);
 					Vector2 AP = (random(0,359),random(-90,90));
@@ -42,7 +57,9 @@ Class MCExplosion : MinecraftEntity
 						cos(AP.Y) * dist, 0, -sin(AP.Y) * dist,
 						cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
 						AP.X, SXF_NOCHECKPOSITION, 64);
-				}		
+				}
+				*/
+				
 			}
 		}
 		Stop;
@@ -59,6 +76,7 @@ Class MCExplosionSmokeless : MCExplosion
 
 Class MCExplosionSprite : Actor
 {
+	mixin TM_FastRNG;
 	int DelayMin, DelayMax;
 	Property Delay: DelayMin, DelayMax;
 	Default
@@ -68,7 +86,7 @@ Class MCExplosionSprite : Actor
 		+NOBLOCKMAP
 		+ROLLSPRITE
 		+BRIGHT
-		Scale 2.5;
+		Scale 3.5;
 	}
 	
 	States
@@ -77,8 +95,7 @@ Class MCExplosionSprite : Actor
 		TNT1 A 1 NoDelay 
 		{
 			roll = randompick(0, 90, 180, 270);
-			bXFLIP = random(0,1);
-			A_SetScale(Scale.X + frandom(-0.35, 0.35));
+			A_SetScale(Scale.X + ffrandom(-0.35, 0.35));
 			static const Name Trans[] = 
 			{
 				'MCExplo1',
@@ -88,10 +105,10 @@ Class MCExplosionSprite : Actor
 				'MCExplo5'
 			};
 			int size = Trans.Size();
-			int i = random(0, size);
+			int i = irandom(0, size);
 			if (i < size)
 				A_SetTranslation(Trans[i]);
-			A_SetTics(Max(0, random(DelayMin, DelayMax)));
+			A_SetTics(Max(0, irandom(DelayMin, DelayMax)));
 		}
 		X208 ABCDEFGHIJKLMNOP 1;
 		Stop;
@@ -102,17 +119,24 @@ Class MCExplosionSpriteDelay : MCExplosionSprite
 {
 	Default
 	{
-		MCExplosionSprite.Delay 1, 8;
+		MCExplosionSprite.Delay 1, 10;
 	}
 }
 
 Class MCExplosionSmoke : Actor
 {
+	mixin TM_FastRNG;
 	Default
 	{
 		+NOINTERACTION
 		+NOBLOCKMAP
-		Scale 3.0;
+		Scale 4.0;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		roll = randompick(0, 90, 180, 270);
 	}
 	
 	override void Tick()

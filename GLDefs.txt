@@ -1,4 +1,16 @@
+// Auto doesn't work due to the naming conventions so this must be done manually.
+
 brightmap sprite "Materials/Enderman.png"
 {
 	map "Materials/Brightmaps/Auto/Enderman.png"
+}
+
+brightmap sprite "Materials/Spider.png"
+{
+	map "Materials/Brightmaps/Auto/Spider.png"
+}
+
+brightmap sprite "Materials/CaveSpider.png"
+{
+	map "Materials/Brightmaps/Auto/Spider.png"
 }

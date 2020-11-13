@@ -22,6 +22,7 @@ Class MCSkeletonSpawner : RandomSpawner
 
 Class MinecraftHandler : EventHandler
 {
+	mixin TM_FastRNG;
 	const DespawnTimer = Second * 5;
 	const CleanTimer = Second * 10;
 	enum ETimers
@@ -35,7 +36,6 @@ Class MinecraftHandler : EventHandler
 	private int MobCount, EndermanCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
-	private MCSpawnList SpawnList;
 	private Array<MCMountInfo> MountList;
 	
 	AArray Monsters;
@@ -100,20 +100,10 @@ Class MinecraftHandler : EventHandler
 	{
 		MountList.Clear();
 		Monsters = AArray.Create();
-		InitQueues();
 		CreateSpawnList();
+		InitQueues();
 		Timer[S_Spawn] = Second;
-		/*
-		DamageSectors = MC_SectorContainer.Create();
-		for (int i = 0; i < level.Sectors.Size(); i++)
-		{
-			Sector s = level.Sectors[i];
-			if (s.DamageAmount > 0)
-				DamageSectors.AddSector(s);
-		}
-		*/
-		// TO DO: Find out via testing and printing what the line specials are
-		// for floorLowerAndChange, etc.
+		MCC_AIDifficulty_Prev = MCC_AIDifficulty;
 		
 	}
 	
@@ -172,49 +162,81 @@ Class MinecraftHandler : EventHandler
 		}
 	}
 	
-	void DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	Actor DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
 	{
-		if (!mo || !Cls)	return;
+		if (!mo || !Cls || Chance < 1)	return null;
 		
-		Inventory Item = Inventory(mo.A_DropItem(Cls, Amount, Chance));
-		if (Item && !Item.bBIGPOWERUP && !(Item is 'Ammo') && !(Item is 'Weapon'))
+		Actor check = mo.A_DropItem(Cls, Amount, Chance);
+		if (!check)	return null;
+		
+		Inventory Item = Inventory(check);
+		if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
 		{
 			let DropTimer = MCDropTimer.Create(Item);
 		}
+		return check;
 	}
 	
-	
+	private int MCC_AIDifficulty_Prev;
 	override void WorldTick()
 	{
-		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap')
+		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap' || level.IsFrozen())
 			return;
+		
 		if (MobCount > 0 && ++Timer[S_Despawn] >= DespawnTimer)
 		{
 			Timer[S_Despawn] = 0;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = Monsters.Actors[i];
-				if (!mo)	continue;
+				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				if (!mo || (mo.Target && mo.Targetable(mo.Target)))	continue;
 				
-				if (mo.A_CheckRange(4096, "Null", true) ||
-					(mo.A_CheckRange(2048, "Null", true) && random[rng](1,256) <= 32))
+				double  dmin = mo.DespawnRangeMin,
+						dmax = mo.DespawnRangeMax;
+				
+				if (mo.A_CheckRange(mo.DespawnRangeMin, "Null", true))
 				{
-					mo.Destroy();
+					
+					double closest = dmax ** 2;
+					for (int i = 0; i < MAXPLAYERS; i++)
+					{
+						if (!playeringame[i])	continue;
+						let plr = players[i].mo;	
+						if (!plr || plr.bKILLED)	continue;
+						
+						closest = min(mo.Distance2DSquared(plr), closest);
+					}
+					
+					if (closest < dmin)
+						continue;
+					else if (closest >= dmax)
+						mo.Destroy();
+					else
+					{
+						double scalar = MC_Functions.GetFalloff(dmin, dmax, closest);
+						int chance = int(round(1000.0 * scalar));
+						if (irandom(1, 1000) <= chance)
+							mo.Destroy();
+					}
 				}
 			}
 		}
 		
-		DoEnderTrace();
+		// If there's enderman around, check player LOS and trigger them if
+		// staring at their heads.
+		if (EndermanCount > 0)
+			DoEnderTrace();
 		
 		if (++Timer[S_Clean] >= CleanTimer)
 		{
 			Timer[S_Clean] = 0;
 			Monsters.Clean();
+			/*
 			SpawnQueue.Clean();
 			SpawnQueuePriority.Clean();
 			ClsQueue.Clean();
 			ClsQueuePriority.Clean();
-			
+			*/
 			MobCount = 0;
 			EndermanCount = 0;
 			for (int i = 0; i < Monsters.Size(); i++)

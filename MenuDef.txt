@@ -7,14 +7,13 @@ OptionMenu "MinecraftOptions"
 {
 	Class "MinecraftMenu"
 	Title "$MCM_OPTIONS_TITLE"
-	Position -64
-	
 	Submenu			"Monster Tweaks", "MinecraftMonsterTweaks"
 	StaticText ""
 	StaticText "Difficulty Settings", GOLD
-//	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
 	MinecraftOption "$MCM_PEACEFUL_TEXT", "$MCM_PEACEFUL_SUB",			MCC_Peaceful,			"OnOff"
 	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
+	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
+	MinecraftOption "$MCM_AIDIFFICULTY_TEXT", "$MCM_AIDIFFICULTY_SUB",	MCC_AIDifficulty, 		"DifficultySelection"
 	StaticText ""
 	StaticText "Spawner Tweaks", GOLD
 	MinecraftSlider "$MCM_SDMINUTE_TEXT", "$MCM_SDMINUTE_SUB",			MCC_SpawnDelayMinute,	0, 10, 1
@@ -45,13 +44,12 @@ OptionMenu "MinecraftMonsterTweaks"
 {
 	Class "MinecraftMenu"
 	Title "Monster Tweaks"
-	Position -64
-	
 	Submenu "Specific Monsters", "MinecraftSpecificMonsters"
 	StaticText ""
 //	Submenu "Zombie",				"MinecraftZombieMenu"
 //	Submenu "Skeleton",				"MinecraftSkeletonMenu"
 	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
+	MinecraftOption "$MCM_SPAWNCONDITIONS_TEXT", "$MCM_SPAWNCONDITIONS_SUB",	MCC_SpawnConditions, "OnOff"
 	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
 	MinecraftSlider "$MCM_SPAWNMUL_TEXT", "$MCM_SPAWNMUL_SUB",			MCC_SpawnMul,			0.5, 10.0, 0.1
 	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 100.0, 0.1
@@ -78,8 +76,7 @@ OptionMenu "MinecraftCreeperMenu"
 	//MCC_CreeperChainBoom
 	Class "MinecraftMenu"
 	Title "$MCM_CREEPERTWEAKS"
-	Position -64
-	
+	MinecraftOption "$MCM_CREEPERALWAYSBOOM_TEXT",	"$MCM_CREEPERALWAYSBOOM_SUB",	MCC_CreeperAlwaysBoom,	"YesNo"
 	MinecraftOption "$MCM_CREEPERBOOMBOOM_TEXT",	"$MCM_CREEPERBOOMBOOM_SUB",		MCC_CreeperBoomBoom,	"YesNo"
 	MinecraftOption "$MCM_CREEPERCHAINBOOM_TEXT",	"$MCM_CREEPERCHAINBOOM_SUB",	MCC_CreeperChainBoom,	"CreeperChainBoom"
 }

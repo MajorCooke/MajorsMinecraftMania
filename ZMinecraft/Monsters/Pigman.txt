@@ -1,8 +1,8 @@
 //==============================================================================
 // Pigmen (aka Piglin)
 // 
-// Monsters that will attack undead mobs except zombified variants of their own
-// and players (occasionally).
+// Monsters that will attack undead mobs occasionally. Always wither (skeleton)s
+// and sometimes other creatures.
 //==============================================================================
 
 Class MCPigman : MinecraftEnemy
@@ -37,7 +37,8 @@ Class MCZombiePigman : MCUndead
 	{
 		DamageFactor "Drowning", 0.0;
 		DamageFactor "Fire", 0.0;
-		
+		DamageFactor "Slime", 0.0;
+		DamageFactor "DamageSector", 0.0;
 		Tag "Zombie Pigman";
 		Obituary "%o was butchered, then sold as fresh meat by the Zombie Pigmen.";
 	}

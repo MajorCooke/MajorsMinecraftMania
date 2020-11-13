@@ -9,8 +9,6 @@ and a few other cool tricks.
 
 Class MinecraftEnemy : MinecraftEntity
 {
-	
-	
 	//==========================================================================
 	// Base overrides
 	//==========================================================================
@@ -18,8 +16,9 @@ Class MinecraftEnemy : MinecraftEntity
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		AttackDamagers = true;
+		AdjustDifficulty();
 		SetupRelations();
+		AttackDamagers = true;
 		PrevScale = Scale;
 		PrevAngs = (Angle, Pitch, Roll);
 		PrevPos = Pos;
@@ -59,12 +58,13 @@ Class MinecraftEnemy : MinecraftEntity
 		
 		Super.Deactivate(activator);
 	}
-	/*
+	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
-		return !(other && Distance2DSquared(other) > (radius + other.radius + 1) ** 2);
+		return !(bDORMANT && other is 'MinecraftEnemy');
+		
 	}
-	*/
+	
 	override bool CanResurrect(Actor other, bool passive)
 	{	return false;	}
 	private int Lifetime;
@@ -109,7 +109,7 @@ Class MinecraftEnemy : MinecraftEntity
 			Sector sec = CurSector;
 			if (BlockingFloor)	sec = BlockingFloor;
 				
-			if (MCC_EnvironmentDamage && Pos.Z <= FloorZ && sec)
+			if (MCC_EnvironmentDamage)
 			{
 				// if fall damage threshold is not 0 and
 				// velocity is cancelled out and
@@ -128,7 +128,7 @@ Class MinecraftEnemy : MinecraftEntity
 					}
 				}
 				
-				if (MCC_SectorDamage)
+				if (MCC_SectorDamage && Pos.Z <= GetZAt(0))
 				{
 					int DmgAmt = sec.DamageAmount,
 						DmgInt = sec.DamageInterval;
@@ -140,6 +140,7 @@ Class MinecraftEnemy : MinecraftEntity
 						else			
 						{
 							DmgInfo.secdmg = true;
+							DmgAmt = GetDamageFactor("DamageSector", DmgAmt);
 							DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
 						}
 						
@@ -148,44 +149,47 @@ Class MinecraftEnemy : MinecraftEntity
 						SectorDamageTimer = 0;
 					}
 				}
-			}
 			
-			// Drowning
-			if (MCC_Drowning && WaterLevel >= 3 && !bINVULNERABLE)
-			{
-				if (DrownTimer > 0)	DrownTimer--;
-				else
+				//------------------------------------------------------------------
+				// Drowning
+				//------------------------------------------------------------------
+				if (MCC_Drowning && WaterLevel >= 3 && !bINVULNERABLE && !IsImmune("Drowning"))
 				{
-					DrownDamage++;
-					DrownTimer = Second - 1;
-					DmgInfo.secdmg = true;
-					DamageMobj(null, null, min(DrownDamage, TELEFRAG_DAMAGE - 1), "Drowning", DMG_NO_ARMOR);
-					
+					if (DrownTimer > 0)	DrownTimer--;
+					else
+					{
+						DrownDamage++;
+						DrownTimer = Second - 1;
+						DmgInfo.secdmg = true;
+						DamageMobj(null, null, min(DrownDamage, TELEFRAG_DAMAGE - 1), "Drowning", DMG_NO_ARMOR);
+						
+						if (health < 1)	return;
+					}
+				}
+				else if (DrownTimer < DrownTimerStart)
+				{
+					DrownDamage = 0;
+					DrownTimer += 3;
+					DrownTimer = Min(DrownTimer, DrownTimerStart);
 				}
 			}
-			else if (DrownTimer < DrownTimerStart)
-			{
-				DrownDamage = 0;
-				DrownTimer += 3;
-				DrownTimer = Min(DrownTimer, DrownTimerStart);
-			}
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			// Play an active sound every 5-6 seconds.
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			if (--ActiveSoundDelay < 1)
 			{
-				ActiveSoundDelay += (Second * 4) + random[snd](0,Second * 2);
+				ActiveSoundDelay += (Second * 4) + irandom(0,Second * 2);
 				if (ActiveSound != "")
 					A_StartSound(ActiveSound, CHAN_VOICE, CHANF_OVERLAP);
 			}
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			//
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			if (AttackDelay > 0)
 				AttackDelay--;
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			// Handle damage timer & translation changes.
-			//----------------------------------------------------------------------
+			//------------------------------------------------------------------
 			if (DamageTimer > 0)
 			{
 				if (--DamageTimer < 1)
@@ -208,7 +212,7 @@ Class MinecraftEnemy : MinecraftEntity
 		else VelLen = 0;
 		
 		CurStyle = GetRenderStyle();
-		
+		/*
 		if ((LifeTime < 5) ||
 			!(VelLen ~== 0) ||
 			PrevAngs != Angs ||
@@ -216,8 +220,10 @@ Class MinecraftEnemy : MinecraftEntity
 			PrevStyle != CurStyle || 
 			PrevTrans != Translation)
 		{
-			UpdateLimbs();
+			
 		}
+		*/
+		UpdateLimbs();
 		
 		PrevTrans = Translation;
 		PrevScale = Scale;
@@ -229,7 +235,7 @@ Class MinecraftEnemy : MinecraftEntity
 	}
 	
 	private LastDamaged DmgInfo;
-	private Array<Actor> Damagers;
+	protected Array<Actor> Damagers;
 	private uint TempTranslation;
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
@@ -307,15 +313,37 @@ Class MinecraftEnemy : MinecraftEntity
 				
 				if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
 				{	
-					Vector2 v = Vel.XY;
-					if (Vel.Z <= 0)
-						Vel.Z += 7.0;
-					
-					if ((flags & DMG_USEANGLE))
-						ang = angle;
-					else if (s)	ang = AngleTo(s);
-					else if (i)	ang = AngleTo(i);
-					Thrust(-1, ang);
+					/*
+					if (bNOGRAVITY)
+					{
+						Vector2 AP = (angle, pitch);
+						
+						if (!(flags & DMG_USEANGLE))
+						{
+							Actor who = s;
+							if (!who)	who = i;
+							
+							if (who)
+							{
+								
+							}
+						}
+						
+					}
+					else
+					*/
+					if (!bNOGRAVITY)
+					{
+						Vector2 v = Vel.XY;
+						if (Vel.Z <= 0)
+							Vel.Z += 7.0;
+						
+						if (flags & DMG_USEANGLE)
+							ang = angle;
+						else if (s)	ang = AngleTo(s);
+						else if (i)	ang = AngleTo(i);
+						Thrust(-1, ang);
+					}
 				}
 			}
 		}
@@ -366,18 +394,7 @@ Class MinecraftEnemy : MinecraftEntity
 	*/
 	//--------------------------------------------------------------------------
 	
-	int GetDamageFactor(Name type, int damage)
-	{
-		if (damage < 1)	return damage;
-		
-		int dmg = damage;
-		dmg = ApplyDamageFactor(type, dmg);
-		
-		if (dmg > 0)
-			dmg = GetModifiedDamage(type, dmg, true);
-			
-		return dmg;
-	}
+	
 	
 	protected void PreDie(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
 	{
@@ -455,13 +472,13 @@ Class MinecraftEnemy : MinecraftEntity
 	Spawn:
 		TNT1 A 35;
 	Idle:
-		---- A 0 A_Jump(256, random(1, 4));
+		---- A 0 A_Jump(256, irandom(1, 4));
 		---- AAAAAAAAAA 17 Look();
 	IdleMove:
 		---- A 0 
 		{
 			LookTimer = 0;
-			return A_Jump(256, random(1, 35*2));
+			return A_Jump(256, irandom(1, 35*2));
 		}
 		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
 		---- AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
@@ -493,7 +510,7 @@ Class MCGoal : MinecraftEntity
 	States
 	{
 	Spawn:
-		TNT1 A 8 A_SpawnItemEx('MCExplosionSmoke', frandom(0,3), 0, frandom(1,3), frandom(0,2), 0, frandom(0, 2), random(0,359), SXF_NOCHECKPOSITION);
+		TNT1 A 8 A_SpawnItemEx('MCExplosionSmoke', ffrandom(0,3), 0, ffrandom(1,3), ffrandom(0,2), 0, ffrandom(0, 2), irandom(0,359), SXF_NOCHECKPOSITION);
 		Wait;
 	}
 }

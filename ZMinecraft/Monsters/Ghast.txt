@@ -8,11 +8,606 @@
 // - Sporadic movement pattern makes it more difficult to hit
 //==============================================================================
 
-Class MCGhast : MinecraftEnemy
+/*
+Tentacle positions
+(X and Y are flipped)
+ 1.0, -1.0, 0.0
+ 0.2, -1.0, 0.0
+-0.6, -1.0, 0.0
+
+ 0.6, 0.0, 0.0
+-0.2, 0.0, 0.0
+-1.0, 0.0, 0.0
+
+ 1.0, 0.0, 0.0
+ 0.2, 0.0, 0.0
+-0.6, 0.0, 0.0
+
+Minecraft/Ghast/Affectionate
+Minecraft/Ghast/Charge
+Minecraft/Ghast/Death
+Minecraft/Ghast/Fireball
+Minecraft/Ghast/Moan
+Minecraft/Ghast/Scream
+
+*/
+
+Class MCGhastDrop : RandomSpawner
 {
 	Default
 	{
-		DamageFactor "Fire", 0.0;
-		DamageFactor "Slime", 0.0;
+		DropItem "GreenArmor", 256, 20;
+		DropItem "BlueArmor", 256, 15;
+		DropItem "Soulsphere", 256, 10;
+		DropItem "Megasphere", 256, 5;
 	}
 }
+
+Class MCGhast : MinecraftEnemy
+{
+	const _Radius = 1.6;
+	const _Height = 3.2;
+	const RealScale = 32.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	
+	enum ELimbs
+	{
+		Head = 0,
+		Ten1,
+		Ten2,
+		Ten3,
+		Ten4,
+		Ten5,
+		Ten6,
+		Ten7,
+		Ten8,
+		Ten9,
+		LimbCount,
+	};
+	
+	private Actor Mover;
+	
+	Default
+	{
+		+NOBLOCKMONST
+		+NOGRAVITY
+		+MBFBOUNCER
+		+NOFEAR
+		+DROPOFF
+		
+		MinecraftEnemy.DespawnRange 4096, 8192;
+		MinecraftEnemy.SightTimeOut 0;
+		
+		DamageFactor "DamageSector", 0.0;
+		DamageFactor "Fire", 0.0;
+		DamageFactor "Falling", 0.0;
+		DamageFactor "Drowning", 0.0;
+		
+		
+		ActiveSound "Minecraft/Ghast/Moan";
+		PainSound "Minecraft/Ghast/Scream";
+		DeathSound "Minecraft/Ghast/Death";
+		
+		MinecraftEnemy.MaxChaseRange 3096;
+		MaxTargetRange 2048;
+		MaxStepHeight 0;
+		
+		Mass 1000;
+		Health 500;
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		VSpeed 0;
+		
+		BloodColor "White";
+		Tag "Ghast";
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+			
+		if (!A_DropItem('MegaSphere', -1, 5))
+		if (!A_DropItem('SoulSphere', -1, 10))
+		if (!Event.DropItem(self, 'BlueArmor', -1, 15))
+		if (!Event.DropItem(self, 'GreenArmor', -1, 20))
+			Event.DropItem(self, 'Backpack');
+		
+		return true;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		Limb[Head] = MCBodyPart(Spawn('MCGhastHead', pos));
+		Limb[Ten1] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten2] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten3] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten4] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten5] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten6] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten7] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten8] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Ten9] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		
+		Limb[Head].Owner = self;
+		Limb[Head].Master = self;
+		
+		double SineStep = 360.0 / 9.0;
+		for (int i = Ten1; i < Limb.Size(); i++)
+		{
+			Limb[i].Owner = self;
+			Limb[i].Master = Limb[Head];
+			Limb[i].SetPitch(45);
+			Limb[i].SetSineOffset((0, SineStep * i, 0));
+		}
+		
+		Limb[Ten1].SetPosOffsets(( 1.0, 1.0, 0.0), false);
+		Limb[Ten2].SetPosOffsets(( 1.0, 0.2, 0.0), false);
+		Limb[Ten3].SetPosOffsets(( 1.0,-0.6, 0.0), false);
+		Limb[Ten4].SetPosOffsets(( 0.0, 0.6, 0.0), false);
+		Limb[Ten5].SetPosOffsets(( 0.0,-0.2, 0.0), false);
+		Limb[Ten6].SetPosOffsets(( 0.0,-1.0, 0.0), false);
+		Limb[Ten7].SetPosOffsets((-1.0, 1.0, 0.0), false);
+		Limb[Ten8].SetPosOffsets((-1.0, 0.2, 0.0), false);
+		Limb[Ten9].SetPosOffsets((-1.0,-0.6, 0.0), false);
+		AP = (FFRandom(0,359), FFRandom(-90, 90));
+	}
+	private int VelTimer;
+	private Vector2 AP;
+	private Vector3 NextVel, CurVel, PreVel;
+	private double NextSpeed;
+	
+	private void ClipVector(out Vector3 to)
+	{
+		Vector3 ta = to;
+		ta *= 1000.0;
+		ta.X = round(ta.X);
+		ta.Y = round(ta.Y);
+		ta.Z = round(ta.Z);
+		to = ta * .0001;
+	}
+	const TopSpeed = 5.0;
+	override void Tick()
+	{
+		if (bDORMANT || bKILLED || IsFrozen())
+			return;
+			
+		PreVel = Vel;
+		
+		if (VelLen >= TopSpeed)
+		{
+			Vel *= 0.90;
+			ClipVector(Vel);
+			VelLen = Vel.Length();
+		}
+		
+		if (--VelTimer < 1 || (NextVel ~== (0,0,0)))
+		{
+			VelTimer = Second * IRandom(1, 4);
+			AP = (	ffrandom(0, 360),
+					ffrandom(-75, 75));
+			NextVel = S7_Math.Vec3FromAngle(AP.X, AP.Y, TopSpeed);
+		}
+			
+		// If bouncing off geometry, adopt the new direction.
+		// This just isn't working very well.
+		
+		bool thru = bTHRUACTORS;
+		bTHRUACTORS = true;
+		BlockingLine = null;
+		BlockingFloor = null;
+		BlockingCeiling = null;
+		double cz = Pos.Z;
+		SetZ(Pos.Z + Vel.Z);
+		bool check = CheckPosition(Pos.XY + Vel.XY, false);
+		SetZ(cz);
+		bTHRUACTORS = thru;
+		
+		
+		if (BlockingLine && (!(vel ~== (0,0,0)) || !(PreVel ~== (0,0,0))) && 
+			!(NextVel ~== (0,0,0)))
+		{
+			int f = BlockingLine.Flags;
+			if (((f & Line.ML_BLOCKEVERYTHING) ||
+				(f & Line.ML_BLOCKING) && !(f & Line.ML_TWOSIDED)) ||					
+				(!bNOBLOCKMONST && (f & Line.ML_BLOCKMONSTERS)) ||
+				(bBLOCKASPLAYER && (f & Line.ML_BLOCK_PLAYERS)))
+			{
+				int CurSide = S7_Math.PointOnLineSidePrecise(pos.x, pos.y, BlockingLine);
+				Vector3 normal = (BlockingLine.Delta.Y, -BlockingLine.Delta.X, 0).Unit();
+				if (CurSide > 0)	normal *= -1;
+				
+				Vector3 NVel = Vel; 
+				if (NVel ~== (0,0,0))	NVel = PreVel;
+				
+				double len = NextVel.Length();
+				NextVel = S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
+				Vel = S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
+				
+			//	Console.Printf("Old: %.1f %.1f %.1f | New: %.1f %.1f %.1f", 
+			//		OV.X, OV.Y, OV.Z, NextVel.X, NextVel.Y, NextVel.Z);
+			}
+		}
+		
+		
+		if (BlockingCeiling || Pos.Z + Height >= CeilingZ - 2)
+		{
+			AP.Y = abs(AP.Y);
+			NextVel.Z = -abs(NextVel.Z);
+			Vel.Z = -abs(Vel.Z);
+		}
+		else if (BlockingFloor || Pos.Z <= FloorZ + 2)
+		{
+			AP.Y = -abs(AP.Y);
+			NextVel.Z = abs(NextVel.Z);
+			Vel.Z = abs(Vel.Z);
+		}
+		
+		
+	//	CurVel = MC_kSpring.FancySpringAngles(Vel, NextVel, CurVel, 0.05, 0.05);
+		Vel += NextVel * 0.15;
+		
+		Super.Tick();
+		BlockingLine = null;
+		BlockingCeiling = null;
+		BlockingFloor = null;
+	}
+	
+	void AimAtTarget()
+	{
+		if (ValidateTarget(false, 0, true))
+		{
+			A_FaceTarget(0);
+			FaceDir(45);
+		}
+		else
+		{
+			A_ClearTarget();
+			SetState(ResolveState('Idle'));
+		}
+	}
+	
+	void Burst()
+	{
+		Explode(true, 0, Max(Radius * 2, Height), 0, 0);
+		/*
+		int end = 192;
+		int half = end / 2;
+		Class<Actor> explo = 'MCExplosionSprite';
+		for (int i = 0; i < end; i++)
+		{
+			explo = (i <= half) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
+			A_SpawnItemEx(explo,
+				ffrandom(-Radius, Radius) * 2, ffrandom(-Radius, Radius) * 2, Height * ffrandom[rng](0.0, 2.0),
+				angle: randompick(0, 90), flags: SXF_NOCHECKPOSITION);
+		}
+		*/
+	}
+	
+	void SpawnFireball()
+	{
+		if (!Target)	return;
+		
+		MCBodyPartHead head = GetHead();
+		Vector3 SpawnPos;
+		SpawnPos = Vec3Angle(
+			2.0 * Scale.X * OverScale, 
+			((head) ? head.angle : angle), 
+			0.0 * Scale.X * OverScale);
+		
+		let ball = MCGhastFireball(Spawn('MCGhastFireball', SpawnPos, ALLOW_REPLACE));
+		if (ball)
+		{
+			ball.Target = self;
+			ball.Owner = self;
+			ball.Tracer = Target;
+			if (Target.Player)
+				ball.A_FaceTracer(0, 0, 0, 0, FAF_BOTTOM, Target.Player.ViewZ - Target.Pos.Z);
+			else
+				ball.A_FaceTracer(0, 0, 0, 0, FAF_BOTTOM);
+			
+		}
+	}
+	
+	private void FaceDir(double anglimit = 0)
+	{
+		if (!(Vel.XY ~== (0,0)))
+			A_FaceMovementDirection(0, anglimit, flags: FMDF_NOPITCH);
+	}
+	
+	
+	
+	States
+	{
+	Spawn:
+		TNT1 A 35;
+	Idle:
+		TNT1 AAAAAAAAAAAAAAAAA 2 FaceDir();
+		TNT1 A 0 Look();
+		Loop;
+	See:
+		TNT1 AAAAAAAAA 2 AimAtTarget();
+		TNT1 A 0 A_StartSound("Minecraft/Ghast/Charge", CHAN_VOICE, CHANF_OVERLAP);
+		TNT1 BBBBBBBBB 2 AimAtTarget();
+		TNT1 A 2
+		{
+			AimAtTarget();
+			SpawnFireball();
+		}
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 2 AimAtTarget();
+		Loop;
+	Death:
+		TNT1 A 35 Burst();
+		Stop;
+	}
+}
+
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// Ghast Fireball
+// 
+// Much like the Vanilla counterpart, slowly accelerates faster until it reaches
+// the defined speed. However, to reflect it, the "use" keybind is the only way.
+// Otherwise, people could easily cheese ghasts. Instantly kills ghasts after
+// being reflected by a player.
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+
+Class MCGhastFireball : MinecraftEntity
+{
+	const HOffset = 0.45;
+	const RealDamage = 10;
+	Actor Owner, Flame, Hitbox;
+	int Timer;
+	
+	Property Timer: Timer;
+	Default
+	{
+		MCGhastFireball.Timer Minute;
+		Projectile;
+		Speed 40;
+		Damage 0;
+		Radius 6;
+		Height 12;
+		+FORCEXYBILLBOARD
+		+NOBLOCKMAP
+		+SKYEXPLODE
+		+EXPLODEONWATER
+		+BRIGHT
+		+HITTRACER
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		HitBox = Spawn('MCGhastFireballReflect', pos);
+		if (HitBox)	
+		{
+			HitBox.Master = self;
+			double mul = 8;
+			HitBox.A_SetSize(Radius * mul, Height * mul);
+		}
+			
+		Flame = Spawn('MCGhastFire', pos + (0,0,Height * HOffset));
+		if (Flame)	Flame.Master = self;
+	}
+	
+	void DestroyOthers()
+	{
+		if (Flame)	Flame.Destroy();
+		if (Hitbox)	Hitbox.Destroy();
+	}
+	
+	override void OnDestroy()
+	{
+		DestroyOthers();
+		Super.OnDestroy();
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (other is 'MCGhastFireball')	return true;
+		
+		return (!passive);
+	}
+	
+	override int SpecialMissileHit(Actor victim)
+	{
+		if (Target && victim == Target)
+			return 1;
+	
+		int flags = 0;
+		int dmg = RealDamage;
+		int ret = -1;
+		if (victim)
+		{
+			
+			if (victim is 'MCGhast' && Target is 'PlayerPawn')
+			{
+				ret = (bRIPPER) ? -1 : 0;
+				dmg = Max(victim.Health * 10, victim.SpawnHealth());
+			}
+			else
+				dmg *= irandom(1, (bSTRIFEDAMAGE) ? 4 : 8);
+			
+			victim.DamageMobj(self, Target, dmg, DamageType, flags);
+		}
+		return ret;
+	}
+	
+	override void Activate(Actor activator)
+	{
+		Actor mo = activator;
+		if (mo && mo.player)
+		{
+			Actor temp = Target;
+			Target = mo;
+			Tracer = temp;
+			
+			double len = vel.Length();
+			Angle = Target.Angle;
+			Pitch = Target.Pitch;
+			Vel3DFromAngle(len, Angle, Pitch);
+		}
+	}
+	
+	void MoveParts()
+	{
+		if (Flame)	Flame.Warp(self, -1, 0, 24 * Scale.X, flags: WARPF_NOCHECKPOSITION|WARPF_INTERPOLATE);
+		
+		if (HitBox)
+		{
+			
+			double mid = Pos.Z + Height * 0.5;
+		//	double mmd = Hitbox.Pos.Z + Hitbox.Height * 0.5;
+			Vector3 np = pos; np.z = mid - Hitbox.Height * 0.5;
+			HitBox.SetOrigin(np + vel * 0.5, false);
+			HitBox.Angle = Angle;
+			HitBox.Pitch = Pitch;
+		}
+	}
+	
+	States
+	{
+	Spawn:
+		X216 G 1 NoDelay
+		{
+			Speed = 0;
+			A_StartSound("Minecraft/Ghast/Fireball", CHAN_BODY, CHANF_OVERLAP);
+		}
+		---- A 1
+		{
+			
+			if (Speed < Default.Speed)
+			{
+				Speed += 1.0;
+				Vel3DFromAngle(Speed, angle, pitch);
+			}
+			MoveParts();
+			
+			if (Timer > 0 && --Timer < 1)
+				Destroy();
+		}
+		Wait;
+	Death:
+		TNT1 A 35
+		{
+			bNOINTERACTION = bINVISIBLE = true;
+			Explode(true, 64, 64, flags: 0);
+			DestroyOthers();
+		}
+		Stop;
+	}
+}
+
+// The box is set by the fireball to be 2x the size of the fireball. Pressing
+// use on it will reflect the fireball. Only players can do this.
+Class MCGhastFireballReflect : Actor
+{
+	private int Timer;
+	Default
+	{
+		+NOINTERACTION
+		+INVISIBLE
+		+NOCLIP
+		+THRUACTORS
+		+NONSHOOTABLE
+	}
+	
+	override bool Used(Actor user)
+	{
+		if (user && Master && Timer < 1)
+		{
+			Master.Activate(user);
+			SetState(ResolveState('Active'));
+			return true;
+		}
+		return false;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (bDESTROYED) return;
+		
+		// Needed in order to negate +NOINTERACTION's setting. Not a recommended
+		// hack to be using but there's no other choice if we want this to be
+		// reflectable with the 'use' keybind.
+		A_ChangeLinkFlags(0); 
+		
+		if (IsFrozen() || !Master)
+			return;
+			
+		if (Timer > 0)	Timer--;
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A -1;
+		Stop;
+	Active:
+		TNT1 A 5 { Timer = 5; }
+		Goto Spawn;
+	}
+}
+
+Class MCGhastFire : Actor
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOTONAUTOMAP
+		+FORCEYBILLBOARD
+		+BRIGHT
+		Scale 3.0;
+	}
+	
+	States
+	{
+	Spawn:
+		X211 A 0 NoDelay A_Jump(256, "F1", "F2");
+	F1:
+		X209 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2;
+		X210 ABCDEF 2;
+		Loop;
+	F2:
+		X211 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2;
+		X212 ABCDEF 2;
+		Loop;
+	}
+}
+
+Class MCGhastHead : MCBodyPartHead
+{
+	Default
+	{
+		MCBodyPartHead.NoAim true;
+		MCBodyPart.CopyFrames MCFrames_FromMaster;
+	}
+	override void DoMotion()
+	{
+		Super.DoMotion();
+		CurAng.Y = 0;
+		NextAng.Y = 0;
+		A_SetPitch(0);
+	}
+}
+Class MCGhastTentacle : MCBodyPartArm
+{
+	Default
+	{
+		MCBodyPart.ForceIdleSway true;
+		MCBodyPart.SineDistance 0, 10, 0;
+		MCBodyPart.SineSpeed 0, 2, 0;
+	}
+}
+
+Class MCGhastTentacleGib: MCBodyPartGib {}
+

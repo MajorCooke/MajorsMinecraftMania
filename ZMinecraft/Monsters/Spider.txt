@@ -58,8 +58,8 @@ Class MCSpider : MinecraftEnemy
 	
 	Default
 	{
-		Health 80;
-	
+		Health 100;
+		MinecraftEnemy.MislChance 100;
 		MCSpider.Type S_Normal;
 		Radius RealRadius;
 		Height RealHeight;
@@ -73,6 +73,27 @@ Class MCSpider : MinecraftEnemy
 		MeleeRange RealRadius + 8;
 		MaxTargetRange 768;
 	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+		
+		int end = 5;
+		for (int i = 0; i < end; i++)
+		{
+			int rng = irandom(0,10);
+			if (rng == 0)		
+			{
+				Event.DropItem(self, 'Backpack');
+				break;
+			}
+			else if (rng <= 5)	Event.DropItem(self, 'HealthBonus');
+			else				Event.DropItem(self, 'ArmorBonus');
+		}		
+		return true;
+	}
+	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -121,6 +142,13 @@ Class MCSpider : MinecraftEnemy
 		UpdateLimbs();
 	}
 	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (!other || (other.bSOLID && !other.bACTLIKEBRIDGE))
+			return false;
+		return true;
+	}
+	
 	private int LeapTimer;
 	
 	States
@@ -155,6 +183,7 @@ Class MCCaveSpider : MCSpider
 {
 	Default
 	{
+		MinecraftEnemy.OverScale 0.5;
 		MCSpider.Type S_Cave;
 		Tag "Cave Spider";
 		Obituary "%o couldn't fight off the swarming Cave Spiders.";

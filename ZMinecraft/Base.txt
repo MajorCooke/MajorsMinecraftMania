@@ -2,6 +2,8 @@
 
 Class MinecraftEntity : Actor
 {
+	mixin TM_FastRNG;
+
 	Vector3 Middle()	{	return (0, 0, height * 0.5);	}
 
 	int Explode(bool sfx = true,
@@ -37,7 +39,7 @@ Class MCPlayerProtection : PowerProtection
 	override void InitEffect()
 	{
 		Super.InitEffect();
-		EffectTics = 1000;
+		EffectTics = 1000000;
 	}
 	
 	override void DoEffect()
@@ -57,23 +59,16 @@ Class MCImmunityFrames : PowerProtection
 	
 	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor inflictor, Actor source, int flags)
 	{
-		if (passive && EffectTics > 0)
+		if (passive)
 		{
-			if (damage < 1 ||
-				(source is "MinecraftEntity") || 
-				(inflictor is "MinecraftEntity"))
+			if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
 				newdamage = -1;
 		}
 	}
 	
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
 	{
-		if (EffectTics > 0)
-		{
-			if (damage < 1 ||
-				(source is "MinecraftEntity") || 
-				(inflictor is "MinecraftEntity"))
-				newdamage = -1;
-		}
+		if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
+			newdamage = -1;
 	}
 }

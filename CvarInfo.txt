@@ -5,6 +5,7 @@
 // Easy are simplest and deal the least damage.
 // Normal have increased spawn rates with low damage. Some monsters inflict effects.
 // Hard deals increased damage.
+server int MCC_AIDifficulty = 1;
 server int MCC_Difficulty = 1;
 
 //==============================================================================
@@ -36,6 +37,8 @@ server float MCC_SpawnMul = 1.0;
 server bool MCC_Spawning = true;
 // Health multiplier
 server float MCC_HealthMul = 1.0;
+//
+server bool MCC_SpawnConditions = true;
 
 //==============================================================================
 // Monster Properties
@@ -86,6 +89,9 @@ server bool MCC_CreeperBoomBoom = false;
 // 1 = Only hissing creepers
 // 2 = All
 server int MCC_CreeperChainBoom = 0;
+
+// Creepers always explode on death
+server bool MCC_CreeperAlwaysBoom = false;
 
 //==============================================================================
 // Debug

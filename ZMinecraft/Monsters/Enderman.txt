@@ -41,12 +41,13 @@ Class MCEnderman : MinecraftEnemy
 	
 	Default
 	{
-		Health 150;
+		Health 200;
 		Mass 200;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
 		Speed NormalSpeed;
+		RipLevelMin (int.min + 1);
 		MaxStepHeight 64;
 		BloodColor "Purple";
 		ActiveSound "Minecraft/Enderman/Idle";
@@ -57,6 +58,18 @@ Class MCEnderman : MinecraftEnemy
 		Obituary "%o blinked. Then an Enderman ate %p eyes.";
 		
 		MaxTargetRange EndermanTargetDistance;
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+			
+		if (!A_DropItem('MCEndermanDrop',-1, 13))
+		if (!A_DropItem('MCCreeperWeaponSpawner',-1, 20))
+		Event.DropItem(self, 'Backpack', -1, 64);
+		
+		return true;
 	}
 	
 	override void PostBeginPlay()
@@ -209,6 +222,7 @@ Class MCEnderman : MinecraftEnemy
 		else
 		{
 			A_ClearTarget();
+			ClearStare();
 			ActiveSound = Default.ActiveSound;
 			if (Limb[Head])	Limb[Head].Frame = Fr_A;
 			Speed = NormalSpeed;
@@ -244,7 +258,7 @@ Class MCEnderman : MinecraftEnemy
 			if (Angry)
 			{
 				double r = 2.0 / (Scale.Y * OverScale);
-				Vector3 jiggle = (frandom(-r, r), frandom(-r, r), 0);
+				Vector3 jiggle = (FFRandom(-r, r), FFRandom(-r, r), 0);
 				
 				for (int i = 0; i < Limb.Size(); i++)
 				{
@@ -280,7 +294,7 @@ Class MCEnderman : MinecraftEnemy
 		{
 			ClearRelations(Res_Actors);
 			SetAngry(src);
-			DoTeleport(false, secdmg);
+			DoTeleport(0);
 			return;
 		}
 		SetAngry(src);
@@ -300,44 +314,64 @@ Class MCEnderman : MinecraftEnemy
 			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
 				return false;
 		}
-		return true;
+		else if (other is 'MCArrowProjectile')
+		{
+			if (IFRandom(0,3))	return false;
+		}
+		return Super.CanCollideWith(other, passive);
 	}
 	
 	private bool InTeleport;
-	bool DoTeleport(bool enemy = false, bool secdmg = false)
+	bool DoTeleport(int response = 0)
 	{
-		if (secdmg)
-		{
 		//	let Lines = GetIntersectingLines(self, (1024, 1024));
-			int i, j, k, l,
-				iter = 32,
-				half = iter / 2;
-			double tile = 32;
-			k = random(-half,half);
-			L = random(-half,half);
-			for (i = 0; i < iter; i++)
+		int i, j, k, l,
+			Enemy_Forward = 1,
+			Enemy_Dodge = 2,
+			iter = 32,
+			half = iter / 2;
+		double tile = 32;
+		k = IFRandom(-half,half);
+		L = IFRandom(-half,half);
+		Vector3 Closest = pos;
+		double CloseDist = 32767;
+		for (i = 0; i < iter; i++)
+		{
+			k = ((k + i) % iter) - half;
+			for (j = 0; j < iter; j++)
 			{
-				k = ((k + i) % iter) - half;
-				for (j = 0; j < iter; j++)
+				l = ((l + j) % iter) - half;
+				
+				//pos.z = Level.PointInSector(pos.xy).floorplane.ZatPoint(pos.xy);
+				Vector3 off = (pos.x + iter * k, pos.y + iter * l, pos.z);
+				Sector s = Level.PointInSector(off.xy);
+				
+				if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
+					continue;
+				
+				off.z = s.floorplane.ZatPoint(off.xy);
+				if (!Level.IsPointInLevel(off) || 
+					off.z > pos.z + double(32 * iter) || 
+					off.z < pos.z - double(32 * iter))
+					continue;
+				
+				double curz = pos.Z;
+				SetZ(off.Z);
+				if (CheckPosition(off.XY))
 				{
-					l = ((l + j) % iter) - half;
-					
-					//pos.z = Level.PointInSector(pos.xy).floorplane.ZatPoint(pos.xy);
-					Vector3 off = (pos.x + iter * k, pos.y + iter * l, pos.z);
-					Sector s = Level.PointInSector(off.xy);
-					
-					if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
-						continue;
-					
-					off.z = s.floorplane.ZatPoint(off.xy);
-					if (!Level.IsPointInLevel(off) || 
-						off.z > pos.z + double(32 * iter) || 
-						off.z < pos.z - double(32 * iter))
-						continue;
-					
-					double curz = pos.Z;
-					SetZ(off.Z);
-					if (CheckPosition(off.XY))
+					if (response == Enemy_Forward)
+					{
+						if (Targetable(Target))
+						{
+							double dis = Distance3DSquared(target);
+							if (dis < CloseDist)
+							{
+								closest = off;
+								CloseDist = dis;
+							}
+						}
+					}
+					else
 					{
 						SetOrigin(off, true);
 						A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);
@@ -345,55 +379,16 @@ Class MCEnderman : MinecraftEnemy
 					}
 				}
 			}
-			return false;
-		}
-	
-		/*
-		int steps = random(30,60);
-		
-		bool MBF = bMBFBOUNCER;
-		double steph = MaxStepHeight;
-		double dropo = MaxDropOffHeight;
-		double sped = Speed;
-		
-		InTeleport = true;
-		bMBFBOUNCER = true;
-		MaxStepHeight = 1024;
-		MaxDropOffHeight = 1024;
-		Speed = Radius;
-		
-		Vector3 current = pos, pre = pos;
-		bool safe = false;
-		for (int i = 0; i < steps; i++)
-		{
-			A_Wander();
-			if (pos.z > floorz)
-				SetZ(floorz);
-				
-			safe = (CurSector.DamageAmount < 1 || ApplyDamageFactor(CurSector.DamageType, CurSector.DamageAmount) < 1);
-			
-			if (!secdmg)
-			{
-				if (safe)	current = pos;
-				else		SetOrigin(current, false);
-			}
-			else
-			{
-				if (safe)
-					break;
-			}
 		}
 		
-		prev = pre;
+		if (response < 1)	return false;
 		
-		bMBFBOUNCER = MBF;
-		MaxStepHeight = steph;
-		MaxDropOffHeight = dropo;
-		Speed = sped;
-		InTeleport = false;
-		*/
+		SetOrigin(closest, true);
+		A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);
 		return true;
 	}
+	
+	
 	
 	States
 	{
@@ -404,7 +399,7 @@ Class MCEnderman : MinecraftEnemy
 		TNT1 A 0 
 		{
 			SetAngry(null);
-			return A_Jump(256, random(1, 4));
+			return A_Jump(256, IRandom(1, 4));
 		}
 		TNT1 AAAAAAAAAA 17 Look();
 	IdleMove:
@@ -412,7 +407,7 @@ Class MCEnderman : MinecraftEnemy
 		{
 			SetAngry(null);
 			LookTimer = 0;
-			return A_Jump(256, random(1, 35*2));
+			return A_Jump(256, IRandom(1, 35*2));
 		}
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
@@ -422,13 +417,30 @@ Class MCEnderman : MinecraftEnemy
 	See:
 		TNT1 A 1 
 		{
+			if (!ValidateTarget(true, TargetOnly: true))
+			{
+				SetAngry(null);
+				ClearRelations(Res_Actors);
+				return ResolveState('Idle');
+			}
 			int flag = (MoveWait > 0) ? CHF_DONTMOVE : 0;
 			Chase(flags: flag|CHF_NOPLAYACTIVE);
+			return ResolveState(null);
 		}
 		Wait;
 	Melee:
-		TNT1 A 1 DoMelee(random[rng](20, 25));
+		TNT1 A 1 DoMelee(IRandom(20, 25));
 		Goto See;
+	}
+}
+
+Class MCEndermanDrop : RandomSpawner
+{
+	Default
+	{
+		DropItem "BlurSphere", 256, 10;
+		DropItem "Berserk", 256, 10;
+		DropItem "InvulnerabilitySphere", 256, 1;
 	}
 }
 
@@ -447,15 +459,10 @@ Class MCEnderman : MinecraftEnemy
 extend class MinecraftHandler
 {
 	transient private EnderTracer etrc;
-	void DoEnderTrace()
+	private void DoEnderTrace()
 	{
-		if (EndermanCount < 1)	return;
-		
 		if (!etrc)	etrc = new('EnderTracer');
-		etrc.Endermen.Clear();
 		
-		MCEnderman mo = null;
-		Array<Actor> Staring; Staring.Clear();
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i] || !players[i].mo)
@@ -464,42 +471,44 @@ extend class MinecraftHandler
 			Actor plr = players[i].mo;
 			if (!plr)	continue;
 			
-		
-			
-			double angle = plr.angle;
-			double pitch = plr.pitch;
-			Vector3 ang = (cos(angle)*cos(pitch), sin(angle)*cos(pitch), -sin(pitch));
+			Vector3 ang = MC_Map.AnglesToVector(plr.angle, plr.pitch);
 			Vector3 pos = plr.Vec2OffsetZ(0,0,plr.player.viewz);
 			
 			bool Pushed = false;
-			etrc.Endermen.Clear();
-			do
+			etrc.HitList.Clear();
+			etrc.Trace(pos, plr.CurSector, ang, EndermanTargetDistance, 0);
+			
+			Array<EnderHitList> hl; hl.Move(etrc.HitList);
+			MCEnderman mo = null;
+			for (int i = 0; i < hl.Size(); i++)
 			{
-				etrc.Trace(pos, plr.CurSector, ang, EndermanTargetDistance, 0);
-				mo = MCEnderman(etrc.Results.HitActor);
-				if (mo)
+				if (!hl[i])	continue;
+				mo = hl[i].mo;
+				if (mo && !mo.bKILLED && !mo.CheckFear(plr))
 				{
-					etrc.Endermen.Push(mo);
-					if (mo.Health > 0 && !mo.CheckFear(plr))
+					Vector3 hitpos = etrc.Results.HitPos;
+					let head = mo.GetHead();
+					if (head && hitpos.z >= head.pos.z)
 					{
-						Vector3 hitpos = etrc.Results.HitPos;
-						let head = mo.GetHead();
-						if (head)
-						{
-							if (hitpos.z >= head.pos.z)
-								mo.SetAngry(plr, true, true);
-							//	mo.Stared(plr);
-						}
-					}	
+						mo.SetAngry(plr, true, true);
+					//	mo.Stared(plr);
+					}
 				}
-			} while (etrc.Results.HitType == TRACE_HitActor);
+			}
 		}
 	}
+}
+
+Class EnderHitList
+{
+	MCEnderman mo;
+	Vector3 HitPos, HitVector;
 }
 
 Class EnderTracer : LineTracer
 {
 	Array<Actor> Endermen;
+	Array<EnderHitList> HitList;
 	override ETraceStatus TraceCallback() 
 	{
 		switch (Results.HitType) 
@@ -510,12 +519,14 @@ Class EnderTracer : LineTracer
 				return TRACE_Stop;
 			case TRACE_HitActor:
 			{
-				Actor mo = Results.HitActor;
-				if (mo is 'MCEnderman')
+				let mo = MCEnderman(Results.HitActor);
+				if (mo)
 				{
-					int size = Endermen.Size();
-					if (size < 1 || Endermen.Find(mo) >= size)
-						return TRACE_Stop;
+					let et = new('EnderHitList');
+					et.mo = mo;
+					et.HitPos = Results.HitPos;
+					et.HitVector = Results.HitVector;
+					HitList.Push(et);
 				}
 				return TRACE_Skip;
 			}
@@ -543,6 +554,7 @@ Class MCEndermanArm : MCBodyPartArm
 {
 	Default
 	{
+		MCBodyPart.SwingAngleCap 30.0;
 		MCBodyPart.Gib 'MCEndermanArmGib';
 		MCBodyPart.CurAction (E_Swing|E_Sway);
 		Radius 0.2;
@@ -569,6 +581,7 @@ Class MCEndermanLeg : MCBodyPartLeg
 {
 	Default
 	{
+		MCBodyPart.SwingAngleCap 30.0;
 		MCBodyPart.Gib 'MCEndermanLegGib';
 		Radius 0.2;
 		Height 6.0;

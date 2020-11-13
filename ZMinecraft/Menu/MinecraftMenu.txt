@@ -135,12 +135,20 @@ Class MinecraftMenu : OptionMenu
 
 		if (tt.Length() > 0)
 		{
+			let fnt = OptionFont();
+			Screen.DrawText (fnt, OptionMenuSettings.mFontColorValue,
+				(Screen.GetWidth() - fnt.StringWidth (tt) * CleanXfac_1) / 2,
+				(Screen.GetHeight() - (fnt.GetHeight() * CleanYfac_1)),
+				tt,
+				DTA_CleanNoMove_1, true);
+			/*
 			Screen.DrawText (OptionFont(), OptionMenuSettings.mFontColorValue,
 			//	(Screen.GetWidth() - SmallFont.StringWidth (tt) * CleanXfac_1) / 2,
 				((Screen.GetWidth() / 2) - ((SmallFont.StringWidth (tt) * CleanXfac_1) / 2)),
 				BigFont.GetHeight() * CleanYfac_1 * 2.5,
 				tt,
 				DTA_CleanNoMove_1, true);
+			*/
 		}
 	}
 }

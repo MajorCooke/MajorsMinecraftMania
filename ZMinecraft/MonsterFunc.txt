@@ -18,19 +18,54 @@ Struct LastDamaged
 extend class MinecraftEnemy
 {
 	//--------------------------------------------------------------------------
+	// A virtual for monsters to adjust various aspects for AI difficulty setting.
+	//--------------------------------------------------------------------------
+	private bool Inited, LookAllRound;
+	virtual void AdjustDifficulty()
+	{
+		if (!Inited)
+		{
+			LookAllRound = irandom(0,1);
+			Inited = true;
+		}
+		
+		Switch (MCC_AIDifficulty)
+		{
+			Default:
+			Case Dif_Easy:
+				bLOOKALLAROUND = Default.bLOOKALLAROUND;
+				break;
+			Case Dif_Normal:
+				bLOOKALLAROUND = (LookAllRound || Default.bLOOKALLAROUND);
+				break;
+			Case Dif_Hard:
+				bLOOKALLAROUND = true;
+				break;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
 	// TraceDistance
 	//
 	// Returns the distance to the edge of another actor.
 	//--------------------------------------------------------------------------
 	
 	transient private GDDTracer Trc;
+	bool CheckTrace(Actor mo, double dist = 0, double zz = -1)
+	{
+		double ret = TraceDistance(mo, dist, zz);
+		return (ret >= 0 && ret <= dist);
+	}
 	double TraceDistance(Actor mo, double dist = 0, double zz = -1)
 	{
 		if (dist <= 0 || !Targetable(mo))	return -1;
-				
-		if (zz < 0.0)	//zz = MissileHeight;
-			zz = Clamp(mo.pos.z, pos.z, pos.z + height);
 		
+		// Set the position so its flat if the other's feet is above our
+		// own, but not our head.
+		if (zz < 0.0)
+			zz = Clamp(	mo.pos.z, 
+						Max(pos.z, floorz), 
+						Min(pos.z + height, ceilingz));
 		
 		Vector3 mpos = Vec2OffsetZ(0,0,zz),
 				tpos = mo.pos;
@@ -39,7 +74,8 @@ extend class MinecraftEnemy
 		
 		if (!Trc)	Trc = new('GDDTracer');
 		Trc.trg = mo;
-		Trc.Trace(mpos, cursector, APR, dist, 0);
+		Trc.SetHittable(1,1,1);
+		Trc.Trace(mpos, cursector, APR, dist + radius, 0);
 		
 		if (Trc.Results.HitType == TRACE_HitActor)
 			return level.Vec3Diff(Trc.Results.HitPos, mpos).Length();
@@ -81,7 +117,7 @@ extend class MinecraftEnemy
 		
 	}
 
-	virtual void UpdateLimbs()
+	virtual void UpdateLimbs(bool interp = true)
 	{
 		for (int i = 0; i < Limb.Size(); i++)
 		{
@@ -91,7 +127,22 @@ extend class MinecraftEnemy
 				if (!(Limb[i] is 'MCBodyPartHead'))
 					NA.Y -= Pitch;
 				
-				Limb[i].UpdatePosition(Limb[i].Master, WARPF_INTERPOLATE);
+				Switch (Limb[i].CopyFrames)
+				{
+					Case MCFrames_FromOwner:	
+						Limb[i].Frame = Frame;	
+						break;
+					Case MCFrames_FromMaster:
+					{
+						if (Limb[i].Master)	
+							Limb[i].Frame = Limb[i].Master.Frame; 
+						break;
+					}
+					Default:
+						break;
+				}
+				
+				Limb[i].UpdatePosition(Limb[i].Master, (interp ? WARPF_INTERPOLATE : 0));
 				Limb[i].UpdateScales(OverScale, Scale);
 				Limb[i].SetNextAngles(NA);
 				Limb[i].A_SetRenderStyle(alpha, CurStyle);
@@ -121,7 +172,7 @@ extend class MinecraftEnemy
 	
 	// Checks if the actor is immune to a damagetype.
 	bool IsImmune(Name DmgType) const
-	{	return (ApplyDamageFactor(DmgType, TELEFRAG_DAMAGE) < 1);	}
+	{	return (GetDamageFactor(DmgType, TELEFRAG_DAMAGE) < 1);	}
 	
 	//--------------------------------------------------------------------------
 	// Sets the drown timer.
@@ -134,6 +185,30 @@ extend class MinecraftEnemy
 	{
 		DrownTimerStart = maxtime;
 		DrownTimer = (current > -1) ? current : maxtime;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Applies a damagefactor for all things, including natural and inventory.
+	int GetDamageFactor(Name type, int damage, bool secdmg = false)
+	{
+		if (damage < 1)	return damage;
+		
+		int dmg = damage;
+		dmg = ApplyDamageFactor(type, dmg);
+		
+		if (dmg > 0)
+			dmg = GetModifiedDamage(type, dmg, true);
+		
+		// For damage sectors, DamageSector is a global for reduction no matter
+		// what, on top of the regular damage type.
+		if (dmg > 0 && secdmg)
+		{
+			dmg = ApplyDamageFactor("DamageSector", dmg);
+			if (dmg > 0)
+				dmg = GetModifiedDamage("DamageSector", dmg, true);
+		}
+			
+		return dmg;
 	}
 	
 	//--------------------------------------------------------------------------
@@ -264,7 +339,6 @@ extend class MinecraftEnemy
 		
 		if (!Relations)
 		{
-			
 			A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxTargetRange);
 		}
 		else
@@ -318,7 +392,7 @@ extend class MinecraftEnemy
 				CustomLook(true);
 			}
 			
-			if (ValidateTarget())
+			if (ValidateTarget(true))
 			{
 				if (!bAMBUSH || CheckSight(Target, CSFlags))
 					SetState(ResolveState("See"));
@@ -326,9 +400,8 @@ extend class MinecraftEnemy
 			else
 			{
 				if (Tracer == Target)	Tracer = null;
-				A_ClearTarget();
+				ClearTarget();
 			}
-			
 		}
 	}
 	
@@ -436,10 +509,14 @@ extend class MinecraftEnemy
 						}
 					}
 					else if (pos.z <= floorz)
-					{
+					{	
 						Vector2 nmpos = Vec2Angle(speed, ang);
 						if (TryMove(nmpos, bDROPOFF))
+						{
 							good = true;
+							if (VelLen <= speed)
+								vel = (0,0,vel.z);
+						}
 						else
 							ChaseTics = Second;
 					}
@@ -460,7 +537,7 @@ extend class MinecraftEnemy
 				
 				if (Goal && Target == Goal)
 				{
-					if (CheckGoal(0, true))
+					if (CheckGoal(0, 'Idle'))
 					{
 						melee = null;
 						missile = null;
@@ -470,14 +547,19 @@ extend class MinecraftEnemy
 		}
 		if (!good && (angle % 45 != 0.0))
 			AlignMoveDir();
+		
+		if (missile != null && MislChance > -1)
+		{
+			MislChance = Min(MislChance, 1.0);
+		}
+		
 		if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
 		{
 			let s = ResolveState(melee);
 			if (s)
 			{
 				// TO DO: Convert to use a trace function.
-				double rad = (Target.Radius + MeleeRange) ** 2;
-				if (Distance3DSquared(Target) <= rad && sight)
+				if (CheckTrace(Target, MeleeRange))
 				{
 					bJUSTATTACKED = true;
 					SetState(s);
@@ -517,8 +599,6 @@ extend class MinecraftEnemy
 		*/
 	}
 	
-	
-	
 	virtual bool DoMissile()
 	{
 		return false;
@@ -526,7 +606,7 @@ extend class MinecraftEnemy
 	
 	virtual bool DoMelee(int damage = -1)
 	{
-		if (!Target || Target.Health < 1 || AttackDelay > 0 || !TraceDistance(Target, MeleeRange))
+		if (AttackDelay > 0 || !Targetable(Target) || !CheckTrace(Target, MeleeRange))
 			return false;
 		
 		if (damage < 0)	
@@ -548,7 +628,7 @@ extend class MinecraftEnemy
 		
 		if (dmg > 0 || armafter != armbefore)
 		{
-			if (ValidateTarget() && !bNODAMAGETHRUST && !Target.bDONTTHRUST && 
+			if (Target && !bNODAMAGETHRUST && !Target.bDONTTHRUST && 
 				!(Target is 'MinecraftEnemy') && Target.Mass > 0)
 			{
 				double thrust = clamp((damage * 20.0) / Target.Mass, 0., 32);
@@ -557,7 +637,9 @@ extend class MinecraftEnemy
 			}
 			AttackDelay = AttackDelayMax;
 			SetMeleeAnimation();
+			ValidateTarget();
 		}
+		
 		return true;
 	}
 	
@@ -574,7 +656,7 @@ extend class MinecraftEnemy
 		GS_Reached
 	};
 	
-	int CheckGoal(double dist = 0.0, bool goidle = false)
+	int CheckGoal(double dist = 0.0, StateLabel next = null)
 	{
 		if (dist <= 0.0)	dist = radius;
 		if (Goal && Target == Goal)
@@ -585,7 +667,8 @@ extend class MinecraftEnemy
 			{
 				SetOrigin(Goal.pos, true);
 				RemoveGoal();
-				if (goidle)	SetState(ResolveState('Spawn'));
+				State s = ResolveState(next);
+				if (s)	SetState(s);
 				return GS_Reached;
 			}
 			return GS_Chasing;
@@ -623,4 +706,10 @@ extend class MinecraftEnemy
 			
 		Goal = BackupGoal = null;
 	}
+	
+	//==========================================================================
+	// Despawn Handling
+	//
+	// If all players are outside of the 
+	//==========================================================================
 }

@@ -23,9 +23,9 @@ Model MCSword
 	Scale 1.0 1.0 1.2
 	// Built in with stonesword.png.
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/IronSword.png"
+	Skin 0 "Materials/IronSword.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/GoldSword.png"
+	Skin 0 "Materials/GoldSword.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -353,9 +353,9 @@ Model MCSkeletonArmRight
 	Model 0 "Models/Skeleton/Arm.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -367,9 +367,9 @@ Model MCSkeletonArmLeft
 	Model 0 "Models/Skeleton/Arm.obj"
 	Scale 1.0 -1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -381,9 +381,9 @@ Model MCSkeletonArmGib
 	Model 0 "Models/Skeleton/ArmGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -395,9 +395,9 @@ Model MCSkeletonBody
 	Model 0 "Models/Skeleton/Body.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -410,9 +410,9 @@ Model MCSkeletonBodyGib
 	Model 0 "Models/Skeleton/Body.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -424,9 +424,9 @@ Model MCSkeletonHead
 	Model 0 "Models/Skeleton/Head.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -438,9 +438,9 @@ Model MCSkeletonHeadGib
 	Model 0 "Models/Skeleton/HeadGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -452,9 +452,9 @@ Model MCSkeletonLegRight
 	Model 0 "Models/Skeleton/Leg.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -466,9 +466,9 @@ Model MCSkeletonLegLeft
 	Model 0 "Models/Skeleton/Leg.obj"
 	Scale 1.0 -1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -480,9 +480,9 @@ Model MCSkeletonLegGib
 	Model 0 "Models/Skeleton/LegGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/Stray.png"
+	Skin 0 "Materials/Stray.png"
 	FrameIndex ASDF B 0 0
-	Skin 0 "Graphics/WitherSkeleton.png"
+	Skin 0 "Materials/WitherSkeleton.png"
 	FrameIndex ASDF C 0 0
 }
 
@@ -685,7 +685,7 @@ Model MCSpiderBack
 	Model 0 "Models/Spider/Back.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderBackGib
@@ -696,7 +696,7 @@ Model MCSpiderBackGib
 	Model 0 "Models/Spider/Back.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderHead
@@ -707,7 +707,7 @@ Model MCSpiderHead
 	Model 0 "Models/Spider/Head.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderHeadGib
@@ -718,7 +718,7 @@ Model MCSpiderHeadGib
 	Model 0 "Models/Spider/HeadGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderLeg
@@ -729,7 +729,7 @@ Model MCSpiderLeg
 	Model 0 "Models/Spider/Leg.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderLegGib
@@ -740,7 +740,7 @@ Model MCSpiderLegGib
 	Model 0 "Models/Spider/LegGib.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderThorax
@@ -751,7 +751,7 @@ Model MCSpiderThorax
 	Model 0 "Models/Spider/Thorax.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
 }
 Model MCSpiderThoraxGib
@@ -762,8 +762,43 @@ Model MCSpiderThoraxGib
 	Model 0 "Models/Spider/Thorax.obj"
 	Scale 1.0 1.0 1.2
 	FrameIndex ASDF A 0 0
-	Skin 0 "Graphics/CaveSpider.png"
+	Skin 0 "Materials/CaveSpider.png"
 	FrameIndex ASDF B 0 0
+}
+
+//==============================================================================
+// Ghast
+//==============================================================================
+Model MCGhastHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Ghast/Head.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/GhastShooting.png"
+	FrameIndex ASDF B 0 0
+}
+
+Model MCGhastTentacle
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Ghast/Tentacle.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}
+
+Model MCGhastTentacleGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	INTERPOLATEDOUBLEDFRAMES
+	Model 0 "Models/Ghast/TentacleGib.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
 }
 
 //==============================================================================
@@ -774,6 +809,6 @@ Model MCBlock_Stone
 	Model 0 "Models/Blocks/Block_1.obj"
 	Scale 1.0 1.0 1.2
 	
-	Skin 0 "Graphics/Blocks/Stone.png"
+	Skin 0 "Materials/Blocks/Stone.png"
 	FrameIndex ASDF A 0 0
 }

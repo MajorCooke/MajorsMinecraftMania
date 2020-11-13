@@ -1,7 +1,11 @@
 //==============================================================================
-
+const SineWavePerSecond = 360.0 / 35.0;
+const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
 enum EMinecraftConst
 {
+	MCFrames_FromOwner = 1,
+	MCFrames_FromMaster = 2,
+
 	CSFlags = SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY,
 	
 	// Difficulty settings
@@ -31,8 +35,10 @@ enum EMinecraftConst
 	
 	Res_Both = 0,
 	Res_Actors,
-	Res_Classes
-};
+	Res_Classes,
+	
+	MCGroup_Unsorted = 1 << 0,
+}
 
 enum EMinecraftMountConst
 {
@@ -48,5 +54,9 @@ enum EMinecraftMountConst
 	MMF_RELATIVE =	1,
 }
 
-const SineWavePerSecond = 360.0 / 35.0;
-const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
+enum EMinecraftDimension
+{
+	Dim_Overworld = 	1,
+	Dim_Hell =			1 << 1,
+	Dim_End =			1 << 2,
+}

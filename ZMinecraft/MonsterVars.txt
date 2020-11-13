@@ -14,9 +14,10 @@ extend class MinecraftEnemy
 	bool OnGround;
 	private Vector3 PrevVel;
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
-				DrownTimer, DrownTimerStart, DrownDamage,
-				CurrentTranslation, ActiveSoundDelay, DamageTimer;
+				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
+				ActiveSoundDelay, DamageTimer, DespawnTimer;
 	
+	double DespawnRangeMin, DespawnRangeMax, SpawnRangeMin, SpawnRangeMax;
 	protected MC_QuatTurner Turner;
 	Array<MCBodyPart> Limb;
 	protected Vector2 PrevScale;
@@ -30,24 +31,32 @@ extend class MinecraftEnemy
 	protected int IdleTimer, ChaseCheckTimer, LookTimer;
 	protected double SoundPitch, PrevAlpha, OverScale;
 	
-	double FallDmgVel, VelLen, MaxChaseRange;
+	double FallDmgVel, VelLen, MaxChaseRange, MislChance;
 	
 	meta bool PeacefulDespawn;
 	meta int MobType;
 	Sound StepSound;
 	
+	Property MislChance:	MislChance;
+	Property SpawnRange: 	SpawnRangeMin, SpawnRangeMax;
+	Property DespawnRange:	DespawnRangeMin, DespawnRangeMax;
 	Property FallDmgVel:	FallDmgVel;
-	Property StepSound: StepSound;
-	Property DrownTimer: DrownTimerStart;
+	Property StepSound: 	StepSound;
+	Property DrownTimer: 	DrownTimerStart;
 	Property PeacefulDespawn: PeacefulDespawn;
-	Property MobType: MobType;
-	Property Passive: Passive;
-	Property MaxChaseRange: MaxChaseRange;
-	Property SoundPitch: SoundPitch;
-	Property OverScale: OverScale;
+	Property MobType: 		MobType;
+	Property Passive: 		Passive;
+	Property MaxChaseRange:	MaxChaseRange;
+	Property SoundPitch:	SoundPitch;
+	Property OverScale:		OverScale;
+	Property SightTimeOut:	OOSTimeOut;
 	
 	Default
 	{
+		MinecraftEnemy.MislChance -1;
+		MinecraftEnemy.SpawnRange 	1024, 3072;
+		MinecraftEnemy.DespawnRange	3072, 5120;
+		MinecraftEnemy.SightTimeOut Second * 5;
 		MinecraftEnemy.OverScale 1.0;
 		MinecraftEnemy.SoundPitch 1.0;
 		MinecraftEnemy.FallDmgVel 15.0;
@@ -55,7 +64,7 @@ extend class MinecraftEnemy
 		MinecraftEnemy.PeacefulDespawn true;
 		MinecraftEnemy.MobType M_Normal;
 		Monster;
-		Health 80;
+		Health 100;
 		Speed 4;
 		Scale 6;
 		PushFactor 0.3;
@@ -83,5 +92,6 @@ extend class MinecraftEnemy
 		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
 		DamageFactor "Slime", 1.0;
+		DamageFactor "DamageSector", 1.0;
 	}
 }

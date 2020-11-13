@@ -63,7 +63,7 @@ Class MCCreeper : MinecraftEnemy
 		MinecraftEnemy.MaxChaseRange 768;
 		MaxTargetRange 512;
 		
-		Health 80;
+		Health 100;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
@@ -79,6 +79,15 @@ Class MCCreeper : MinecraftEnemy
 		
 		Tag "Creeper";
 		Obituary "A creeper blasted %o sky high, Team Rocket style.";
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		if (!Super.DropItems(src, inf, mod))
+			return false;
+		
+		A_DropItem('MCCreeperWeaponSpawner',1, 20);
+		return true;
 	}
 
 	override void PostBeginPlay()
@@ -172,7 +181,9 @@ Class MCCreeper : MinecraftEnemy
 		// Death by explosion, cause an explosion if enabled based on the type.
 		// If kiiled by another creeper, explode based on if charging or just 
 		// make it happen via cvar. Else if not by creeper, blow up if wanted.
-		if ((dmgflags & DMG_EXPLOSION))
+		if (MCC_CreeperAlwaysBoom)
+			DamageType = 'Creeper';
+		else if (dmgflags & DMG_EXPLOSION)
 		{
 			if (MCC_CreeperChainBoom > 0 && source is 'MCCreeper')
 			{
@@ -326,6 +337,16 @@ Class MCCreeper : MinecraftEnemy
 		A_Stop();
 		A_StopAllSounds();
 		
+		BlockThingsIterator it = MC_Map.MakeBTIPos(pos, (ExploRange, ExploRange));
+		if (it)
+		{
+			while (it.Next())
+			{
+				let mo = MinecraftEnemy(it.thing);
+				if (mo && mo.health > 1)
+					mo.Damagers.Append(Damagers);
+			}
+		}
 		// Deal 256 damage to players and minecraft monsters.
 		Explode(true,	 256, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
 		
@@ -396,24 +417,18 @@ Class MCCreeper : MinecraftEnemy
 		
 		if (dist < 0.0)
 		{
-			if (mo is 'PlayerPawn')
+			if (mo.player)
 				dist = (Charging) ? HissingRange : ExploRange;
 			else
 				dist = (ExploRange + HissingRange) * 0.5;
 		}
-		
+		dist += radius;
 		return 	(mo && 
-				((!_2d && Distance3DSquared(mo) <= (dist ** 2)) ||
-				(_2d && Distance2DSquared(mo) <= (dist ** 2))));
-	}
-	
-	override bool DropItems(Actor src, Actor inf, Name mod)
-	{
-		if (!Super.DropItems(src, inf, mod))
-			return false;
-		
-		A_DropItem('MCCreeperWeaponSpawner',1, 16);
-		return true;
+				((!_2d && CheckTrace(Target, dist))) ||
+				(_2d && CheckTrace(Target, dist, Target.pos.z)));
+				
+			//	(_2d && Distance2DSquared(mo) <= (dist ** 2)) ||
+			//	(!_2d && Distance3DSquared(mo) <= (dist ** 2)));
 	}
 	
 	override void SpawnRiders()
@@ -429,6 +444,23 @@ Class MCCreeper : MinecraftEnemy
 		SpawnRider('MCCreeper', hoff, 16);
 	}
 	
+	double ChargeChaseSpeed;
+	override void AdjustDifficulty()
+	{
+		Super.AdjustDifficulty();
+		
+		double SpeedMul = 0;
+		
+		Switch(MCC_AIDifficulty)
+		{
+			Default:
+			Case Dif_Easy:		SpeedMul = 0.0; break;
+			Case Dif_Normal:	SpeedMul = 0.5; break;
+			Case Dif_Hard:		SpeedMul = 1.0; break;
+		}
+		ChargeChaseSpeed = Speed * SpeedMul;	
+	}
+	
 	States
 	{
 	Spawn:
@@ -439,14 +471,14 @@ Class MCCreeper : MinecraftEnemy
 		{
 			
 			SetExplosionCounting(false);
-			return A_Jump(256, random(1, 4));
+			return A_Jump(256, IFRandom(1, 4));
 		}
 		TNT1 AAAAAAAAAA 17 Look();
 	IdleMove:
 		TNT1 A 0 
 		{
 			LookTimer = 0;
-			return A_Jump(256, random(1, 35*2));
+			return A_Jump(256, IFRandom(1, 35*2));
 		}
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
@@ -458,9 +490,10 @@ Class MCCreeper : MinecraftEnemy
 		{
 			if (OnGround)
 				SetExplosionCounting(false);
-			Chase('Melee', null, 0, 30, true);
-			
+			bool drop = bDROPOFF;
 			bDROPOFF = (Target && Target.Pos.Z + Target.Height < Pos.Z && InExploRange(Target, true, HissingRange));
+			Chase('Melee', null, 0, 30, true);
+			bDROPOFF = drop;
 		}
 		Wait;
 	Melee:
@@ -468,15 +501,28 @@ Class MCCreeper : MinecraftEnemy
 		{
 			SetExplosionCounting(true, pos.z > floorz);
 		}
-		TNT1 A AlterTics
+		TNT1 A 1
 		{
-			StateLabel next = null;
-			if (OnGround && (!InExploRange() || !CheckSight(Target, CSFlags)))
+			if (!InExploRange(Target, !OnGround) || !CheckSight(Target, CSFlags))
 			{
 				SetExplosionCounting(false);
-				next = "See";
+				return ResolveState("See");
 			}
-			return ResolveState(next);
+			
+			if (ChargeChaseSpeed > 0 && Pos.Z <= FloorZ && VelLen <= Speed)
+			{
+				bool drop = bDROPOFF;
+				bDROPOFF = (Targetable(Target) && Target.Pos.Z + Target.Height < Pos.Z);
+				Chase(null, null);
+				bDROPOFF = drop;
+				/*
+				Vel.XY = (0,0);
+				Vector2 newpos = Vec2Angle(ChargeChaseSpeed, AngleTo(Target));
+				TryMove(newpos, bDROPOFF);
+				*/
+			}
+			
+			return ResolveState(null);
 		}
 		Wait;
 	

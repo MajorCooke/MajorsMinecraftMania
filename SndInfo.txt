@@ -30,7 +30,7 @@ $random Minecraft/Explode
 	Minecraft/Explode4
 }
 
-$rolloff Minecraft/Explode 2048 3096
+$rolloff Minecraft/Explode 2048 4096
 
 $random Minecraft/Hit
 {
@@ -379,3 +379,68 @@ $PitchSet Minecraft/Enderman/Hit 0.9 1.1
 $PitchSet Minecraft/Enderman/Idle 0.9 1.1
 $PitchSet Minecraft/Enderman/Death 0.9 1.1
 $PitchSet Minecraft/Enderman/Scream 0.9 1.1
+
+
+//==============================================================================
+// Ghast
+//==============================================================================
+
+Minecraft/Ghast/Affectionate	"Sounds/Minecraft/mob/ghast/affectionate_scream.ogg"
+Minecraft/Ghast/Charge			"Sounds/Minecraft/mob/ghast/charge.ogg"
+Minecraft/Ghast/Death			"Sounds/Minecraft/mob/ghast/death.ogg"
+Minecraft/Ghast/Fireball		"Sounds/Minecraft/mob/ghast/fireball4.ogg"
+
+Minecraft/Ghast/Moan1			"Sounds/Minecraft/mob/ghast/moan1.ogg"
+Minecraft/Ghast/Moan2			"Sounds/Minecraft/mob/ghast/moan2.ogg"
+Minecraft/Ghast/Moan3			"Sounds/Minecraft/mob/ghast/moan3.ogg"
+Minecraft/Ghast/Moan4			"Sounds/Minecraft/mob/ghast/moan4.ogg"
+Minecraft/Ghast/Moan5			"Sounds/Minecraft/mob/ghast/moan5.ogg"
+Minecraft/Ghast/Moan6			"Sounds/Minecraft/mob/ghast/moan6.ogg"
+Minecraft/Ghast/Moan7			"Sounds/Minecraft/mob/ghast/moan7.ogg"
+
+Minecraft/Ghast/Scream1			"Sounds/Minecraft/mob/ghast/scream1.ogg"
+Minecraft/Ghast/Scream2			"Sounds/Minecraft/mob/ghast/scream2.ogg"
+Minecraft/Ghast/Scream3			"Sounds/Minecraft/mob/ghast/scream3.ogg"
+Minecraft/Ghast/Scream4			"Sounds/Minecraft/mob/ghast/scream4.ogg"
+Minecraft/Ghast/Scream5			"Sounds/Minecraft/mob/ghast/scream5.ogg"
+
+$random Minecraft/Ghast/Moan
+{
+	Minecraft/Ghast/Moan1
+	Minecraft/Ghast/Moan2
+	Minecraft/Ghast/Moan3
+	Minecraft/Ghast/Moan4
+	Minecraft/Ghast/Moan5
+	Minecraft/Ghast/Moan6
+	Minecraft/Ghast/Moan7
+}
+
+$random Minecraft/Ghast/Scream
+{
+	Minecraft/Ghast/Scream1
+	Minecraft/Ghast/Scream2
+	Minecraft/Ghast/Scream3
+	Minecraft/Ghast/Scream4
+	Minecraft/Ghast/Scream5
+}
+
+$rolloff Minecraft/Ghast/Affectionate 2048 4096
+$rolloff Minecraft/Ghast/Charge 4096 8192
+$rolloff Minecraft/Ghast/Death 4096 8192
+$rolloff Minecraft/Ghast/Fireball 4096 8192
+$rolloff Minecraft/Ghast/Moan 2048 4096
+$rolloff Minecraft/Ghast/Scream 4096 8192
+
+$limit Minecraft/Ghast/Affectionate 0
+$limit Minecraft/Ghast/Charge 0
+$limit Minecraft/Ghast/Death 0
+$limit Minecraft/Ghast/Fireball 0
+$limit Minecraft/Ghast/Moan 0
+$limit Minecraft/Ghast/Scream 0
+
+$PitchSet Minecraft/Ghast/Affectionate 0.9 1.1
+$PitchSet Minecraft/Ghast/Charge 0.9 1.1
+$PitchSet Minecraft/Ghast/Death 0.9 1.1
+$PitchSet Minecraft/Ghast/Fireball 0.9 1.1
+$PitchSet Minecraft/Ghast/Moan 0.9 1.1
+$PitchSet Minecraft/Ghast/Scream 0.9 1.1
