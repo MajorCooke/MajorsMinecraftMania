@@ -41,7 +41,7 @@ Class MCEnderman : MinecraftEnemy
 	
 	Default
 	{
-		Health 200;
+		Health 300;
 		Mass 200;
 		Scale RealScale;
 		Radius RealRadius;
@@ -125,270 +125,6 @@ Class MCEnderman : MinecraftEnemy
 		UpdateLimbs();
 	}
 	
-	override void SetupRelations()
-	{
-		Super.SetupRelations(true);
-		SetClassRelation('PlayerPawn', Rel_Neutral, true);
-	}
-	
-	private bool Angry, WasAngry, StaredAt;
-	private int MoveWait, StareTimer, StareCount;
-	private Actor StaredBy;
-	private Array<Actor> Staring;
-		
-	void Stared(Actor at)
-	{
-		if (!Angry)
-			Staring.Push(at);
-		StaredAt = true;		
-	}
-	
-	private void HandleStares()
-	{
-		if (Staring.Size() < 1)	return;
-		
-		if (Angry)
-		{
-			Staring.Clear();
-			return;
-		}
-		Actor closest = null;
-		double distance = EndermanTargetDistance ** 2;
-		
-		for (int i = 0; i < Staring.Size(); i++)
-		{
-			if (Staring[i] && Targetable(Staring[i]))
-			{
-				double dist = Distance3DSquared(Staring[i]);
-				if (dist >= distance)	continue;
-				
-				closest = Staring[i];
-				distance = dist;
-			}
-		}
-		Staring.Clear();
-		
-		if (closest != StaredBy)
-		{
-			StaredBy = Closest;
-			StareCount = 0;
-		}
-		
-		if (Closest)
-		{
-			StareTimer = 5;
-			if (StareCount > 7)
-				SetAngry(closest, true, true);
-			else StareCount++;
-		}
-	}
-	
-	void ClearStare()
-	{
-		StaredAt = false;
-		StareTimer = StareCount = 0;
-		StaredBy = null;
-	}
-	
-	bool IsAngry() { return Angry; }
-	
-	void SetAngry(Actor at, bool snd = false, bool stare = false)
-	{
-		if (at)
-		{
-			bool trg = Targetable(Target);
-			if (trg && stare)
-			{
-				if (at == Target)
-					MoveWait = 2;
-				
-				return;
-			}
-			Angry = Targetable(at);
-		}
-		else Angry = false;
-		
-		
-		if (Angry)	
-		{
-			Target = at;
-			if (!WasAngry && snd)
-				A_StartSound("Minecraft/Enderman/Stare", 9, CHANF_OVERLAP, 1, ATTN_NONE);
-			ActiveSound = "Minecraft/Enderman/Scream";
-			if (Limb[Head])	Limb[Head].Frame = Fr_B;
-			Speed = AngerSpeed;
-			SetState(ResolveState("See"));
-		}
-		else
-		{
-			A_ClearTarget();
-			ClearStare();
-			ActiveSound = Default.ActiveSound;
-			if (Limb[Head])	Limb[Head].Frame = Fr_A;
-			Speed = NormalSpeed;
-		}
-	}
-	
-	override void Tick()
-	{
-		
-		if (health < 1 || IsFrozen() || bDESTROYED)
-		{
-			Super.Tick();
-			return;
-		}
-		
-		if (MoveWait > 0)	MoveWait--;
-		/*
-		if (Angry)
-		{
-			if (StaredAt)	MoveWait = 2;
-		}
-		else if (StaredAt)
-		{
-			HandleStares();
-		}
-		*/
-		StaredAt = false;
-			
-		
-		
-		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
-		{
-			if (Angry)
-			{
-				double r = 2.0 / (Scale.Y * OverScale);
-				Vector3 jiggle = (FFRandom(-r, r), FFRandom(-r, r), 0);
-				
-				for (int i = 0; i < Limb.Size(); i++)
-				{
-					let Lim = Limb[i];
-					if (!Lim)	continue;
-					
-					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
-					else			Lim.UpdatePosition(Lim.Master, false);				
-				}
-			}
-			else if (WasAngry)
-			{
-				
-				for (int i = 0; i < Limb.Size(); i++)
-				{
-					let Lim = Limb[i];
-					if (!Lim)	continue;
-					
-					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
-					else			Lim.UpdatePosition(Lim.Master, false);
-				}
-			}
-		}
-		WasAngry = Angry;
-		
-		Super.Tick();
-	}
-	
-	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
-	{
-		if (dmg < 1)	return;
-		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
-		{
-			ClearRelations(Res_Actors);
-			SetAngry(src);
-			DoTeleport(0);
-			return;
-		}
-		SetAngry(src);
-		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
-		
-	}
-	
-	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
-	{
-		return (InTeleport && !(flags & DMG_FORCED)) ? 0 : Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-	}
-	
-	override bool CanCollideWith(Actor other, bool passive)
-	{
-		if (InTeleport)
-		{
-			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
-				return false;
-		}
-		else if (other is 'MCArrowProjectile')
-		{
-			if (IFRandom(0,3))	return false;
-		}
-		return Super.CanCollideWith(other, passive);
-	}
-	
-	private bool InTeleport;
-	bool DoTeleport(int response = 0)
-	{
-		//	let Lines = GetIntersectingLines(self, (1024, 1024));
-		int i, j, k, l,
-			Enemy_Forward = 1,
-			Enemy_Dodge = 2,
-			iter = 32,
-			half = iter / 2;
-		double tile = 32;
-		k = IFRandom(-half,half);
-		L = IFRandom(-half,half);
-		Vector3 Closest = pos;
-		double CloseDist = 32767;
-		for (i = 0; i < iter; i++)
-		{
-			k = ((k + i) % iter) - half;
-			for (j = 0; j < iter; j++)
-			{
-				l = ((l + j) % iter) - half;
-				
-				//pos.z = Level.PointInSector(pos.xy).floorplane.ZatPoint(pos.xy);
-				Vector3 off = (pos.x + iter * k, pos.y + iter * l, pos.z);
-				Sector s = Level.PointInSector(off.xy);
-				
-				if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
-					continue;
-				
-				off.z = s.floorplane.ZatPoint(off.xy);
-				if (!Level.IsPointInLevel(off) || 
-					off.z > pos.z + double(32 * iter) || 
-					off.z < pos.z - double(32 * iter))
-					continue;
-				
-				double curz = pos.Z;
-				SetZ(off.Z);
-				if (CheckPosition(off.XY))
-				{
-					if (response == Enemy_Forward)
-					{
-						if (Targetable(Target))
-						{
-							double dis = Distance3DSquared(target);
-							if (dis < CloseDist)
-							{
-								closest = off;
-								CloseDist = dis;
-							}
-						}
-					}
-					else
-					{
-						SetOrigin(off, true);
-						A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);
-						return true;
-					}
-				}
-			}
-		}
-		
-		if (response < 1)	return false;
-		
-		SetOrigin(closest, true);
-		A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);
-		return true;
-	}
-	
-	
 	
 	States
 	{
@@ -420,7 +156,6 @@ Class MCEnderman : MinecraftEnemy
 			if (!ValidateTarget(true, TargetOnly: true))
 			{
 				SetAngry(null);
-				ClearRelations(Res_Actors);
 				return ResolveState('Idle');
 			}
 			int flag = (MoveWait > 0) ? CHF_DONTMOVE : 0;
@@ -429,7 +164,7 @@ Class MCEnderman : MinecraftEnemy
 		}
 		Wait;
 	Melee:
-		TNT1 A 1 DoMelee(IRandom(20, 25));
+		TNT1 A 1 DoMelee(IRandom(30, 40));
 		Goto See;
 	}
 }
@@ -610,3 +345,368 @@ Class MCEndermanArmGib : MCBodyPartGib
 
 Class MCEndermanLegGib : MCBodyPartGib
 {	Default {	MCBodyPartGib.Offsets 0, 0, -2.8;	}	}
+
+extend Class MCEnderman
+{
+	//--------------------------------------------------------------------------
+	// Not naturally hateful of players.
+	//--------------------------------------------------------------------------
+	override void SetupRelations()
+	{
+		Super.SetupRelations(true);
+		SetClassRelation('PlayerPawn', Rel_Neutral, true);
+	}
+	
+	private bool Angry, WasAngry, StaredAt;
+	private int MoveWait, StareTimer, StareCount;
+	private Actor StaredBy;
+	private Array<Actor> Staring;
+		
+	void Stared(Actor at)
+	{
+		if (!Angry)
+			Staring.Push(at);
+		StaredAt = true;		
+	}
+	
+	private void HandleStares()
+	{
+		if (Staring.Size() < 1)	return;
+		
+		if (Angry)
+		{
+			Staring.Clear();
+			return;
+		}
+		Actor closest = null;
+		double distance = EndermanTargetDistance ** 2;
+		
+		for (int i = 0; i < Staring.Size(); i++)
+		{
+			if (Staring[i] && Targetable(Staring[i]))
+			{
+				double dist = Distance3DSquared(Staring[i]);
+				if (dist >= distance)	continue;
+				
+				closest = Staring[i];
+				distance = dist;
+			}
+		}
+		Staring.Clear();
+		
+		if (closest != StaredBy)
+		{
+			StaredBy = Closest;
+			StareCount = 0;
+		}
+		
+		if (Closest)
+		{
+			StareTimer = 5;
+			if (StareCount > 7)
+				SetAngry(closest, true, true);
+			else StareCount++;
+		}
+	}
+	
+	void ClearStare()
+	{
+		StaredAt = false;
+		StareTimer = StareCount = 0;
+		StaredBy = null;
+	}
+	
+	bool IsAngry() { return Angry; }
+	
+	void SetAngry(Actor at, bool snd = false, bool stare = false)
+	{
+		// If the staring actor is looking at the head, don't move until eye
+		// contact is broken.
+		if (at)
+		{
+			bool trg = Targetable(Target);
+			if (trg && stare)
+			{
+				if (at == Target)
+					MoveWait = 2;
+				
+				return;
+			}
+			Angry = Targetable(at);
+		}
+		else Angry = false;
+		
+		// Don't make me angry...
+		// You won't like me when I'm angry...
+		if (Angry)	
+		{
+			Target = at;
+			if (!WasAngry && snd)
+				A_StartSound("Minecraft/Enderman/Stare", 9, CHANF_OVERLAP, 1, ATTN_NONE);
+			ActiveSound = "Minecraft/Enderman/Scream";
+			if (Limb[Head])	Limb[Head].Frame = Fr_B;
+			Speed = AngerSpeed;
+			SetState(ResolveState("See"));
+		}
+		// Anger management successful.
+		else
+		{
+			SetActorRelation(Target, Rel_None);
+			A_ClearTarget();
+			ClearStare();
+			
+			ActiveSound = Default.ActiveSound;
+			if (Limb[Head])	Limb[Head].Frame = Fr_A;
+			Speed = NormalSpeed;
+		}
+	}
+	
+	override void Tick()
+	{
+		if (health < 1 || IsFrozen() || bDESTROYED)
+		{
+			Super.Tick();
+			return;
+		}
+		
+		if (MoveWait > 0)	MoveWait--;
+
+		StaredAt = false;
+			
+		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
+		{
+			if (Angry)
+			{
+				double r = 2.0 / (Scale.Y * OverScale);
+				Vector3 jiggle = (FFRandom(-r, r), FFRandom(-r, r), 0);
+				
+				for (int i = 0; i < Limb.Size(); i++)
+				{
+					let Lim = Limb[i];
+					if (!Lim)	continue;
+					
+					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
+					else			Lim.UpdatePosition(Lim.Master, false);				
+				}
+			}
+			else if (WasAngry)
+			{
+				
+				for (int i = 0; i < Limb.Size(); i++)
+				{
+					let Lim = Limb[i];
+					if (!Lim)	continue;
+					
+					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
+					else			Lim.UpdatePosition(Lim.Master, false);
+				}
+			}
+		}
+		WasAngry = Angry;
+		
+		Super.Tick();
+	}
+	
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
+	{
+		if (dmg < 1)	return;
+		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
+		{
+			ClearRelations(Res_Actors);
+			SetAngry(null);
+			DoTeleport();
+			return;
+		}
+		SetAngry(src);
+		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
+		
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		return (InTeleport && !(flags & DMG_FORCED)) ? 0 : Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (InTeleport)
+		{
+			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
+				return false;
+		}
+		else if (other is 'MCArrowProjectile')
+		{
+			if (IRandom(0,3))	return false;
+		}
+		return Super.CanCollideWith(other, passive);
+	}
+	
+	private bool InTeleport;
+	private bool GetTeleSpots(out Array<CVector3> Spots, Actor mo = null, 
+		double dist = -1, double iter = -1, bool condition = true)
+	{
+		Spots.Clear();
+		if (bDESTROYED || bKILLED || dist == 0)	return false;
+		if (!mo)	mo = self;
+		
+		if (dist < 0)	dist = 2048;
+		if (iter < 1)	iter = 32;
+		iter = round(iter);
+		
+		double i, j, k, l,
+			half = dist * 0.5;
+		Vector3 poz = mo.pos;
+		double curz = mo.pos.z;
+		Vector2 grid = (FRandom(-half, half), FRandom(-half, half));
+	//	grid = MC_Map.SnapVector2Uniform(grid, iter);
+		k = grid.x;
+		l = grid.y;
+		bool ndrop = bNODROPOFF;
+		bNODROPOFF = true;
+		for (i = 0; i < dist; i += iter)
+		{
+			k = ((grid.x + i) % dist) - half;
+			for (j = 0; j < dist; j += iter)
+			{
+				l = ((grid.y + j) % dist) - half;
+				
+				Vector3 off = (poz.x + k, poz.y + l, poz.z);
+				Sector s = Level.PointInSector(off.xy);
+				
+				// Debug info for showing locations.
+				if (MCC_Debug == 10)
+				{
+					let mo = Spawn('MCExplosionSprite', off);
+					if (mo)	mo.Scale *= 0.5;
+				}
+				
+				if (condition)
+				{
+					if (s.DamageAmount > 0 && GetDamageFactor(s.DamageType, s.DamageAmount) > 0)
+						continue;
+					
+				//	off.z = s.floorplane.ZatPoint(off.xy);
+					off.z = s.NextHighestCeilingAt(off.x, off.y, off.z, off.z + height);
+					off.z = s.NextLowestFloorAt(off.x, off.y, off.z, 0, height);
+					if (!Level.IsPointInLevel(off) || 
+						off.z > poz.z + dist || 
+						off.z < poz.z - dist)
+						continue;
+				}
+				SetZ(off.Z);
+				if (CheckPosition(off.XY))
+				{
+					if (MCC_Debug == 9)
+					{
+						let mo = Spawn('MCExplosionSprite', off);
+						if (mo)	mo.Scale *= 0.5;
+					}
+					let v = CVector3.Create(off);
+					Spots.Push(v);
+				}
+				SetZ(curz);
+			}
+		}
+		bNODROPOFF = ndrop;
+		return (Spots.Size() > 0);
+	}
+	
+	void TeleSound()
+	{	A_StartSound("Minecraft/Enderman/Portal", 9, CHANF_OVERLAP);	}
+	
+	protected bool DoTeleport()
+	{
+		Array<CVector3> Spots;
+		GetTeleSpots(Spots, self, -1, 64);
+		double curz = pos.z;
+		Vector3 v;
+		
+		int size = Spots.Size();
+		int offset = irandom(0, size - 1);;
+		for (int i = 0; i < Spots.Size(); i++)
+		{
+			int j = (i + offset) % size;
+			if (!Spots[j])	continue;
+			
+			v = Spots[j].V;
+		//	SetOrigin(Spots[i].V, true);
+			SetZ(v.z);
+			if (TryMove(v.XY, true))
+			{
+				TeleSound();
+				return true;
+			}
+		}
+		SetZ(curz);
+		return false;		
+	}
+	
+	protected bool DoTeleportToEnemy()
+	{
+		TeleSound();
+		return true;
+	}
+	
+	/*
+	private bool GetTeleSpots(Actor mo, int dist = -1, int morange = -1)
+	{
+		if (bDESTROYED || bKILLED || dist == 0)	return false;
+		
+		if (!mo)	mo = self;
+		
+		int BS = 32; // block size
+		
+		if (dist < 0)		dist = BS;
+		if (morange < 0)	morange = dist / 2;
+		
+		Spots.Clear();
+		
+		int i, j, k, l,
+			iter = dist,
+			half = iter / 2;
+		
+		k = IRandom(-half,half) * iter;
+		l = IRandom(-half,half) * iter;
+		
+		Vector3 poz = mo.pos;
+		
+		double curz = poz.Z;
+		Vector3 Closest = poz;
+		double CloseDist = 32767;
+		
+		
+		for (i = 0; i < iter; i++)
+		{
+			k = ((k + i) % iter) - half;
+			for (j = 0; j < iter; j++)
+			{
+				l = ((l + j) % iter) - half;
+				
+				Vector3 off = (poz.x + iter * k, poz.y + iter * l, poz.z);
+				Sector s = Level.PointInSector(off.xy);
+				
+				
+				
+			//	off.z = s.floorplane.ZatPoint(off.xy);
+				off.z = s.NextHighestCeilingAt(off.x, off.y, off.z, off.z + height);
+				off.z = s.NextLowestFloorAt(off.x, off.y, off.z, 0, height);
+				if (!Level.IsPointInLevel(off) || 
+					off.z > poz.z + double(BS * iter) || 
+					off.z < poz.z - double(BS * iter))
+					continue;
+				
+				
+				SetZ(off.Z);
+				if (CheckPosition(off.XY))
+				{
+					let v = CVector3.Create(off);
+					Spots.Push(v);
+				}
+				SetZ(curz);
+			}
+		}
+		SetZ(curz);
+		return (Spots.Size() > 0);
+	}
+	*/
+}

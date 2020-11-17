@@ -290,7 +290,9 @@ Class MCCreeper : MinecraftEnemy
 		if (!Charging && ChargeTimer > 0)
 			ChargeTimer--;
 		
-		if (ValidateTarget(false, HissingRange) && CheckSight(Target, CSFlags))
+		if (Targetable(Target) && 
+			//ValidateTarget(false, HissingRange) && 
+			CheckSight(Target, CSFlags))
 		{
 			if (!OnGround && Vel.Z < -9.0)
 				SetExplosionCounting(true, true);
@@ -417,15 +419,15 @@ Class MCCreeper : MinecraftEnemy
 		
 		if (dist < 0.0)
 		{
-			if (mo.player)
+			if (mo is 'PlayerPawn')
 				dist = (Charging) ? HissingRange : ExploRange;
 			else
 				dist = (ExploRange + HissingRange) * 0.5;
 		}
 		dist += radius;
 		return 	(mo && 
-				((!_2d && CheckTrace(Target, dist))) ||
-				(_2d && CheckTrace(Target, dist, Target.pos.z)));
+				((!_2d && CheckTrace(Target, dist, height * 0.5, false, true, false))) ||
+				(_2d && CheckTrace(Target, dist, Target.pos.z, false, true, false)));
 				
 			//	(_2d && Distance2DSquared(mo) <= (dist ** 2)) ||
 			//	(!_2d && Distance3DSquared(mo) <= (dist ** 2)));
@@ -497,13 +499,13 @@ Class MCCreeper : MinecraftEnemy
 		}
 		Wait;
 	Melee:
-		TNT1 A AlterTics
+		TNT1 A 1
 		{
 			SetExplosionCounting(true, pos.z > floorz);
 		}
 		TNT1 A 1
 		{
-			if (!InExploRange(Target, !OnGround) || !CheckSight(Target, CSFlags))
+			if (!InExploRange(Target, !OnGround))
 			{
 				SetExplosionCounting(false);
 				return ResolveState("See");

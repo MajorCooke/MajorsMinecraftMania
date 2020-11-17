@@ -32,6 +32,7 @@ Class MCSpider : MinecraftEnemy
 	const RealScale = 9.0;
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
+	const _MeleeRange = RealRadius + 8;
 	enum ELimbs
 	{
 		Head = 0,
@@ -53,13 +54,17 @@ Class MCSpider : MinecraftEnemy
 		S_Cave
 	};
 	
+	double LeapRange;
 	int Type;
+	
 	Property Type: Type;
+	Property LeapRange: LeapRange;
 	
 	Default
 	{
 		Health 100;
 		MinecraftEnemy.MislChance 100;
+		MCSpider.LeapRange _MeleeRange * 2;
 		MCSpider.Type S_Normal;
 		Radius RealRadius;
 		Height RealHeight;
@@ -70,8 +75,9 @@ Class MCSpider : MinecraftEnemy
 		Tag "Spider";
 		Obituary "%o's became a living host for spider breeding.";
 		
-		MeleeRange RealRadius + 8;
+		MeleeRange _MeleeRange;
 		MaxTargetRange 768;
+		Speed 6;
 	}
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
@@ -149,7 +155,27 @@ Class MCSpider : MinecraftEnemy
 		return true;
 	}
 	
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
+	{
+		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle, secdmg);
+		
+		if (!secdmg && !(flags & DMG_THRUSTLESS) && LeapTimer < Second)
+		{
+			LeapTimer = Second;
+		}
+	}
+	
 	private int LeapTimer;
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (bKILLED || IsFrozen())
+			return;
+			
+		if (LeapTimer > 0)	LeapTimer--;
+	}
 	
 	States
 	{
@@ -171,10 +197,27 @@ Class MCSpider : MinecraftEnemy
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
 		Goto Idle;
 	See:
-		TNT1 A 1 Chase();
+		TNT1 A 1
+		{
+			if (CheckTrace(Target, LeapRange) && Target != Goal &&
+				Target.Pos.Z + Target.Height >= Pos.Z && 
+				Target.Pos.Z <= Pos.Z + 32 &&
+				OnGround && LeapTimer < 1)
+			{
+				LeapTimer = Second;
+				if (MCC_Debug == 8)
+					Console.Printf("%.1f", VelPosLen);
+				Vel3DFromAngle(VelPosLen + 4, angle, 0);
+				Vel.Z += 8.0;
+				OnGround = false;
+			}
+		//	int flag = (OnGround) ? 0 : CHF_DONTMOVE;
+		//	Chase(flags: flag, _3dmelee: true);
+			Chase(_3dmelee: true);
+		}
 		Wait;
 	Melee:
-		TNT1 A 1 DoMelee(random[rng](20, 25));
+		TNT1 A 1 DoMelee(irandom(20, 25));
 		Goto See;
 	}
 }

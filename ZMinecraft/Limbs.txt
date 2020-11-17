@@ -57,7 +57,7 @@ Struct LimbSwing play
 		VelSpring = 0;
 	}
 	
-	double NextSwing(double VelLen)
+	double NextSwing(double VelPosLen)
 	{
 		if (Scale ~== 0.0 || SwingAmp ~== 0.0)	return 0;
 		
@@ -67,7 +67,7 @@ Struct LimbSwing play
 		
 	//	VelAng = MC_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
 		
-		VelSpring = MC_kSpring.DampedSpringDouble(CurSpring, VelLen, VelSpring, 0.25, 0.1);
+		VelSpring = MC_kSpring.DampedSpringDouble(CurSpring, VelPosLen, VelSpring, 0.25, 0.1);
 		CurSpring += VelSpring;
 		
 		if (CurSpring ~== 0.0)	return CurSpring;
@@ -268,7 +268,7 @@ Class MCBodyPart : MinecraftEntity
 	}
 		
 	// Offsets are relative, a la A_SpawnItemEx/A_Warp.
-	void SpawnGib(double VelLen, Vector3 Ofs = (0,0,0))
+	void SpawnGib(double VelPosLen, Vector3 Ofs = (0,0,0))
 	{
 		if (bKILLED || Destroyed())	return;
 		bKILLED = true;
@@ -310,7 +310,7 @@ Class MCBodyPart : MinecraftEntity
 			if (Owner) g.Vel += Owner.Vel;
 		}
 		
-		if (Attachment)	Attachment.SpawnGib(VelLen, Ofs);
+		if (Attachment)	Attachment.SpawnGib(VelPosLen, Ofs);
 		DestroyMe = true;
 	}
 	bool Destroyed() { return bDESTROYED || DestroyMe;	}
@@ -497,7 +497,7 @@ Class MCBodyPart : MinecraftEntity
 			if (CurAction & E_Swing)
 			{
 				Swing.AngleCap = SwingAngleCap;
-				AngOff.Y += Swing.NextSwing(Owner.VelLen);
+				AngOff.Y += Swing.NextSwing(Owner.VelPosLen);
 			}
 		}
 		if (!doSpring || Owner.bDORMANT)
@@ -678,7 +678,7 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	
 	private Vector2 HoldAng;
 	private int LifeTime;
-	private double Timer, StartPitch, VelLen;
+	private double Timer, StartPitch, VelPosLen;
 	protected double EndPitch, EndRoll;
 	private bool DualSideRoll, DualSidePitch;
 	
@@ -712,8 +712,8 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		VelLen = vel.Length();
-		double velo = min(VelLen * 0.2, 20.0);
+		VelPosLen = vel.Length();
+		double velo = min(VelPosLen * 0.2, 20.0);
 		Turning = (
 			ffrandom(-2.0, 2.0) * velo,
 			ffrandom(-2.0, 2.0) * velo,

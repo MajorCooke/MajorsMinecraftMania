@@ -371,8 +371,8 @@ Class MCGhastFireball : MinecraftEntity
 		Projectile;
 		Speed 40;
 		Damage 0;
-		Radius 6;
-		Height 12;
+		Radius 12;
+		Height 24;
 		+FORCEXYBILLBOARD
 		+NOBLOCKMAP
 		+SKYEXPLODE
@@ -388,7 +388,7 @@ Class MCGhastFireball : MinecraftEntity
 		if (HitBox)	
 		{
 			HitBox.Master = self;
-			double mul = 8;
+			double mul = 6;
 			HitBox.A_SetSize(Radius * mul, Height * mul);
 		}
 			
@@ -497,7 +497,7 @@ Class MCGhastFireball : MinecraftEntity
 		TNT1 A 35
 		{
 			bNOINTERACTION = bINVISIBLE = true;
-			Explode(true, 64, 64, flags: 0);
+			Explode(true, 64, 96, 32, flags: 0);
 			DestroyOthers();
 		}
 		Stop;

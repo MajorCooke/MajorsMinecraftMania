@@ -31,7 +31,7 @@ extend class MinecraftEnemy
 	protected int IdleTimer, ChaseCheckTimer, LookTimer;
 	protected double SoundPitch, PrevAlpha, OverScale;
 	
-	double FallDmgVel, VelLen, MaxChaseRange, MislChance;
+	double FallDmgVel, VelLen, PosLen, VelPosLen, MaxChaseRange, MislChance;
 	
 	meta bool PeacefulDespawn;
 	meta int MobType;

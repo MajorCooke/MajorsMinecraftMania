@@ -512,7 +512,8 @@ extend class MinecraftEnemy
 		if (targetable)
 		{
 			bool sight = CheckSight(Target, CSFlags);
-			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
+			if (//CheckTrace(Target, ChaseRange ** 2) ||
+				Distance3DSquared(Target) > (ChaseRange ** 2) ||
 				(chasing && !sight))
 			{
 				OOSTimer++;

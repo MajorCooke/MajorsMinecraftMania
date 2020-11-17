@@ -261,10 +261,11 @@ Class MCZombie : MCUndead
 	
 	override void SetMeleeAnimation()
 	{
-		if (Limb[ArmR] && Limb[ArmL])
+		if (bKILLED || bDESTROYED)	return;
+		for (int i = 0; i < Limb.Size(); i++)
+		if ((i == ArmR || i == ArmL) && Limb[i])
 		{
-			bool c1 = Limb[ArmR].SetAnimation('ZombieMelee');
-			bool c2 = Limb[ArmL].SetAnimation('ZombieMelee');
+			Limb[i].SetAnimation('ZombieMelee');
 		}
 	}
 	

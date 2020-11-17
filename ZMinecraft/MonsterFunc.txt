@@ -51,12 +51,12 @@ extend class MinecraftEnemy
 	//--------------------------------------------------------------------------
 	
 	transient private GDDTracer Trc;
-	bool CheckTrace(Actor mo, double dist = 0, double zz = -1)
+	bool CheckTrace(Actor mo, double dist = 0, double zz = -1, bool flor = true, bool wall = true, bool ceil = true)
 	{
 		double ret = TraceDistance(mo, dist, zz);
 		return (ret >= 0 && ret <= dist);
 	}
-	double TraceDistance(Actor mo, double dist = 0, double zz = -1)
+	double TraceDistance(Actor mo, double dist = 0, double zz = -1, bool flor = false, bool wall = true, bool ceil = false)
 	{
 		if (dist <= 0 || !Targetable(mo))	return -1;
 		
@@ -64,8 +64,8 @@ extend class MinecraftEnemy
 		// own, but not our head.
 		if (zz < 0.0)
 			zz = Clamp(	mo.pos.z, 
-						Max(pos.z, floorz), 
-						Min(pos.z + height, ceilingz));
+						Max(pos.z, floorz + 1, mo.pos.z), 
+						Min(pos.z + height, ceilingz, mo.pos.z));
 		
 		Vector3 mpos = Vec2OffsetZ(0,0,zz),
 				tpos = mo.pos;
@@ -74,7 +74,7 @@ extend class MinecraftEnemy
 		
 		if (!Trc)	Trc = new('GDDTracer');
 		Trc.trg = mo;
-		Trc.SetHittable(1,1,1);
+		Trc.SetHittable(flor,wall,ceil);
 		Trc.Trace(mpos, cursector, APR, dist + radius, 0);
 		
 		if (Trc.Results.HitType == TRACE_HitActor)
@@ -508,14 +508,14 @@ extend class MinecraftEnemy
 							ChaseTics = Second;
 						}
 					}
-					else if (pos.z <= floorz)
+					else if (OnGround)
 					{	
 						Vector2 nmpos = Vec2Angle(speed, ang);
 						if (TryMove(nmpos, bDROPOFF))
 						{
 							good = true;
-							if (VelLen <= speed)
-								vel = (0,0,vel.z);
+							if (VelPosLen <= speed)
+								vel.XY = vel.XY * 0.8;
 						}
 						else
 							ChaseTics = Second;

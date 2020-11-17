@@ -208,13 +208,18 @@ Class MinecraftEnemy : MinecraftEntity
 		Angs = (Angle, Pitch, Roll);		
 		
 		if (!bDORMANT && (!(vel ~== (0,0,0)) || !(Pos ~== PrevPos)))
-			VelLen = vel.Length() + level.Vec3Diff(PrevPos, Pos).Length();
-		else VelLen = 0;
+		{
+			PosLen = level.Vec3Diff(PrevPos, Pos).Length();
+			VelLen = vel.Length();
+			VelPosLen = VelLen + PosLen;
+			
+		}
+		else VelLen = PosLen = VelPosLen = 0;
 		
 		CurStyle = GetRenderStyle();
 		/*
 		if ((LifeTime < 5) ||
-			!(VelLen ~== 0) ||
+			!(velposlen ~== 0) ||
 			PrevAngs != Angs ||
 			PrevAlpha != alpha || 
 			PrevStyle != CurStyle || 
