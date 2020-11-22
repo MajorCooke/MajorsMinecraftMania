@@ -191,14 +191,18 @@ Class MCZombie : MCUndead
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 		
+		int c1 = 0, c2 = 0;
 		int end = 10;
 		for (int i = 0; i < end; i++)
 		{
-			if (random[rng](1, 4) == 1)
-				Event.DropItem(self, 'HealthBonus');
-			if (random[rng](1, 4) == 1)
-				Event.DropItem(self, 'ArmorBonus');
+			if (irandom(1, 4) == 1)
+				c1++;
+			if (irandom(1, 4) == 1)
+				c2++;
+				
 		}
+		Event.DropItem(self, 'HealthBonus', c1);
+		Event.DropItem(self, 'ArmorBonus', c2);
 		return true;
 	}
 	

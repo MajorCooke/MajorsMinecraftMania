@@ -23,6 +23,9 @@ MCM_PACKMUL_SUB = "Multiplies the number of monsters spawned in a pack.";
 MCM_DROPITEMS_TEXT = "Monsters Drop Items";
 MCM_DROPITEMS_SUB = "Monsters killed by players can drop resources (health/armor/ammo).";
 
+MCM_COMBINEITEMS_TEXT = "Combine Item Drops";
+MCM_COMBINEITEMS_SUB = "Disable this option for mods that drop randomized base items.";
+
 MCM_ITEMTIMER_TEXT = "Item Timer";
 MCM_ITEMTIMER_SUB = "Minutes to wait before items disappear (0 = no limit)";
 
@@ -67,6 +70,9 @@ MCM_SDRANDOM_SUB = "Adds between 0 to this many seconds randomly to the delay.";
 
 MCM_SPAWNCONDITIONS_TEXT = "Conditional Spawning";
 MCM_SPAWNCONDITIONS_SUB = "Monsters won't spawn in lava/slime/etc if environment damage is on.";
+
+MCM_SFX_TEXT = "Particles";
+MCM_SFX_SUB = "Determines how much special FX spawns.";
 
 //==============================================================================
 // Monster specific texts

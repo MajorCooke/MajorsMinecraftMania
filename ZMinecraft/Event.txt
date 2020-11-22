@@ -37,7 +37,7 @@ Class MinecraftHandler : EventHandler
 	private double DespawnDist;
 	private int Timer[S_Max];
 	private Array<MCMountInfo> MountList;
-	
+	AArray SmokeCount;
 	AArray Monsters;
 	
 	
@@ -162,19 +162,52 @@ Class MinecraftHandler : EventHandler
 		}
 	}
 	
-	Actor DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	bool DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
 	{
-		if (!mo || !Cls || Chance < 1)	return null;
+		if (!mo || !Cls || Chance < 1 || Amount == 0)	return false;
 		
-		Actor check = mo.A_DropItem(Cls, Amount, Chance);
-		if (!check)	return null;
-		
-		Inventory Item = Inventory(check);
-		if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
+		Array<Actor> drops;	drops.Clear();
+		bool good = false;
+		if (MCC_CombineItems || Amount < 1)
 		{
-			let DropTimer = MCDropTimer.Create(Item);
+			Actor check = null;
+			check = mo.A_DropItem(Cls, Amount, Chance);
+			if (!check)
+				return false;
+			if (check is 'RandomSpawner')
+				return true;
+			if (check is 'Inventory')
+				drops.Push(check);
 		}
-		return check;
+		else
+		{
+			for (int i = 0; i < Amount; i++)
+			{
+				Actor check = mo.A_DropItem(Cls, -1, Chance);
+				if (!check)	continue;
+				else if (check is 'RandomSpawner')
+				{
+					good = true;
+					continue;
+				}
+				else if (check && check is 'Inventory')
+				{
+					drops.Push(check);
+				}
+			}
+		}
+		
+		if (drops.Size() < 1)	return good;
+		
+		for (int i = 0; i < drops.Size(); i++)
+		{
+			Inventory Item = Inventory(drops[i]);
+			if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
+			{
+				let DropTimer = MCDropTimer.Create(Item);
+			}
+		}
+		return true;
 	}
 	
 	private int MCC_AIDifficulty_Prev;

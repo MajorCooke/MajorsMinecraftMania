@@ -92,14 +92,21 @@ Class MCSkeleton : MCUndead
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 		
+		int c[4];
 		int end = 2;
 		for (int i = 0; i < end; i++)
 		{
-			if (random[rng](1, 4) == 1)	Event.DropItem(self, 'Shell');
-			if (random[rng](1, 4) == 1)	Event.DropItem(self, 'Clip');
-			if (random[rng](1, 4) == 1)	Event.DropItem(self, 'RocketAmmo');
-			if (random[rng](1, 4) == 1)	Event.DropItem(self, 'Cell');
+			if (irandom(1, 4) == 1)	c[0]++;
+			if (irandom(1, 4) == 1)	c[1]++;
+			if (irandom(1, 4) == 1)	c[2]++;
+			if (irandom(1, 4) == 1)	c[3]++;
 		}
+		
+		Event.DropItem(self, 'Shell', c[0]);
+		Event.DropItem(self, 'Clip', c[1]);
+		Event.DropItem(self, 'RocketAmmo', c[2]);
+		Event.DropItem(self, 'Cell', c[3]);
+		
 		return true;
 	}
 	

@@ -19,6 +19,16 @@ OptionMenu "MinecraftOptions"
 	MinecraftSlider "$MCM_SDMINUTE_TEXT", "$MCM_SDMINUTE_SUB",			MCC_SpawnDelayMinute,	0, 10, 1
 	MinecraftSlider "$MCM_SDSECOND_TEXT", "$MCM_SDSECOND_SUB",			MCC_SpawnDelaySecond,	0, 59, 1
 	MinecraftSlider "$MCM_SDRANDOM_TEXT", "$MCM_SDRANDOM_SUB",			MCC_SpawnDelayRandom,	0, 60, 1
+	StaticText ""
+	StaticText "Special Effects", GOLD
+	MinecraftOption "$MCM_SFX_TEXT", "$MCM_SFX_SUB",	MCC_SFX,	"SFXValue"
+}
+
+OptionValue "SFXValue"
+{
+	0, "Minimal"
+	1, "Decreased"
+	2, "All"
 }
 
 OptionValue "DifficultySelection"
@@ -57,6 +67,7 @@ OptionMenu "MinecraftMonsterTweaks"
 	StaticText ""
 	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
 	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
+	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"YesNo"
 	StaticText ""
 	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
 	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage

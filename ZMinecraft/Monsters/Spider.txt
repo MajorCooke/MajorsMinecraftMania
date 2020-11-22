@@ -86,17 +86,21 @@ Class MCSpider : MinecraftEnemy
 			return false;
 		
 		int end = 5;
+		int c[2];
+		bool bp = false;
 		for (int i = 0; i < end; i++)
 		{
 			int rng = irandom(0,10);
-			if (rng == 0)		
+			if (rng == 0 && !bp)		
 			{
+				bp = true;
 				Event.DropItem(self, 'Backpack');
-				break;
 			}
-			else if (rng <= 5)	Event.DropItem(self, 'HealthBonus');
-			else				Event.DropItem(self, 'ArmorBonus');
-		}		
+			else if (rng <= 5)	c[0]++;
+			else				c[1]++;
+		}
+		Event.DropItem(self, 'HealthBonus', c[0]);
+		Event.DropItem(self, 'ArmorBonus', c[1]);
 		return true;
 	}
 	
@@ -137,6 +141,13 @@ Class MCSpider : MinecraftEnemy
 		Limb[LegR2].SetPosOffsets((		 0.0,  	 0.8, 1.9));
 		Limb[LegR3].SetPosOffsets((		 0.0, 	 0.8, 1.9));
 		Limb[LegR4].SetPosOffsets((		 0.0, 	 0.8, 1.9));
+		
+		
+		Limb[LegL2].SetSineOffset((180,0,0));		
+		Limb[LegL4].SetSineOffset((180,0,0));
+		Limb[LegR1].SetSineOffset((180,0,0));
+		Limb[LegR3].SetSineOffset((180,0,0));
+		
 		
 		int t = 0;
 		for (int i = LegL1; i < LegL1 + 4; i++)
@@ -234,11 +245,26 @@ Class MCCaveSpider : MCSpider
 }
 
 //------------------------------------------------------------------------------
+// Body parts
 Class MCSpiderBack : MCBodyPart {}
 Class MCSpiderHead : MCBodyPartHead {}
-Class MCSpiderLeg : MCBodyPartLeg
-{	Default	{	MCBodyPart.CurAction 0;	}	}
 Class MCSpiderThorax : MCBodyPart	{}
+
+Class MCSpiderLeg : MCBodyPartLeg	
+{
+	Default
+	{
+		MCBodyPart.SwingAngleCap 20;
+		MCBodyPart.SwingAmp SineWavePerSecond * 2.0;
+		MCBodyPart.SwingAngleDir 1, 1, 0;
+	}
+	
+	override void DoMotionAdjustments()
+	{
+		Super.DoMotionAdjustments();
+		if (AngOff.Y < 35)	AngOff.Y = 35;
+	}
+}
 
 //------------------------------------------------------------------------------
 // Gibs

@@ -294,8 +294,8 @@ Class MCCreeper : MinecraftEnemy
 			//ValidateTarget(false, HissingRange) && 
 			CheckSight(Target, CSFlags))
 		{
-			if (!OnGround && Vel.Z < -9.0)
-				SetExplosionCounting(true, true);
+		//	if (!OnGround && Vel.Z < -9.0)
+		//		SetExplosionCounting(true, true);
 		
 			// Handle the charging effects.
 			if (Charging && ChargeTimer < MaxCharge)
@@ -399,9 +399,6 @@ Class MCCreeper : MinecraftEnemy
 				if (LimbX[i])	LimbX[i].PostAngSet(true);
 		}
 		Charging = on;
-		if (on)
-			ChargeFall = (pos.z > floorz);
-		else ChargeFall = false;
 		
 	//	ChargeFall = (on) ? fall : false;
 	}
@@ -423,14 +420,16 @@ Class MCCreeper : MinecraftEnemy
 				dist = (Charging) ? HissingRange : ExploRange;
 			else
 				dist = (ExploRange + HissingRange) * 0.5;
-		}
-		dist += radius;
-		return 	(mo && 
-				((!_2d && CheckTrace(Target, dist, height * 0.5, false, true, false))) ||
-				(_2d && CheckTrace(Target, dist, Target.pos.z, false, true, false)));
 				
-			//	(_2d && Distance2DSquared(mo) <= (dist ** 2)) ||
-			//	(!_2d && Distance3DSquared(mo) <= (dist ** 2)));
+			
+		}
+		dist += max(height, radius);
+		return 	(mo && 
+			//	((!_2d && CheckTrace(Target, dist, height * 0.5, false, false, false))) ||
+			//	(_2d && CheckTrace(Target, dist, Target.pos.z, false, false, false)));
+				
+				(_2d && Distance2DSquared(mo) <= (dist ** 2)) ||
+				(!_2d && Distance3DSquared(mo) <= (dist ** 2)));
 	}
 	
 	override void SpawnRiders()

@@ -1,3 +1,5 @@
+
+
 ================================================================================
 - Monster Information -
 ================================================================================
@@ -20,6 +22,11 @@ is away from them. They will attempt to spawn in safe areas where they cannot
 naturally be damaged, if sector damage is enabled in the option menu. But if it's
 disabled, they can spawn in any sector regardless of the floor having damage or
 not.
+
+When a player is damaged by a Minecraft enemy, they become immune for half a 
+second to damage coming from them. That means it's possible for a player to become
+immune to an explosion from a creeper that would otherwise annihilate them if a
+zombie were to melee them. This is not a bug - it's a feature. =P
 
 --------------------------------------------------------------------------------
 ***** Monsters *****
@@ -58,7 +65,7 @@ Differences from Minecraft:
 + No natural armor/resistance
 - Immune to poison, drowning
 
---- Creeper ---
+=== Creeper ===
 A failed pig-monster with camoflauge green skin and an explosive temper (quite 
 physically), these walking PTSD trigger creatures make like a dog's fart upon 
 arrival: silent, and deadly, save for the soft hiss...
@@ -70,3 +77,22 @@ But you're Doomguy! You can outright kill ANYTHING! Right? ...Right?
 - Can explode when dropping over an edge when taking fall damage
 - Always explodes if dying by falling
 + Explosions deal extra damage to non-minecraft enemies (player is immune to this)
+
+=== Enderman ===
+An alien creature that naturally isn't hostile to anything, unless attacked or
+looked at the head. When angered, staring at their head will make them hold still.
+
+- Increased health, damage, speed and can teleport
++ No armor or immunities
+
+=== Spider ===
+An abnormally large arachnopod that triggers arachnophobia, by leaping at enemies
+
+- Leaps at enemies
+- Moves through obstacles
+- Smaller in height
++ Bigger in radius, more vulnerable to explosions
+
+=== Ghast ===
+A big floating monster that moves in a sporadic manner and shoots fireballs.
+

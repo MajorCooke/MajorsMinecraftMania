@@ -60,6 +60,10 @@ server bool MCC_DropItems = true;
 // Timer in minutes to wait before despawning items spawned by monsters.
 server int MCC_ItemTimer = 2;
 
+// If enabled, attempts to simply multiply how much the item is worth on pickup.
+// This won't work for items that are spawned via randomspawner.
+server bool MCC_CombineItems = false;
+
 // Gibs start fading out the moment they stop moving if enabled.
 server bool MCC_ShortGibLives = false;
 
@@ -92,6 +96,12 @@ server int MCC_CreeperChainBoom = 0;
 
 // Creepers always explode on death
 server bool MCC_CreeperAlwaysBoom = false;
+
+
+//==============================================================================
+// FX Control
+//==============================================================================
+server int MCC_SFX = 2;
 
 //==============================================================================
 // Debug

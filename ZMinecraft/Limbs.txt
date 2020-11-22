@@ -47,7 +47,7 @@ Struct LimbSway play
 Struct LimbSwing play
 {
 	const GainCap = 8.0;
-	double SwingAmp, VelTheta, Scale, VelSpring, CurSpring, AngleCap;
+	double SwingAmp, VelTheta, Scale, VelSpring, CurSpring, AngleCap, Offset;
 	
 	void Init(double off, double s, double amp = 1.0)	
 	{	
@@ -57,7 +57,7 @@ Struct LimbSwing play
 		VelSpring = 0;
 	}
 	
-	double NextSwing(double VelPosLen)
+	double NextSwing(double VelPosLen, bool cosine = false, double off = 0, bool donext = true)
 	{
 		if (Scale ~== 0.0 || SwingAmp ~== 0.0)	return 0;
 		
@@ -75,8 +75,11 @@ Struct LimbSwing play
 		double len = SwingAmp * (1.0 / Scale);
 		
 		double mag = Clamp((CurSpring * len), 0, SineWavePerSecond * 4);
-		VelTheta = (VelTheta + mag) % 360;
-		double ret = Sin(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
+		if (donext)
+			VelTheta = (VelTheta + mag + off + Offset) % 360;
+		double ret = 0;
+		if (cosine)	ret = Cos(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
+		else		ret = Sin(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
 		
 	//	Console.Printf("%.1f %.1f %.1f %.1f, %.1f", VelSpring, CurSpring, Len, Mag, Ret);
 		
@@ -92,13 +95,14 @@ Class MCBodyPart : MinecraftEntity
 	private int StepDelay;
 	protected bool ForceIdleSway;
 	protected int CurAction;
-	protected double LimbLength, OverScale;
+	protected double OverScale;
 	protected MCBodyPartAttachment Attachment;
 	protected Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
 		
 		PosOff,		// Position Offsets
 		RelOff,		// Relative position offsets (takes angles into account)
 		AngOff,		// Secondary angle offsets (reset every tic to (0,0,0)
+		SwingAngDir,		// How much to influence the APR as a scalar.
 		CurAng,		// The current angle, pitch and roll.
 		MainAng,	// Primary angle offsets (not reset)
 		NextAng,	// For spring dampening. Target angles to reach.
@@ -110,7 +114,6 @@ Class MCBodyPart : MinecraftEntity
 	protected Class<MCBodyPartGib> Gib;
 	
 	int		CopyFrames;
-	bool	InvertInvis;
 	double	OffX, OffY, OffZ,
 			ROfX, ROfY, ROfZ,
 			AttX, AttY, AttZ,
@@ -119,24 +122,28 @@ Class MCBodyPart : MinecraftEntity
 			SOX, SOY, SOZ, 
 			SDX, SDY, SDZ, 
 			SSX, SSY, SSZ,
+			ADX, ADY, ADZ,
 			SwingAmp,
 			SwingAngleCap,
 			StepVolume;
-	
 	Sound	StepSound;
 	
 	LimbSway Sway;
 	LimbSwing Swing;
 	MinecraftEnemy Owner;
 	
-	Property CopyFrames: CopyFrames;
-	Property ForceIdleSway: ForceIdleSway;
 	Property StepSound: StepSound;
 	Property StepVolume: StepVolume;
-	Property InvertInvis: InvertInvis;
+	
+	// Should this copy the master's sprite frame?
+	Property CopyFrames: CopyFrames;
+	// Force idle swaying motion regardless of cvar?
+	Property ForceIdleSway: ForceIdleSway;
 	Property CurAction : CurAction;			// See Constants.txt
-	Property LimbLength: LimbLength;
+	// Offset of the limb's sine wave when in motion. I.e. making one leg go back
+	// while the other goes forward.
 	Property SineOffset: SOX, SOY, SOZ;
+	// 
 	Property SineDistance: SDX, SDY, SDZ;
 	Property SineSpeed: SSX, SSY, SSZ;
 	Property VelSineOffset: VelSineOffset;
@@ -144,12 +151,16 @@ Class MCBodyPart : MinecraftEntity
 	Property RelOffsets: ROfX, ROfY, ROfZ;
 	Property AttachOffset: AttX, AttY, AttZ;
 	Property AngleOffset: AOffX, AOffY, AOffZ;
+	// Used for adjusting the angle/pitch/roll of the limb. This is a scalar.
+	// X = Angle, Y = Pitch, Z = Roll.
+	Property SwingAngleDir: ADX, ADY, ADZ;
 	Property SwingAmp: SwingAmp;
 	Property SwingAngleCap: SwingAngleCap;
 	Property Gib: Gib;
 	
 	Default
 	{
+		MCBodyPart.SwingAngleDir 0, 1, 0;
 		MCBodyPart.ForceIdleSway false;
 		MCBodyPart.SwingAngleCap 80;
 		MCBodyPart.SwingAmp SineWavePerSecond * 0.3;
@@ -221,8 +232,6 @@ Class MCBodyPart : MinecraftEntity
 	override void BeginPlay()
 	{
 		Super.BeginPlay();
-		if (LimbLength <= 0)
-			LimbLength = Height;
 		Sway.Init((SOX,SOY,SOZ), (SDX, SDY, SDZ), (SSX, SSY, SSZ));
 		Swing.Init(VelSineOffset, OverScale, SwingAmp);
 	}
@@ -235,7 +244,8 @@ Class MCBodyPart : MinecraftEntity
 		
 		Swing.SwingAmp = SwingAmp;
 		NextAng = (Angle, Pitch, Roll);
-		CurAng = NextAng + MainAng + AngOff;
+		CurAng = NextAng + MainAng;
+		SwingAngDir = (ADX, ADY, ADZ);
 	}
 	
 	override void OnDestroy()
@@ -392,22 +402,20 @@ Class MCBodyPart : MinecraftEntity
 		
 		if (StepDelay < 1 && StepSound != "" && self is 'MCBodyPartLeg')
 		{
-			if (pitch < 0.0 && pitch + Next.Y + AngOff.Y >= 0.0)
+			if (pitch < 0.0 && pitch + Next.Y >= 0.0)
 			{
 				StepDelay = StepWait;
 				A_StartSound(StepSound, CHAN_BODY, CHANF_OVERLAP, StepVolume);
 			}
 		}
 		
-		A_SetAngle(Next.X + AngOff.X, turnflags);
-		A_SetPitch(Next.Y + AngOff.Y, turnflags);
-		A_SetRoll(Next.Z + AngOff.Z, turnflags);
-		
-		
+		A_SetAngle(Next.X, turnflags);
+		A_SetPitch(Next.Y, turnflags);
+		A_SetRoll(Next.Z, turnflags);
 		
 		if (Attachment)	
 		{
-			Attachment.UpdateAngles(Next + AngOff, turnflags);
+			Attachment.UpdateAngles(Next, turnflags);
 		}
 	}
 	
@@ -497,7 +505,11 @@ Class MCBodyPart : MinecraftEntity
 			if (CurAction & E_Swing)
 			{
 				Swing.AngleCap = SwingAngleCap;
-				AngOff.Y += Swing.NextSwing(Owner.VelPosLen);
+				double NS = Swing.NextSwing(Owner.VelPosLen, true);
+				double NC = Swing.NextSwing(Owner.VelPosLen, donext: false);
+				AngOff.X += NS * SwingAngDir.X;
+				AngOff.Y += NC * SwingAngDir.Y;				
+				AngOff.Z += NS * SwingAngDir.Z;
 			}
 		}
 		if (!doSpring || Owner.bDORMANT)
@@ -511,9 +523,14 @@ Class MCBodyPart : MinecraftEntity
 			CurAng += VelAng;
 		}
 		
-		AngOff += (AOffX, AOffY, AOffZ);
-		UpdateAngles(CurAng, SPF_INTERPOLATE);
+		DoMotionAdjustments();
+		UpdateAngles(CurAng + AngOff, SPF_INTERPOLATE);
 		
+	}
+	
+	virtual void DoMotionAdjustments()
+	{
+		AngOff += (AOffX, AOffY, AOffZ);
 	}
 	
 	Vector3, Vector3, Vector3 GetAngles()
@@ -628,7 +645,7 @@ Class MCBodyPartArm : MCBodyPart
 	{
 		MCBodyPart.CurAction E_Sway;
 		MCBodyPart.SineOffset 0, 0, 0;			// Starting offset
-		MCBodyPart.SineDistance 1, 2, 0;			// Wave Size
+		MCBodyPart.SineDistance 1, 2, 0;		// Wave Size
 		MCBodyPart.SineSpeed 0.1, 0.2, 0;		// Waves Per Second
 		MCBodyPart.AttachOffset 0, 0, -1.6;
 	}
@@ -659,7 +676,7 @@ Class MCBodyPartLeg : MCBodyPart
 	}
 	
 	override void SetSineOffset(Vector3 off, bool swinging)	
-	{	Swing.VelTheta = off.x;	}
+	{	Swing.VelTheta = off.x;	Swing.Offset = off.y;	}
 }
 
 //==============================================================================
