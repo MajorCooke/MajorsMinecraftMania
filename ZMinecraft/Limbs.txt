@@ -47,7 +47,7 @@ Struct LimbSway play
 Struct LimbSwing play
 {
 	const GainCap = 8.0;
-	double SwingAmp, VelTheta, Scale, VelSpring, CurSpring, AngleCap, Offset;
+	double SwingAmp, VelTheta, Scale, VelSpring, CurSpring, AngleCap;
 	
 	void Init(double off, double s, double amp = 1.0)	
 	{	
@@ -76,7 +76,7 @@ Struct LimbSwing play
 		
 		double mag = Clamp((CurSpring * len), 0, SineWavePerSecond * 4);
 		if (donext)
-			VelTheta = (VelTheta + mag + off + Offset) % 360;
+			VelTheta = (VelTheta + mag) % 360;
 		double ret = 0;
 		if (cosine)	ret = Cos(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
 		else		ret = Sin(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
@@ -399,7 +399,7 @@ Class MCBodyPart : MinecraftEntity
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
 		if (!Master || Destroyed())	return;
-		
+		Next = Next + AngOff;
 		if (StepDelay < 1 && StepSound != "" && self is 'MCBodyPartLeg')
 		{
 			if (pitch < 0.0 && pitch + Next.Y >= 0.0)
@@ -524,7 +524,7 @@ Class MCBodyPart : MinecraftEntity
 		}
 		
 		DoMotionAdjustments();
-		UpdateAngles(CurAng + AngOff, SPF_INTERPOLATE);
+		UpdateAngles(CurAng, SPF_INTERPOLATE);
 		
 	}
 	
@@ -676,7 +676,7 @@ Class MCBodyPartLeg : MCBodyPart
 	}
 	
 	override void SetSineOffset(Vector3 off, bool swinging)	
-	{	Swing.VelTheta = off.x;	Swing.Offset = off.y;	}
+	{	Swing.VelTheta = off.x;	}
 }
 
 //==============================================================================

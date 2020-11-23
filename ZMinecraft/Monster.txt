@@ -141,7 +141,8 @@ Class MinecraftEnemy : MinecraftEntity
 						{
 							DmgInfo.secdmg = true;
 							DmgAmt = GetDamageFactor("DamageSector", DmgAmt);
-							DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
+							if (DmgAmt > 0)
+								DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
 						}
 						
 						if (health < 1)	return;
@@ -548,9 +549,9 @@ Class MCBoss : MinecraftEnemy
 	{
 		+BOSS
 		MinecraftEnemy.MobType M_Normal;
+		DamageFactor "DamageSector", 0.0;
 		DamageFactor "Poison", 0.0;
 		DamageFactor "Wither", 0.0;
-		DamageFactor "Fire", 0.0;
 		DamageFactor "Drowning", 0.0;
 		DamageFactor "Falling", 0.0;
 	}

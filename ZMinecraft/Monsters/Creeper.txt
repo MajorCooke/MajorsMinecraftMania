@@ -146,8 +146,8 @@ Class MCCreeper : MinecraftEnemy
 		LimbX[LegBR].SetPosOffsets((-.8,0.4,0.6));
 		LimbX[LegBL].SetPosOffsets((-.8,-.4,0.6));
 		
-		LimbX[LegFL].SetSineOffset((180,180,180));
-		LimbX[LegBR].SetSineOffset((180,180,180));
+		LimbX[LegFL].SetSineOffset((180, 0, 0));
+		LimbX[LegBR].SetSineOffset((180, 0, 0));
 		UpdateLimbs();
 	}
 	

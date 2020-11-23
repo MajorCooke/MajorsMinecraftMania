@@ -15,13 +15,13 @@ mixin Class NormalLimbCount
 mixin Class TM_FastRNG
 {
 	private int FRNGTime;
-	private S7_FastRNG FRNG;
+	private MC_S7_FastRNG FRNG;
 	
 	private void UpdateFRNG()
 	{
 		if (!FRNG || Level.MapTime - FRNGTime >= Second * 10)	
 		{
-			FRNG = S7_FastRNG.Create();
+			FRNG = MC_S7_FastRNG.Create();
 			FRNGTime = Level.MapTime;
 		}
 	}

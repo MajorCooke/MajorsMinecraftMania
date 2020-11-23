@@ -190,7 +190,7 @@ Class MCGhast : MinecraftEnemy
 			VelTimer = Second * IRandom(1, 4);
 			AP = (	ffrandom(0, 360),
 					ffrandom(-75, 75));
-			NextVel = S7_Math.Vec3FromAngle(AP.X, AP.Y, TopSpeed);
+			NextVel = MC_S7_Math.Vec3FromAngle(AP.X, AP.Y, TopSpeed);
 		}
 			
 		// If bouncing off geometry, adopt the new direction.
@@ -217,7 +217,7 @@ Class MCGhast : MinecraftEnemy
 				(!bNOBLOCKMONST && (f & Line.ML_BLOCKMONSTERS)) ||
 				(bBLOCKASPLAYER && (f & Line.ML_BLOCK_PLAYERS)))
 			{
-				int CurSide = S7_Math.PointOnLineSidePrecise(pos.x, pos.y, BlockingLine);
+				int CurSide = MC_S7_Math.PointOnLineSidePrecise(pos.x, pos.y, BlockingLine);
 				Vector3 normal = (BlockingLine.Delta.Y, -BlockingLine.Delta.X, 0).Unit();
 				if (CurSide > 0)	normal *= -1;
 				
@@ -225,8 +225,8 @@ Class MCGhast : MinecraftEnemy
 				if (NVel ~== (0,0,0))	NVel = PreVel;
 				
 				double len = NextVel.Length();
-				NextVel = S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
-				Vel = S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
+				NextVel = MC_S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
+				Vel = MC_S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
 				
 			//	Console.Printf("Old: %.1f %.1f %.1f | New: %.1f %.1f %.1f", 
 			//		OV.X, OV.Y, OV.Z, NextVel.X, NextVel.Y, NextVel.Z);
