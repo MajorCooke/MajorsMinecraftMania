@@ -374,6 +374,7 @@ Class MCGhastFireball : MinecraftEntity
 		Radius 12;
 		Height 24;
 		+FORCEXYBILLBOARD
+		+FORCERADIUSDMG
 		+NOBLOCKMAP
 		+SKYEXPLODE
 		+EXPLODEONWATER
