@@ -456,7 +456,12 @@ extend Class MCEnderman
 			ClearStare();
 			
 			ActiveSound = Default.ActiveSound;
-			if (Limb[Head])	Limb[Head].Frame = Fr_A;
+			for (int i = 0; i < Limb.Size(); i++)
+				if (i == Head && Limb[i])
+				{
+					Limb[I].Frame = Fr_A;
+					break;
+				}
 			Speed = NormalSpeed;
 		}
 	}
