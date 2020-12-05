@@ -515,6 +515,7 @@ extend Class MCEnderman
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
 	{
 		if (dmg < 1)	return;
+		if (mod == 'Falling')	{ SetAngry(null);	return; }
 		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
 		{
 			ClearRelations(Res_Actors);

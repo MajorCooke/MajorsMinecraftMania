@@ -421,7 +421,7 @@ Class MCGhastFireball : MinecraftEntity
 		if (Target && victim == Target)
 			return 1;
 	
-		int flags = 0;
+		int flags = DMG_EXPLOSION;
 		int dmg = RealDamage;
 		int ret = -1;
 		if (victim)

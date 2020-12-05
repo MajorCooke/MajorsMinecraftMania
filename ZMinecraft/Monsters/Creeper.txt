@@ -241,9 +241,9 @@ Class MCCreeper : MinecraftEnemy
 	{
 		Super.Tick();
 		
-		if (health < 1 || IsFrozen())	
+		if (bKILLED || IsFrozen())	
 		{
-			if (health < 1 && !IsFrozen())
+			if (bKILLED && !IsFrozen())
 			{
 				if (ExplodeTics > 0)
 				{
@@ -321,18 +321,17 @@ Class MCCreeper : MinecraftEnemy
 	
 	protected void Kaboom(bool ClearLimbs = true)
 	{
-		if (!bCORPSE)
-		{
-			bCORPSE = true;
-			Health = min(0, Health);
+		if (bCORPSE)	return;
+		
+		bCORPSE = true;
+		Health = min(0, Health);
+		
+		for (let probe = inv; probe; probe = probe.inv)
+			if (probe)	probe.OwnerDied();
 			
-			for (let probe = inv; probe; probe = probe.inv)
-				if (probe)	probe.OwnerDied();
-			
-		}
 		ExplodeTics = 0;
 		A_ChangeLinkFlags(1);
-		bNEVERTARGET = bNOINTERACTION = bINVISIBLE = true;
+		bNEVERTARGET = bNOINTERACTION = bINVISIBLE = bKILLED = true;
 		A_UnsetShootable();
 		bVULNERABLE = false;
 		if (ClearLimbs)	DestroyLimbs();

@@ -33,6 +33,16 @@ Class MinecraftEnemy : MinecraftEntity
 		SetOverScale(OverScale);
 	}
 	
+	override bool Morph(Actor activator, class<PlayerPawn> playerclass, class<MorphedMonster> monsterclass, int duration, int style, class<Actor> morphflash, class<Actor>unmorphflash)
+	{
+		return false;
+	}
+	
+	override bool MorphMonster (Class<Actor> spawntype, int duration, int style, Class<Actor> enter_flash, Class<Actor> exit_flash)
+	{
+		return false;
+	}
+	
 	override void Activate(Actor activator)
 	{
 		if (health < 1 || bDESTROYED)	return;
