@@ -171,7 +171,7 @@ Class MinecraftHandler : EventHandler
 		if (MCC_CombineItems || Amount < 1)
 		{
 			Actor check = null;
-			check = mo.A_DropItem(Cls, Amount, Chance);
+			check = mo.A_DropItem(Cls, -1, Chance);
 			if (!check)
 				return false;
 			if (check is 'RandomSpawner')
@@ -205,6 +205,8 @@ Class MinecraftHandler : EventHandler
 			if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
 			{
 				let DropTimer = MCDropTimer.Create(Item);
+				if (MCC_CombineItems && Amount > 0)
+					Item.Amount *= Amount;
 			}
 		}
 		return true;

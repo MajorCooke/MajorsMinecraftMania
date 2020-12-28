@@ -173,6 +173,8 @@ Class MCCreeper : MinecraftEnemy
 	private Vector3 TempVel;
 	override void Die(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
 	{
+		if (bKILLED)	return;
+		bKILLED = true;
 		TempVel = Vel;
 		DestroyXLimbs();
 		bVULNERABLE = true;
@@ -203,7 +205,6 @@ Class MCCreeper : MinecraftEnemy
 		Super.Die(source, inflictor, dmgflags, meansofdeath);
 		if (DamageType == 'Creeper')	Vel = TempVel;
 		else bNOINTERACTION = false;
-		
 	}
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
@@ -330,24 +331,24 @@ Class MCCreeper : MinecraftEnemy
 			if (probe)	probe.OwnerDied();
 			
 		ExplodeTics = 0;
-		A_ChangeLinkFlags(1);
 		bNEVERTARGET = bNOINTERACTION = bINVISIBLE = bKILLED = true;
 		A_UnsetShootable();
 		bVULNERABLE = false;
 		if (ClearLimbs)	DestroyLimbs();
 		A_Stop();
 		A_StopAllSounds();
-		
+		/*
 		BlockThingsIterator it = MC_Map.MakeBTIPos(pos, (ExploRange, ExploRange));
 		if (it)
 		{
 			while (it.Next())
 			{
 				let mo = MinecraftEnemy(it.thing);
-				if (mo && mo.health > 1)
+				if (mo && !mo.bKILLED)
 					mo.Damagers.Append(Damagers);
 			}
 		}
+		*/
 		// Deal 256 damage to players and minecraft monsters.
 		Explode(true,	 256, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
 		
