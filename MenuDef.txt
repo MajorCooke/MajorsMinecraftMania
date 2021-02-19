@@ -87,9 +87,13 @@ OptionMenu "MinecraftCreeperMenu"
 	//MCC_CreeperChainBoom
 	Class "MinecraftMenu"
 	Title "$MCM_CREEPERTWEAKS"
-	MinecraftOption "$MCM_CREEPERALWAYSBOOM_TEXT",	"$MCM_CREEPERALWAYSBOOM_SUB",	MCC_CreeperAlwaysBoom,	"YesNo"
-	MinecraftOption "$MCM_CREEPERBOOMBOOM_TEXT",	"$MCM_CREEPERBOOMBOOM_SUB",		MCC_CreeperBoomBoom,	"YesNo"
-	MinecraftOption "$MCM_CREEPERCHAINBOOM_TEXT",	"$MCM_CREEPERCHAINBOOM_SUB",	MCC_CreeperChainBoom,	"CreeperChainBoom"
+	MinecraftOption "$MCM_CREEPERALWAYSBOOM_TEXT",			"$MCM_CREEPERALWAYSBOOM_SUB",		MCC_CreeperAlwaysBoom,		"YesNo"
+	MinecraftOption "$MCM_CREEPERBOOMBOOM_TEXT",			"$MCM_CREEPERBOOMBOOM_SUB",			MCC_CreeperBoomBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
+	MinecraftOption "$MCM_CREEPERCHAINBOOM_TEXT",			"$MCM_CREEPERCHAINBOOM_SUB",		MCC_CreeperChainBoom,		"CreeperChainBoom",	MCC_CreeperAlwaysBoom, 0, 1
+	MinecraftOption "$MCM_CREEPERENEMYBOOM_TEXT",			"$MCM_CREEPERENEMYBOOM_SUB",		MCC_CreeperEnemyBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
+	MinecraftOption "$MCM_CREEPERFRIENDLYBOOM_TEXT",		"$MCM_CREEPERFRIENDLYBOOM_SUB",		MCC_CreeperFriendlyBoom,	"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
+	MinecraftOption "$MCM_CREEPERENVIRONMENTBOOM_TEXT",		"$MCM_CREEPERENVIRONMENTBOOM_SUB",	MCC_CreeperEnvironmentBoom,	"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
+	MinecraftOption "$MCM_CREEPERPLAYERBOOM_TEXT",			"$MCM_CREEPERPLAYERBOOM_SUB",		MCC_CreeperPlayerBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
 }
 
 OptionValue "CreeperChainBoom"

@@ -180,28 +180,41 @@ Class MCCreeper : MinecraftEnemy
 		bVULNERABLE = true;
 		ExplodeTics = 5;
 		
+		bool boom = false;
+		
 		// Death by explosion, cause an explosion if enabled based on the type.
 		// If kiiled by another creeper, explode based on if charging or just 
 		// make it happen via cvar. Else if not by creeper, blow up if wanted.
 		if (MCC_CreeperAlwaysBoom)
-			DamageType = 'Creeper';
+			boom = true;
 		else if (dmgflags & DMG_EXPLOSION)
 		{
 			if (MCC_CreeperChainBoom > 0 && source is 'MCCreeper')
 			{
 				if (MCC_CreeperChainBoom == 1)
-				{
-					if (Charging)	DamageType = 'Creeper';
-					DamageType = (Charging) ? 'Creeper' : 'None';
-				}
+					boom = Charging;
 				else
-					DamageType = 'Creeper'; 
+					boom = true;
 			}
 			else if (MCC_CreeperBoomBoom)
-				DamageType = 'Creeper'; 
+				boom = true;
 			else if (DamageType == 'Creeper')
-				DamageType = 'None';
+				boom = false;
 		}
+		else if (source && !(source is 'MCCreeper'))
+		{
+			if (source.player)
+				boom = MCC_CreeperPlayerBoom;
+			else
+				boom = ((source.bFRIENDLY && MCC_CreeperFriendlyBoom) ||
+						(!source.bFRIENDLY && MCC_CreeperEnemyBoom));
+		}
+		else if (!source && !inflictor && MCC_CreeperEnvironmentBoom)
+		{
+			boom = true;
+		}
+		
+		DamageType = (boom) ? 'Creeper' : 'None';
 		Super.Die(source, inflictor, dmgflags, meansofdeath);
 		if (DamageType == 'Creeper')	Vel = TempVel;
 		else bNOINTERACTION = false;
@@ -338,14 +351,18 @@ Class MCCreeper : MinecraftEnemy
 		A_Stop();
 		A_StopAllSounds();
 		/*
-		BlockThingsIterator it = MC_Map.MakeBTIPos(pos, (ExploRange, ExploRange));
-		if (it)
+		if (Damagers.Size() > 0)
 		{
-			while (it.Next())
+			BlockThingsIterator it = MC_Map.MakeBTIPos(pos, (ExploRange, ExploRange));
+			if (it)
 			{
-				let mo = MinecraftEnemy(it.thing);
-				if (mo && !mo.bKILLED)
-					mo.Damagers.Append(Damagers);
+				while (it.Next())
+				{
+					if (it.thing == self)	continue;
+					let mo = MinecraftEnemy(it.thing);
+					if (mo && !mo.bKILLED)
+						mo.Damagers.Append(Damagers);
+				}
 			}
 		}
 		*/

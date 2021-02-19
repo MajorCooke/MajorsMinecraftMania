@@ -80,11 +80,23 @@ MCM_SFX_SUB = "Determines how much special FX spawns.";
 
 MCM_CREEPERTWEAKS = "Creeper Tweaks";
 
-MCM_CREEPERALWAYSBOOM_TEXT = "Creepers Always Explode";
+MCM_CREEPERALWAYSBOOM_TEXT = "Always Explode";
 MCM_CREEPERALWAYSBOOM_SUB = "Takes priority over other explosion options.";
 
-MCM_CREEPERBOOMBOOM_TEXT = "Explosions explode creepers";
+MCM_CREEPERBOOMBOOM_TEXT = "Explosions";
 MCM_CREEPERBOOMBOOM_SUB = "Non-creeper explosions cause hissing creepers to explode.";
 
-MCM_CREEPERCHAINBOOM_TEXT = "Creeper chain reaction";
-MCM_CREEPERCHAINBOOM_SUB = "Can creepers make other creepers explode?";
+MCM_CREEPERCHAINBOOM_TEXT = "Creepers";
+MCM_CREEPERCHAINBOOM_SUB = "Creepers can cause other creepers to explode on death.";
+
+MCM_CREEPERENEMYBOOM_TEXT = "Enemies";
+MCM_CREEPERENEMYBOOM_SUB = "Enemies cause creepers to explode on death.";
+
+MCM_CREEPERFRIENDLYBOOM_TEXT = "Friendlies";
+MCM_CREEPERFRIENDLYBOOM_SUB = "Friends make creepers explode on death.";
+
+MCM_CREEPERENVIRONMENTBOOM_TEXT = "Environment";
+MCM_CREEPERENVIRONMENTBOOM_SUB = "Creepers explode when killed by the environment.";
+
+MCM_CREEPERPLAYERBOOM_TEXT = "Players";
+MCM_CREEPERPLAYERBOOM_SUB = "Players make creepers explode on death.";

@@ -134,7 +134,7 @@ Class MinecraftEnemy : MinecraftEntity
 					if (DoFallDamage())
 					{
 						SectorDamageTimer = 0;
-						if (health < 1)	return;
+						if (bKILLED)	return;
 					}
 				}
 				
@@ -155,7 +155,7 @@ Class MinecraftEnemy : MinecraftEntity
 								DamageMobj(null, null, DmgAmt, sec.DamageType, DMG_THRUSTLESS);
 						}
 						
-						if (health < 1)	return;
+						if (bKILLED)	return;
 						
 						SectorDamageTimer = 0;
 					}
@@ -174,7 +174,7 @@ Class MinecraftEnemy : MinecraftEntity
 						DmgInfo.secdmg = true;
 						DamageMobj(null, null, min(DrownDamage, TELEFRAG_DAMAGE - 1), "Drowning", DMG_NO_ARMOR);
 						
-						if (health < 1)	return;
+						if (bKILLED)	return;
 					}
 				}
 				else if (DrownTimer < DrownTimerStart)
@@ -257,6 +257,7 @@ Class MinecraftEnemy : MinecraftEntity
 	{
 		int prevhp = health;
 		int dmg = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		if (health < 1)	bKILLED = true;
 		
 		Actor i = inflictor, s = source;
 		bool painless = ((flags & DMG_NO_PAIN) || (i && i.bNOPAIN) || (!i && s && s.bNOPAIN));
@@ -276,7 +277,7 @@ Class MinecraftEnemy : MinecraftEntity
 			Console.Printf("%d: %s from %s, %s", dmg, GetClassName(), src, inf);
 		}
 		
-		if (!painless && health > 0 && ((dmg > 0 || 
+		if (!painless && !bKILLED && ((dmg > 0 || 
 			(i && (i.bCAUSEPAIN || i.bFORCEPAIN)) ||
 			(s && (s.bCAUSEPAIN || s.bFORCEPAIN))) ||
 			(damage > 0 && bALLOWPAIN)))

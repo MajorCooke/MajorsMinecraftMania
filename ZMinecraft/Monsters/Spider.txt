@@ -161,6 +161,8 @@ Class MCSpider : MinecraftEnemy
 	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
+		if (other && other.bMISSILE)
+			return true;
 		if (!other || (other.bSOLID && !other.bACTLIKEBRIDGE))
 			return false;
 		return true;

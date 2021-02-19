@@ -148,11 +148,14 @@ extend class MinecraftHandler
 		if (MobCount < MaxMobs)
 		{
 			PrepareSpawnNormal();
-		//	Console.Printf("%d", MobCount);
 		}
 		else 
 		{
-		//	Console.Printf("%d", MobCount);
+			if (MoCue)	
+			{
+				MoCue.Destroy();
+				MoCue = null;
+			}
 			SpawnFails = 0;
 			ret = reset;
 		}
@@ -165,7 +168,8 @@ extend class MinecraftHandler
 	// performance issues.
 	//==========================================================================
 	
-	
+	private MinecraftEnemy MoCue;
+	private int SpawnFails;
 	private void PrepareSpawnNormal()
 	{	
 		if (!SpawnList)	CreateSpawnList();
@@ -199,8 +203,7 @@ extend class MinecraftHandler
 		}
 	}
 	
-	private MinecraftEnemy MoCue;
-	private int SpawnFails;
+	
 	void AttemptMonsterPlacement()
 	{
 		

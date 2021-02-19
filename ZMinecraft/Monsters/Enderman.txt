@@ -234,6 +234,14 @@ extend class MinecraftHandler
 	}
 }
 
+//==============================================================================
+// Enderman Tracer
+// 
+// This is only used when an enderman is around. This is used to trigger 
+// endermen whenever the player looks at their heads. Only invoked by the main
+// event handler to keep things nice and simple.
+//==============================================================================
+
 Class EnderHitList
 {
 	MCEnderman mo;
@@ -515,7 +523,7 @@ extend Class MCEnderman
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
 	{
 		if (dmg < 1)	return;
-		if (mod == 'Falling')	{ SetAngry(null);	return; }
+		if (mod == 'Falling')	{ return; }
 		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
 		{
 			ClearRelations(Res_Actors);
@@ -546,6 +554,12 @@ extend Class MCEnderman
 		}
 		return Super.CanCollideWith(other, passive);
 	}
+	
+	//--------------------------------------------------------------------------
+	// GetTeleSpots
+	//
+	// Attempts to find a position nearby that doesn't have any damage sectors
+	// or at least doens't take any damage from it. 
 	
 	private bool InTeleport;
 	private bool GetTeleSpots(out Array<CVector3> Spots, Actor mo = null, 

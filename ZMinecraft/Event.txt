@@ -113,8 +113,8 @@ Class MinecraftHandler : EventHandler
 		if (mo)	
 		{
 			mo.Event = self;
-			mo.StartHealth *= Max(0.5, MCC_HealthMul);
-			mo.Health *= Max(0.5, MCC_HealthMul);;
+			mo.StartHealth *= Max(0.5, round(MCC_HealthMul));
+			mo.Health *= Max(0.5, round(MCC_HealthMul));
 			Monsters.Push(mo);
 			MobCount++;
 			

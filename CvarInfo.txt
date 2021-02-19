@@ -85,6 +85,9 @@ server bool MCC_Drowning = true;
 //------------------------------------------------------------------------------
 // Creeper
 //------------------------------------------------------------------------------
+// Creepers always explode on death
+server bool MCC_CreeperAlwaysBoom = false;
+
 // Creepers explode when killed while charging.
 server bool MCC_CreeperBoomBoom = false;
 
@@ -94,8 +97,11 @@ server bool MCC_CreeperBoomBoom = false;
 // 2 = All
 server int MCC_CreeperChainBoom = 0;
 
-// Creepers always explode on death
-server bool MCC_CreeperAlwaysBoom = false;
+
+server bool MCC_CreeperEnemyBoom = false;
+server bool MCC_CreeperFriendlyBoom = false;
+server bool MCC_CreeperEnvironmentBoom = false;
+server bool MCC_CreeperPlayerBoom = false;
 
 
 //==============================================================================
