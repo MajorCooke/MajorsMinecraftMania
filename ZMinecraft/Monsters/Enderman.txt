@@ -65,7 +65,7 @@ Class MCEnderman : MinecraftEnemy
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 			
-		if (!A_DropItem('MCEndermanDrop',-1, 13))
+		if (!A_DropItem('MCEndermanDrop',-1, 32))
 		if (!A_DropItem('MCCreeperWeaponSpawner',-1, 20))
 		Event.DropItem(self, 'Backpack', -1, 64);
 		
@@ -164,7 +164,7 @@ Class MCEnderman : MinecraftEnemy
 		}
 		Wait;
 	Melee:
-		TNT1 A 1 DoMelee(IRandom(30, 40));
+		TNT1 A 1 DoMelee(IRandom(20, 40));
 		Goto See;
 	}
 }
@@ -522,9 +522,9 @@ extend Class MCEnderman
 	
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
 	{
-		if (dmg < 1)	return;
-		if (mod == 'Falling')	{ return; }
-		if (!src && !inf || mod == 'Fire' || mod == 'Slime' || mod == 'Drowning')
+		if (dmg < 1 || mod == 'Falling')	return;
+		
+		if (!src && !inf && (mod == 'Fire' || mod == 'Slime' || mod == 'Drowning'))
 		{
 			ClearRelations(Res_Actors);
 			SetAngry(null);
@@ -535,10 +535,16 @@ extend Class MCEnderman
 		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
 		
 	}
-	
+//	private Actor PrevTarget;
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		/*
+		if (!bKILLED && CheckDamageTimer() < 1 && Targetable(source))
+			PrevTarget = source;
+		*/
 		return (InTeleport && !(flags & DMG_FORCED)) ? 0 : Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+		
+		
 	}
 	
 	override bool CanCollideWith(Actor other, bool passive)

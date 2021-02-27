@@ -109,6 +109,9 @@ extend class MinecraftEnemy
 		A_Respawn(RSF_TELEFRAG);
 		Deactivate(null);
 	}
+	
+	int CheckDamageTimer()
+	{	return DamageTimer;	}
 
 	// This is never called if the actor is dead. Used by monsters to try and
 	// move out of damaging sectors.
@@ -558,7 +561,6 @@ extend class MinecraftEnemy
 			let s = ResolveState(melee);
 			if (s)
 			{
-				// TO DO: Convert to use a trace function.
 				if (CheckTrace(Target, MeleeRange))
 				{
 					bJUSTATTACKED = true;
@@ -621,7 +623,7 @@ extend class MinecraftEnemy
 		
 		if (armor)	armbefore = Armor.Amount;
 		
-		int dmg = ((Target.bINVULNERABLE && !bFOILINVUL) || Target.bNODAMAGE || Target.FindInventory('MCImmunityFrames')) 
+		int dmg = ((Target.bINVULNERABLE && !bFOILINVUL) || Target.bNODAMAGE) 
 			? 0 : Target.DamageMobj(null, self, damage, "Melee");
 			
 		if (armor)	armafter = Armor.Amount;

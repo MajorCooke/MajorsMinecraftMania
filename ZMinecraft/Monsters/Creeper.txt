@@ -350,29 +350,14 @@ Class MCCreeper : MinecraftEnemy
 		if (ClearLimbs)	DestroyLimbs();
 		A_Stop();
 		A_StopAllSounds();
-		/*
-		if (Damagers.Size() > 0)
-		{
-			BlockThingsIterator it = MC_Map.MakeBTIPos(pos, (ExploRange, ExploRange));
-			if (it)
-			{
-				while (it.Next())
-				{
-					if (it.thing == self)	continue;
-					let mo = MinecraftEnemy(it.thing);
-					if (mo && !mo.bKILLED)
-						mo.Damagers.Append(Damagers);
-				}
-			}
-		}
-		*/
-		// Deal 256 damage to players and minecraft monsters.
-		Explode(true,	 256, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
+		
+		// Deals 25% to players and minecraft enemies, full to everything else.
+		Explode(true,	1000, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
 		
 		// Deal damage to everything else, making them very useful for clearing
 		// out crowds of enemies. The player is given an immunity powerup to stop
 		// Creeper damagetype from hurting them.
-		Explode(false,	1000, ExploRange, ExploRange, 0, 0, 0, XF_NOTMISSILE, 0, false, 'CreeperBig');
+	//	Explode(false,	1000, ExploRange, ExploRange, 0, 0, 0, XF_NOTMISSILE, 0, false, 'CreeperBig');
 	}
 	
 	protected void DestroyXLimbs()

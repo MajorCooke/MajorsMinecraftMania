@@ -88,7 +88,7 @@ extend class MinecraftEnemy
 		+FORCEINFIGHTING
 		
 		DamageFactor "Crush", 2000.0;
-		DamageFactor "CreeperBig", 0.0; //This is only used for non-Minecraft monsters.
+		DamageFactor "Creeper", 0.25;
 		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
 		DamageFactor "Slime", 1.0;

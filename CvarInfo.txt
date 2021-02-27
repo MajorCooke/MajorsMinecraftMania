@@ -103,6 +103,11 @@ server bool MCC_CreeperFriendlyBoom = false;
 server bool MCC_CreeperEnvironmentBoom = false;
 server bool MCC_CreeperPlayerBoom = false;
 
+//------------------------------------------------------------------------------
+// Zombie
+//------------------------------------------------------------------------------
+server bool MCC_ZombieBaby = true;
+
 
 //==============================================================================
 // FX Control

@@ -272,8 +272,8 @@ Class MinecraftEnemy : MinecraftEntity
 		{
 			Name src = "Null";
 			Name inf = "Null";
-			if (i)	inf = i.GetClassName();
 			if (s)	src = s.GetClassName();
+			if (i)	inf = i.GetClassName();
 			Console.Printf("%d: %s from %s, %s", dmg, GetClassName(), src, inf);
 		}
 		
@@ -330,25 +330,6 @@ Class MinecraftEnemy : MinecraftEntity
 				
 				if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
 				{	
-					/*
-					if (bNOGRAVITY)
-					{
-						Vector2 AP = (angle, pitch);
-						
-						if (!(flags & DMG_USEANGLE))
-						{
-							Actor who = s;
-							if (!who)	who = i;
-							
-							if (who)
-							{
-								
-							}
-						}
-						
-					}
-					else
-					*/
 					if (!bNOGRAVITY)
 					{
 						Vector2 v = Vel.XY;
@@ -412,7 +393,7 @@ Class MinecraftEnemy : MinecraftEntity
 	//--------------------------------------------------------------------------
 	
 	
-	
+	private bool appended;
 	protected void PreDie(Actor source, Actor inflictor, int dmgflags, Name MeansOfDeath)
 	{
 		DeathPos = pos;
@@ -426,6 +407,17 @@ Class MinecraftEnemy : MinecraftEntity
 		// introduce something on DE4D's side and remove it later.
 		
 		Dismount();
+		
+		if (!appended && (dmgflags & DMG_EXPLOSION))
+		{
+			let src = MinecraftEnemy(source);
+			if (src is 'MCCreeper' && src.Damagers.Size() > 0)
+			{
+				appended = true;
+				Damagers.Append(src.Damagers);
+			}
+		}
+		
 		
 		if (!(source is 'PlayerPawn'))
 		{

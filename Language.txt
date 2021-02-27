@@ -100,3 +100,8 @@ MCM_CREEPERENVIRONMENTBOOM_SUB = "Creepers explode when killed by the environmen
 
 MCM_CREEPERPLAYERBOOM_TEXT = "Players";
 MCM_CREEPERPLAYERBOOM_SUB = "Players make creepers explode on death.";
+
+MCM_ZOMBIETWEAKS = "Zombie Tweaks";
+
+MCM_ZOMBIEBABY_TEXT = "Baby Zombies";
+MCM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn?";

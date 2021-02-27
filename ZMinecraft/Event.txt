@@ -113,8 +113,8 @@ Class MinecraftHandler : EventHandler
 		if (mo)	
 		{
 			mo.Event = self;
-			mo.StartHealth *= Max(0.5, round(MCC_HealthMul));
-			mo.Health *= Max(0.5, round(MCC_HealthMul));
+			mo.StartHealth *= int(round(mo.StartHealth * MCC_HealthMul));
+			mo.Health = int(round(mo.Health * MCC_HealthMul));
 			Monsters.Push(mo);
 			MobCount++;
 			
@@ -146,7 +146,7 @@ Class MinecraftHandler : EventHandler
 				EndermanCount--;
 		}
 	}
-	
+	/*
 	override void WorldThingDamaged(WorldEvent e)
 	{
 		let src = MinecraftEnemy(e.DamageSource);
@@ -161,7 +161,7 @@ Class MinecraftHandler : EventHandler
 			}
 		}
 	}
-	
+	*/
 	bool DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
 	{
 		if (!mo || !Cls || Chance < 1 || Amount == 0)	return false;

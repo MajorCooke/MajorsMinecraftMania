@@ -79,6 +79,14 @@ OptionMenu "MinecraftSpecificMonsters"
 {
 	Title "Choose Monster"
 	Submenu "Creeper",				"MinecraftCreeperMenu"
+	Submenu "Zombie",				"MinecraftZombieMenu"
+}
+
+OptionMenu "MinecraftZombieMenu"
+{
+	Class "MinecraftMenu"
+	Title "$MCM_ZOMBIETWEAKS"
+	MinecraftOption "$MCM_ZOMBIEBABY_TEXT",			"$MCM_ZOMBIEBABY_SUB",	MCC_ZombieBaby,		"YesNo"
 }
 
 OptionMenu "MinecraftCreeperMenu"

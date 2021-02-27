@@ -31,24 +31,72 @@ Class MinecraftEntity : Actor
 
 Class MCPlayerProtection : PowerProtection
 {
+	const HalfSec = 18;
+	int InvulTimer;
 	Default
 	{
 		DamageFactor "CreeperBig", 0.0;
+		DamageFactor "Creeper", 0.25;
 	}
 	
 	override void InitEffect()
 	{
 		Super.InitEffect();
 		EffectTics = 1000000;
+		InvulTimer = 0;
 	}
 	
 	override void DoEffect()
 	{
 		EffectTics++;
 		Super.DoEffect();
+		
+		processed = false;
+		if (InvulTimer > 0)		InvulTimer--;
+	}
+	
+	private bool processed;
+	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor inflictor, Actor source, int flags)
+	{
+		if (passive && Owner && damage > 0)	
+		{
+			if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
+			{
+				if (InvulTimer > 0)
+				{	
+					newdamage = -1;
+					return;
+				}
+				InvulTimer = HalfSec;
+				Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
+				processed = true;
+			}
+			Super.ModifyDamage(damage, damageType, newdamage, passive, inflictor, source, flags);
+		}
+	}
+	
+	// In the event that protection items are bypassed, this can act as a backup,
+	// unless armor is bypassed.
+	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
+	{
+		if (Owner && damage > 0)
+		{
+			if (!processed && (source is "MinecraftEntity" || inflictor is "MinecraftEntity"))
+			{
+				if (InvulTimer > 0)
+				{
+					newdamage = -1;
+					return;
+				}
+				InvulTimer = HalfSec;
+				Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
+				processed = true;
+			}
+			Super.AbsorbDamage(damage, damageType, newdamage, inflictor, source, flags);
+		}
 	}
 }
-
+/*
 Class MCImmunityFrames : PowerProtection
 {
 	override void InitEffect()
@@ -72,3 +120,4 @@ Class MCImmunityFrames : PowerProtection
 			newdamage = -1;
 	}
 }
+*/

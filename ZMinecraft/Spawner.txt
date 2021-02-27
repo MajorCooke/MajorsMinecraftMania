@@ -179,6 +179,9 @@ extend class MinecraftHandler
 		if (!MoCue)
 		{
 			Class<Actor> cls = SpawnList.PickRandom();
+			
+			SpawnList.FilterSpawns(cls);
+			
 			MoCue = MinecraftEnemy(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
 			if (MoCue)
 			{
@@ -423,6 +426,12 @@ Class MCSpawnList play
 			return Queue[0].Classname, Queue[0].Group;
 		
 		return null, '';
+	}
+	
+	void FilterSpawns(in out Class<Actor> cls)
+	{
+		if (cls == 'MCZombieBaby' && !MCC_ZombieBaby)
+			cls = 'MCZombie';
 	}
 }
 
