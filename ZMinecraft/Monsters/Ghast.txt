@@ -174,8 +174,10 @@ Class MCGhast : MinecraftEnemy
 	override void Tick()
 	{
 		if (bDORMANT || bKILLED || IsFrozen())
+		{
+			Super.Tick();
 			return;
-			
+		}	
 		PreVel = Vel;
 		
 		if (VelLen >= TopSpeed)
