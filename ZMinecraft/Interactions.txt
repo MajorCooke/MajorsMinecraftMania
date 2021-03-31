@@ -42,7 +42,7 @@ Class MCActorRelation play
 	
 	protected static bool ValidateActor(Actor mon)
 	{
-		return (mon && mon.health > 0);
+		return (mon && !mon.bKILLED);
 	}
 	
 	bool Update(Actor who, int status, int priority = 0)
@@ -252,7 +252,7 @@ Class MCRelationManager play
 	//--------------------------------------------------------------------------
 	// Passes all recorded actors/classes if they have the status type.
 	// At least one is needed to return true. Any at all.
-	bool CheckStatusType(int status)
+	bool CheckStatusType(int status) const
 	{
 		if (status <= Rel_None || status > Rel_Max || 
 			(Classes.Size() < 1 && Actors.Size() < 1))
@@ -307,13 +307,13 @@ Class MCRelationManager play
 		}
 	}
 	
-	int Size(int whom = Res_Both)
+	int Size(int whom = Res_Both) const
 	{ 	
 		Switch(whom)
 		{
-			Case 1:	return Actors.Size();
-			Case 2: return Classes.Size();
-			Default: return Actors.Size() + Classes.Size();
+			Case Res_Actors:	return Actors.Size();
+			Case Res_Classes:	return Classes.Size();
+			Default: 			return Actors.Size() + Classes.Size();
 		}
 		return 0;
 	}
@@ -366,13 +366,13 @@ extend class MinecraftEnemy
 		}
 	}
 	
-	int CheckClassRelation(Class<Actor> mo)
+	int CheckClassRelation(Class<Actor> mo) const
 	{	return (!mo || !Relations) ? 0 : Relations.FindClassRelation(mo);	}
 	
-	int CheckActorRelation(Actor mo)
+	int CheckActorRelation(Actor mo) const
 	{	return (!mo || !Relations) ? 0 : Relations.FindActorRelation(mo);	}
 	
-	int CheckRelation(Actor mo, Class<Actor> cls = null)
+	int CheckRelation(Actor mo, Class<Actor> cls = null) const
 	{
 		if (!Relations || (!mo && !cls))	return 0;
 		
@@ -406,7 +406,7 @@ extend class MinecraftEnemy
 		if (Relations) Relations.CleanActors();
 	}
 	
-	bool CheckStatusType(int status)
+	bool CheckStatusType(int status) const
 	{
 		if (!Relations || status <= Rel_None || status >= Rel_Max)
 			return false;
@@ -563,7 +563,8 @@ extend class MinecraftEnemy
 			return true;
 		
 		//  Dead, unshootable or not targetable.
-		if (mo.Health < 1 || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY))
+		if (mo.bKILLED || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY) ||
+			mo.bDORMANT)
 			return false;
 		
 		// Peaceful mode disallows targeting players.

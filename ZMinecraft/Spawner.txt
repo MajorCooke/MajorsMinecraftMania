@@ -238,45 +238,37 @@ extend class MinecraftHandler
 				
 				if (!level.IsPointInLevel(next))
 					continue;
-					
+				
 				Sector s = Level.PointInSector(next.XY);
 				
-				if (MCC_SpawnConditions && MCC_EnvironmentDamage && MCC_SectorDamage && 
-					s.DamageAmount > 0 &&
+				if (MCC_SpawnConditions && 
+					MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
 					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)
 					continue;
-				/*
-				double fz = s.FloorPlane.ZAtPoint(next.XY); //MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR|GZF_CEILING);
-				double cz = s.CeilingPlane.ZAtPoint(next.XY);
 				
 				
-				if (s.Get3DFloorCount() > 0)
-				{
-					Array<Double> PoZ;	PoZ.Clear();	PoZ.Push(fz);
-					Array<Double> CeZ;	CeZ.Clear();	CeZ.Push(cz);
-					
-					double	prevfz = fz,
-							iter = fz,
-							nc = cz;
-					do
-					{
-						prevfz = iter;
-						nc = NextHighestCeilingAt(next.X, next.Y, iter, iter + MoCue.Height);
-						iter = NextLowestFloorAt(next.X, next.Y, nc + 1, 0, MoCue.MaxStepHeight);
-						
-						PoZ.Push(iter);
-						CeZ.Push(nc);
-					}
-					while (!(prevfz ~== iter));
-				}
-				else
-				{
-					if (level.Vec3Diff(next, plr.pos).Length() > 4096)
-						continue;
-				}
-				*/
+				if (!s || s.Flags & Sector.SECF_NORESPAWN)
+					continue;
+				
 				if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
 					continue;
+				
+				// Don't allow spawning in skyboxes.
+				if (skies.Size() > 0)
+				{
+					bool cont = false;
+					for (int ii = 0; ii < skies.Size(); ii++)
+					{
+						if (skies[ii] && 
+							skies[ii].CheckSight(MoCue, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+						{
+							cont = true;
+							break;
+						}
+					}
+					if (cont)	continue;
+				}
+					
 				MoCue.SetOrigin(next, false);
 				
 				if (MoCue.bSPAWNFLOAT)

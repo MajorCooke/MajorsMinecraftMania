@@ -20,6 +20,70 @@ Class MCSkeletonSpawner : RandomSpawner
 	}
 }
 
+Class MinecraftLine play
+{
+	Line _line;
+	Sector front, back;
+}
+
+Class MinecraftLineCollection play
+{
+	Array<MinecraftLine> lin;
+	
+	static MinecraftLineCollection Create()
+	{
+		let MLC = new("MinecraftLineCollection");
+		MLC.Clear();
+		return MLC;
+	}
+	
+	void Clear()				{	lin.Clear();	}
+	void Push(Line l)	
+	{	
+		if (l && (l.frontsector || l.backsector) && !CheckLine(l))	
+		{
+			let ln = new("MinecraftLine");
+			ln._line = l;
+			ln.front = l.frontsector;
+			ln.back = l.backsector;
+			lin.Push(ln);	
+		}
+	}
+	
+	bool CheckSectorIndex(int index) const
+	{
+		for (int i = 0; i < lin.Size(); i++)
+		{
+			if ((lin[i].front && lin[i].front.Index() == index) ||
+				(lin[i].back && lin[i].back.Index() == index))
+				return true;
+		}
+		return false;
+	}
+	
+	bool CheckSector(Sector s) const
+	{
+		for (int i = 0; i < lin.Size(); i++)
+		{
+			if (lin[i] && (
+				s == lin[i].front ||
+				s == lin[i].back))
+				return true;
+		}
+		return false;
+	}
+	
+	bool CheckLine(Line l) const
+	{
+		for (int i = 0; i < lin.Size(); i++)
+		{
+			if (lin[i] && lin[i]._line == l)
+				return true;
+		}
+		return false;
+	}
+}
+
 Class MinecraftHandler : EventHandler
 {
 	mixin TM_FastRNG;
@@ -33,13 +97,14 @@ Class MinecraftHandler : EventHandler
 		S_Max
 	};
 	
+	private Array<Int> BannedSectors;
 	private int MobCount, EndermanCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
 	private Array<MCMountInfo> MountList;
 	AArray SmokeCount;
 	AArray Monsters;
-	
+	private Array<SkyViewpoint> skies;
 	
 	
 	
@@ -98,13 +163,13 @@ Class MinecraftHandler : EventHandler
 	
 	override void WorldLoaded(WorldEvent e)
 	{
+		BannedSectors.Clear();
 		MountList.Clear();
 		Monsters = AArray.Create();
 		CreateSpawnList();
 		InitQueues();
 		Timer[S_Spawn] = Second;
 		MCC_AIDifficulty_Prev = MCC_AIDifficulty;
-		
 	}
 	
 	override void WorldThingSpawned(WorldEvent e)
@@ -120,6 +185,52 @@ Class MinecraftHandler : EventHandler
 			
 			if (mo is 'MCEnderman')
 				EndermanCount++;
+			return;
+		}
+		/*
+		let sk = SkyViewpoint(e.Thing);
+		if (sk)	
+		{		
+			let s = sk.CurSector;
+			
+			if (BanSector(s))
+			{	
+				let MLC = MinecraftLineCollection.Create();
+				for (int i = 0; i < s.lines.Size(); i++)
+				{
+					MLC.Push(s.lines[i]);
+				}
+				
+				
+			}
+		}
+		*/
+	}
+	
+	private bool BanSector(Sector s)
+	{
+		int index = s.Index();
+		if (BannedSectors.Find(index) >= BannedSectors.Size())
+		{
+			BannedSectors.Push(index);
+			return true;
+		}
+		return false;
+	}
+	
+	private void BanLineSectors(Line l)
+	{
+		int index[2] = {0,0};
+		if (l && l.frontsector && l.frontsector.Index() > 0)
+			index[0] = l.frontsector.Index();
+		if (l && l.backsector && l.backsector.Index() > 0)
+			index[1] = l.backsector.Index();
+		
+		int size = BannedSectors.Size();
+		for (int i = 0; i < 2; i++)
+		{
+			if (BannedSectors.Find(index[i]) >= size)
+				BannedSectors.Push(index[i]);
 		}
 	}
 	

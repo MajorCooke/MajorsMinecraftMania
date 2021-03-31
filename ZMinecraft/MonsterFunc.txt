@@ -113,8 +113,7 @@ extend class MinecraftEnemy
 	int CheckDamageTimer()
 	{	return DamageTimer;	}
 
-	// This is never called if the actor is dead. Used by monsters to try and
-	// move out of damaging sectors.
+	// This is never called if the actor is dead.
 	virtual void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags = 0, double angle = 0, bool secdmg = false)
 	{
 		
@@ -511,19 +510,22 @@ extend class MinecraftEnemy
 							ChaseTics = Second;
 						}
 					}
-					else if (OnGround)
-					{	
+					else // if (Vel.Z <= 0.0)
+					{
 						Vector2 nmpos = Vec2Angle(speed, ang);
-						if (TryMove(nmpos, bDROPOFF))
+						if (OnGround && TryMove(nmpos, bDROPOFF))
 						{
 							good = true;
+							SetZ(floorz);
 							if (VelPosLen <= speed)
 								vel.XY = vel.XY * 0.8;
 						}
-						else
+						else if (OnGround)
 							ChaseTics = Second;
+							
+						newflags |= CHF_DONTMOVE;
 					}
-					else newflags |= CHF_DONTMOVE;
+					
 				}
 				
 				

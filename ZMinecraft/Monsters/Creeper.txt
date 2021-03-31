@@ -32,6 +32,7 @@ Class MCCreeperWeaponSpawner : RandomSpawner
 Class MCCreeper : MinecraftEnemy
 {
 	const ExploRange = 256.0;
+	const ExploFall = (ExploRange * 0.5);
 	const _Radius = 1.6;
 	const _Height = 5.2;
 	const RealScale = 8.0;
@@ -352,7 +353,7 @@ Class MCCreeper : MinecraftEnemy
 		A_StopAllSounds();
 		
 		// Deals 25% to players and minecraft enemies, full to everything else.
-		Explode(true,	1000, ExploRange, 128,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
+		Explode(true, 1000, ExploRange, ExploFall,-1,-1,-1, XF_NOTMISSILE, 0, false, 'Creeper');
 		
 		// Deal damage to everything else, making them very useful for clearing
 		// out crowds of enemies. The player is given an immunity powerup to stop

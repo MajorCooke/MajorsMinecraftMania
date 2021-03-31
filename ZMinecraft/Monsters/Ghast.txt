@@ -72,9 +72,9 @@ Class MCGhast : MinecraftEnemy
 	{
 		+NOBLOCKMONST
 		+NOGRAVITY
-		+MBFBOUNCER
 		+NOFEAR
 		+DROPOFF
+		+BRIGHT
 		
 		MinecraftEnemy.DespawnRange 4096, 8192;
 		MinecraftEnemy.SightTimeOut 0;

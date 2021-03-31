@@ -324,7 +324,7 @@ Class MCArrowProjectile : MinecraftEntity
 		A_Stop();
 		A_StartSound(DeathSound, CHAN_BODY, CHANF_OVERLAP);
 		
-		if (Tracer && Owner && 
+		if (Tracer && Owner && Tracer.bISMONSTER && 
 			Tracer.Target == Owner && Target == Owner && Owner.Targetable(Tracer)
 				&& !(Tracer is 'PlayerPawn') && Tracer != Target)
 		{
