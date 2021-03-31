@@ -179,12 +179,12 @@ Class MCBodyPart : MinecraftEntity
 		if (bKILLED || Destroyed() || !Master || !bDORMANT)	return;
 		if (Attachment)	Attachment.Activate(activator);
 		doSpring = false;
-		bDONTINTERPOLATE = true;
 		UpdatePosition(Master);
 		NextAng.X = Master.Angle;
 		UpdateAngles(NextAng + MainAng);
-		bDONTINTERPOLATE = false;
+		ClearInterpolation();
 		bINVISIBLE = false;
+		bDONTINTERPOLATE = false;
 		bDORMANT = false;
 	}
 	
@@ -192,8 +192,8 @@ Class MCBodyPart : MinecraftEntity
 	{
 		if (bKILLED || Destroyed() || !Master)	return;
 		if (Attachment)	Attachment.Deactivate(activator);
-		bDONTINTERPOLATE = true;
 		bINVISIBLE = true;
+		bDONTINTERPOLATE = true;
 		bDORMANT = true;
 	}
 	
@@ -218,7 +218,7 @@ Class MCBodyPart : MinecraftEntity
 		
 		Translation = Owner.Translation;
 		if (!Default.bBRIGHT)	bBRIGHT = Owner.bBRIGHT;
-		
+		bINVISIBLE = (Master && Master.bINVISIBLE);
 		if (!bKILLED)
 		{
 			if (Attachment)
@@ -246,6 +246,9 @@ Class MCBodyPart : MinecraftEntity
 		NextAng = (Angle, Pitch, Roll);
 		CurAng = NextAng + MainAng;
 		SwingAngDir = (ADX, ADY, ADZ);
+		
+		if (Master)
+			bINVISIBLE = Master.bINVISIBLE;
 	}
 	
 	override void OnDestroy()

@@ -45,8 +45,9 @@ Class MinecraftEnemy : MinecraftEntity
 	
 	override void Activate(Actor activator)
 	{
-		if (health < 1 || bDESTROYED)	return;
+		if (bKILLED || bDESTROYED)	return;
 		
+		bINVISIBLE = false;
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Activate(activator);
 		
@@ -58,8 +59,9 @@ Class MinecraftEnemy : MinecraftEntity
 	
 	override void Deactivate(Actor activator)
 	{
-		if (health < 1 || bDESTROYED)	return;
-			
+		if (bKILLED || bDESTROYED)	return;
+		
+		bINVISIBLE = true;
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Deactivate(activator);
 		
