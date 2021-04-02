@@ -176,7 +176,7 @@ Class MCZombie : MCUndead
 		ActiveSound "Minecraft/Zombie/Idle";
 		PainSound "Minecraft/Zombie/Pain";
 		DeathSound "Minecraft/Zombie/Death";
-		MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
+	//	MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
 		
 		DamageFactor "Normal", 0.92;
 		

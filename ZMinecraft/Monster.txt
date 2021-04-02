@@ -31,6 +31,7 @@ Class MinecraftEnemy : MinecraftEntity
 		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
 		DmgInfo.Used = true;
 		SetOverScale(OverScale);
+		StepSoundDelay = Max(1, StepSoundDelay);
 	}
 	
 	override bool Morph(Actor activator, class<PlayerPawn> playerclass, class<MorphedMonster> monsterclass, int duration, int style, class<Actor> morphflash, class<Actor>unmorphflash)

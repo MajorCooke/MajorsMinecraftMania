@@ -64,6 +64,7 @@ Class MCSpider : MinecraftEnemy
 	{
 		Health 100;
 		MinecraftEnemy.MislChance 100;
+		MinecraftEnemy.StepSound "Minecraft/Spider/Step", 20;
 		MCSpider.LeapRange _MeleeRange * 2;
 		MCSpider.Type S_Normal;
 		Radius RealRadius;
@@ -212,10 +213,11 @@ Class MCSpider : MinecraftEnemy
 	See:
 		TNT1 A 1
 		{
-			if (CheckTrace(Target, LeapRange) && Target != Goal &&
+			if (LeapTimer < 1 &&
+				CheckTrace(Target, LeapRange) && Target != Goal &&
 				Target.Pos.Z + Target.Height >= Pos.Z && 
 				Target.Pos.Z <= Pos.Z + 32 &&
-				OnGround && LeapTimer < 1)
+				OnGround)
 			{
 				LeapTimer = Second;
 				if (MCC_Debug == 8)

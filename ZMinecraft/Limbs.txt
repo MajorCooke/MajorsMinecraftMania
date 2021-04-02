@@ -113,6 +113,7 @@ Class MCBodyPart : MinecraftEntity
 	protected MC_QuatTurner Turner;
 	protected Class<MCBodyPartGib> Gib;
 	
+	bool	CopyInvis;
 	int		CopyFrames;
 	double	OffX, OffY, OffZ,
 			ROfX, ROfY, ROfZ,
@@ -142,6 +143,7 @@ Class MCBodyPart : MinecraftEntity
 	Property CurAction : CurAction;			// See Constants.txt
 	// Offset of the limb's sine wave when in motion. I.e. making one leg go back
 	// while the other goes forward.
+	Property CopyInvis: CopyInvis;
 	Property SineOffset: SOX, SOY, SOZ;
 	// 
 	Property SineDistance: SDX, SDY, SDZ;
@@ -160,6 +162,7 @@ Class MCBodyPart : MinecraftEntity
 	
 	Default
 	{
+		MCBodyPart.CopyInvis true;
 		MCBodyPart.SwingAngleDir 0, 1, 0;
 		MCBodyPart.ForceIdleSway false;
 		MCBodyPart.SwingAngleCap 80;
@@ -218,7 +221,9 @@ Class MCBodyPart : MinecraftEntity
 		
 		Translation = Owner.Translation;
 		if (!Default.bBRIGHT)	bBRIGHT = Owner.bBRIGHT;
-		bINVISIBLE = (Master && Master.bINVISIBLE);
+		
+		if (CopyInvis)
+			bINVISIBLE = (Master && Master.bINVISIBLE);
 		if (!bKILLED)
 		{
 			if (Attachment)

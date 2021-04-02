@@ -36,12 +36,13 @@ extend class MinecraftEnemy
 	meta bool PeacefulDespawn;
 	meta int MobType;
 	Sound StepSound;
+	int StepSoundDelay;
 	
 	Property MislChance:	MislChance;
 	Property SpawnRange: 	SpawnRangeMin, SpawnRangeMax;
 	Property DespawnRange:	DespawnRangeMin, DespawnRangeMax;
 	Property FallDmgVel:	FallDmgVel;
-	Property StepSound: 	StepSound;
+	Property StepSound: 	StepSound, StepSoundDelay;
 	Property DrownTimer: 	DrownTimerStart;
 	Property PeacefulDespawn: PeacefulDespawn;
 	Property MobType: 		MobType;

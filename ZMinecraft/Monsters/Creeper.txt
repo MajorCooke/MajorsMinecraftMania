@@ -123,6 +123,7 @@ Class MCCreeper : MinecraftEnemy
 			{
 				if (i <= Body)	Lim.Master = self;
 				else			Lim.Master = Limb[Body];
+				Lim.CopyInvis = false;
 				Lim.Owner = self;
 				Lim.bINVISIBLE = true;
 				Lim.A_FadeOut(1.0, 0);
