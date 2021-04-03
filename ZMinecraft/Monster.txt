@@ -118,6 +118,7 @@ Class MinecraftEnemy : MinecraftEntity
 			//----------------------------------------------------------------------
 			// Fall/Slime/Lava/Drowning damage handling.
 			//----------------------------------------------------------------------
+			wasOnGround = OnGround;
 			OnGround = ((Pos.Z <= FloorZ || bONMOBJ));
 			
 			Sector sec = CurSector;

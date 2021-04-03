@@ -16,6 +16,7 @@ extend class MinecraftEnemy
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
 				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
 				ActiveSoundDelay, DamageTimer, DespawnTimer;
+	private bool wasOnGround;
 	
 	double DespawnRangeMin, DespawnRangeMax, SpawnRangeMin, SpawnRangeMax;
 	protected MC_QuatTurner Turner;

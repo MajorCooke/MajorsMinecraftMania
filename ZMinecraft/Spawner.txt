@@ -241,6 +241,10 @@ extend class MinecraftHandler
 				
 				Sector s = Level.PointInSector(next.XY);
 				
+				int ind = s.Index();
+				if (BannedSectors.Find(ind) < BannedSectors.Size())
+					continue;					
+				
 				if (MCC_SpawnConditions && 
 					MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
 					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)

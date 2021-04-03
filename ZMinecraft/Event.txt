@@ -187,7 +187,7 @@ Class MinecraftHandler : EventHandler
 				EndermanCount++;
 			return;
 		}
-		/*
+		
 		let sk = SkyViewpoint(e.Thing);
 		if (sk)	
 		{		
@@ -195,16 +195,17 @@ Class MinecraftHandler : EventHandler
 			
 			if (BanSector(s))
 			{	
+				/*
 				let MLC = MinecraftLineCollection.Create();
 				for (int i = 0; i < s.lines.Size(); i++)
 				{
 					MLC.Push(s.lines[i]);
 				}
-				
+				*/
 				
 			}
 		}
-		*/
+		
 	}
 	
 	private bool BanSector(Sector s)

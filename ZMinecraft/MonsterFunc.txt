@@ -495,6 +495,7 @@ extend class MinecraftEnemy
 					}
 					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
 					
+					Vector3 old = pos;
 					if (flags & CHF_DONTMOVE)
 					{
 						good = true;
@@ -504,7 +505,7 @@ extend class MinecraftEnemy
 						double c = cos(Pitch) * Speed;
 						double s = -sin(Pitch) * Speed;
 						
-						Vector3 old = pos;
+						
 						Vector2 new = Vec2Angle(Speed, ang);
 						
 						SetZ(pos.z + s);
@@ -523,7 +524,8 @@ extend class MinecraftEnemy
 						{
 							good = true;
 							
-							SetZ(floorz);
+							if (max(floorz, old.z) - min(floorz, old.z) <= MaxStepHeight)
+								SetZ(floorz);
 							
 							if (VelPosLen <= speed)
 								vel.XY = vel.XY * 0.8;
