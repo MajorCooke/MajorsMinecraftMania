@@ -20,69 +20,9 @@ Class MCSkeletonSpawner : RandomSpawner
 	}
 }
 
-Class MinecraftLine play
-{
-	Line _line;
-	Sector front, back;
-}
-
-Class MinecraftLineCollection play
-{
-	Array<MinecraftLine> lin;
-	
-	static MinecraftLineCollection Create()
-	{
-		let MLC = new("MinecraftLineCollection");
-		MLC.Clear();
-		return MLC;
-	}
-	
-	void Clear()				{	lin.Clear();	}
-	void Push(Line l)	
-	{	
-		if (l && (l.frontsector || l.backsector) && !CheckLine(l))	
-		{
-			let ln = new("MinecraftLine");
-			ln._line = l;
-			ln.front = l.frontsector;
-			ln.back = l.backsector;
-			lin.Push(ln);	
-		}
-	}
-	
-	bool CheckSectorIndex(int index) const
-	{
-		for (int i = 0; i < lin.Size(); i++)
-		{
-			if ((lin[i].front && lin[i].front.Index() == index) ||
-				(lin[i].back && lin[i].back.Index() == index))
-				return true;
-		}
-		return false;
-	}
-	
-	bool CheckSector(Sector s) const
-	{
-		for (int i = 0; i < lin.Size(); i++)
-		{
-			if (lin[i] && (
-				s == lin[i].front ||
-				s == lin[i].back))
-				return true;
-		}
-		return false;
-	}
-	
-	bool CheckLine(Line l) const
-	{
-		for (int i = 0; i < lin.Size(); i++)
-		{
-			if (lin[i] && lin[i]._line == l)
-				return true;
-		}
-		return false;
-	}
-}
+//==============================================================================
+// Minecraft Event Handler
+//==============================================================================
 
 Class MinecraftHandler : EventHandler
 {
@@ -113,44 +53,6 @@ Class MinecraftHandler : EventHandler
 		return MinecraftHandler(Find("MinecraftHandler"));
 	}
 	
-	
-	/*
-	override void WorldLineActivated(WorldEvent e)
-	{
-		Line l = e.ActivatedLine;
-		// Floor_*TxTy - changes texture before/after movement and gets the special.
-		
-		Sector f = l.frontsector;
-		Sector b = l.backsector;
-		
-		Switch(l.special)
-		{
-			Case 239:
-			Case 241:		
-			{
-				if (l.Args[0] == 0)
-				{
-					if (f && f.DamageAmount > 0)
-						DamageSectors.AddSector(b);
-				}
-				else
-				{
-					let it = level.CreateSectorTagIterator(l.Args[0]);
-					int id = it.Next();
-					while (id > -1)
-					{
-						DamageSectors.AddSector(level.Sectors[id]);
-						id = it.Next();
-					}
-				}
-				break;
-			}
-			Default:
-				break;
-		}
-	}
-	*/
-	
 	override void OnRegister()
 	{
 		if (!level || level.LevelName == 'TitleMap')
@@ -174,11 +76,14 @@ Class MinecraftHandler : EventHandler
 	
 	override void WorldThingSpawned(WorldEvent e)
 	{
+		if (!e.Thing || e.Thing.bDESTROYED || e.Thing.bNOINTERACTION)
+			return;
+			
 		let mo = MinecraftEnemy(e.Thing);
 		if (mo)	
 		{
 			mo.Event = self;
-			mo.StartHealth *= int(round(mo.StartHealth * MCC_HealthMul));
+			mo.StartHealth = int(round(mo.Health * MCC_HealthMul));
 			mo.Health = int(round(mo.Health * MCC_HealthMul));
 			Monsters.Push(mo);
 			MobCount++;
@@ -190,49 +95,76 @@ Class MinecraftHandler : EventHandler
 		
 		let sk = SkyViewpoint(e.Thing);
 		if (sk)	
-		{		
-			let s = sk.CurSector;
-			
-			if (BanSector(s))
-			{	
-				/*
-				let MLC = MinecraftLineCollection.Create();
-				for (int i = 0; i < s.lines.Size(); i++)
-				{
-					MLC.Push(s.lines[i]);
-				}
-				*/
-				
-			}
+		{
+			BanConnectedSectors(sk.CurSector);
+			return;
 		}
 		
 	}
+	
+	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
+	// 2. Iterate through all lines that have a front or back sector connecting
+	// to it.
 	
 	private bool BanSector(Sector s)
 	{
-		int index = s.Index();
-		if (BannedSectors.Find(index) >= BannedSectors.Size())
-		{
-			BannedSectors.Push(index);
-			return true;
-		}
-		return false;
+		if (!s || IsSectorBanned(s.Index()))
+			return false;
+			
+		BannedSectors.Push(s.Index());
+		return true;
 	}
 	
-	private void BanLineSectors(Line l)
+	private bool IsSectorBanned(int index)
 	{
-		int index[2] = {0,0};
-		if (l && l.frontsector && l.frontsector.Index() > 0)
-			index[0] = l.frontsector.Index();
-		if (l && l.backsector && l.backsector.Index() > 0)
-			index[1] = l.backsector.Index();
+		return (index < 1 || BannedSectors.Find(index) < BannedSectors.Size());
+	}
+	
+	private void BanConnectedSectors(Sector s)
+	{
+		if (!s || IsSectorBanned(s.Index()))	return;
 		
-		int size = BannedSectors.Size();
-		for (int i = 0; i < 2; i++)
+		Array<Int> Process; 
+		Process.Clear();
+		Process.Push(s.Index());
+		
+		int Failsafe = 500;
+		while (Process.Size() > 0 && --Failsafe > 0)
 		{
-			if (BannedSectors.Find(index[i]) >= size)
-				BannedSectors.Push(index[i]);
+			// Get the last sector index for processing and remove it from the list.
+			int ind = Process.Size() - 1;
+			int id = Process[ind];
+			Process.Pop();
+			
+			// Now ban the sector. The ban will fail if it's already banned or
+			// the index is invalid, so skip it.
+			
+			Sector sec = level.Sectors[id];
+			if (!BanSector(sec))
+				continue;
+			
+			// If the ban succeeds, go through all its lines and add the indexes
+			// to the list of sectors to be banned if they aren't already.
+			for (int i = 0; i < sec.lines.Size(); i++)
+			{
+				int index[2] = {0,0};
+				Line l = sec.lines[i];
+				
+				if (!l)	continue;
+				
+				if (l.frontsector)		index[0] = l.frontsector.Index();
+				if (l.backsector)		index[1] = l.backsector.Index();
+					
+				for (int j = 0; j < 2; j++)
+				{
+					if (!IsSectorBanned(index[j]) && Process.Find(index[j]) < Process.Size())
+						Process.Push(index[j]);
+				} 
+			}
 		}
+		
+		if (Failsafe < 1)
+			Console.Printf("WARNING! Sector iteration broke the failsafe!");
 	}
 	
 	override void WorldThingDied(WorldEvent e)
@@ -389,7 +321,7 @@ Class MinecraftHandler : EventHandler
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
 				let mo = MinecraftEnemy(Monsters.Actors[i]);
-				if (mo && mo.health > 0)
+				if (mo && !mo.bKILLED)
 				{
 					mo.CleanActors();
 					mo.CleanDamagers();

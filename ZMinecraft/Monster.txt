@@ -430,6 +430,7 @@ Class MinecraftEnemy : MinecraftEntity
 		// introduce something on DE4D's side and remove it later.
 		
 		Dismount();
+		A_StopALlSounds();
 		
 		if (!appended && (dmgflags & DMG_EXPLOSION))
 		{
