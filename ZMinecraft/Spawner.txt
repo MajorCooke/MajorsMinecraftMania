@@ -240,19 +240,14 @@ extend class MinecraftHandler
 					continue;
 				
 				Sector s = Level.PointInSector(next.XY);
-				
-				int ind = s.Index();
-				if (BannedSectors.Find(ind) < BannedSectors.Size())
-					continue;					
+				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()))
+					continue;
 				
 				if (MCC_SpawnConditions && 
 					MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
 					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)
 					continue;
 				
-				
-				if (!s || s.Flags & Sector.SECF_NORESPAWN)
-					continue;
 				
 				if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
 					continue;
