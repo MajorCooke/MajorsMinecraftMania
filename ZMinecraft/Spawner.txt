@@ -68,7 +68,32 @@ extend class MinecraftHandler
 	}
 	*/
 	
-	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		int num = e.Player;
+		let plr = players[num].mo;
+		
+		if (e.Name == 'TM_TogglePeaceful')
+		{
+			Cvar p = Cvar.GetCvar("MCC_Peaceful");
+			bool res = p.GetBool();
+			if (p)	p.SetBool(!res);
+			
+			if (!res)			Console.Printf("Peaceful Mode On");
+			else				Console.Printf("Peaceful Mode Off");
+			return;
+		}
+		
+		if (e.Name == 'TM_ToggleSpawning')
+		{
+			Cvar p = Cvar.GetCvar("MCC_Spawning");
+			bool res = p.GetBool();
+			if (p)	p.SetBool(!res);
+			
+			if (!res)			Console.Printf("Spawning On");
+			else				Console.Printf("Spawning Off");
+		}
+	}
 	
 	//==========================================================================
 	// Performs the countdown to attempt spawning monsters.
@@ -83,25 +108,11 @@ extend class MinecraftHandler
 		{
 			Timer[S_Spawn] = 35;
 			
-			/*
+			
 			// Everything Minecraft related must despawn.
 			// Monsters auto-destroy themselves when set to force despawn, so
 			// wipe it all out.
-			if (MCC_Peaceful && !WasPeaceful)
-			{
-				if (MCC_PeacefulBehavior <= CV_Despawn)
-				{
-					SpawnQueue.Clear(true);
-					SpawnQueuePriority.Clear(true);
-					ClsQueue.Clear(true);
-					ClsQueuePriority.Clear(true);
-				}
-				else if (MCC_PeacefulBehavior == CV_Minecraft)
-				{
-					CheckClassQueues();
-				}
-			}
-			*/
+			
 		}
 		else if (--Timer[S_Spawn] < 1)
 		{

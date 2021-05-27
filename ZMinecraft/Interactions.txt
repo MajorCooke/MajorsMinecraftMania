@@ -467,6 +467,7 @@ extend class MinecraftEnemy
 	private int OOSTimer; // Out of sight timer
 	protected int OOSTimeOut;
 	const LookTimerDefault = 17;
+	
 	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, 
 	bool relate = true, bool TargetOnly = false)
 	{
@@ -512,8 +513,7 @@ extend class MinecraftEnemy
 		if (targetable)
 		{
 			bool sight = CheckSight(Target, CSFlags);
-			if (//CheckTrace(Target, ChaseRange ** 2) ||
-				Distance3DSquared(Target) > (ChaseRange ** 2) ||
+			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
 				(chasing && !sight))
 			{
 				OOSTimer++;
@@ -548,6 +548,7 @@ extend class MinecraftEnemy
 		Target = other;	
 		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
 		Target = OldTarget;
+		if (ret)	OOSTimer = 0;
 		return ret;
 	}
 	
@@ -568,7 +569,7 @@ extend class MinecraftEnemy
 			return false;
 		
 		// Peaceful mode disallows targeting players.
-		if (mo is 'PlayerPawn' && MCC_Peaceful)
+		if (MCC_Peaceful && mo is 'PlayerPawn')
 			return false;
 			
 		// Don't target players that are (totally) frozen because this could fuck up

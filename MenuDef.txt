@@ -8,6 +8,7 @@ OptionMenu "MinecraftOptions"
 	Class "MinecraftMenu"
 	Title "$MCM_OPTIONS_TITLE"
 	Submenu			"Monster Tweaks", "MinecraftMonsterTweaks"
+	Submenu			"Keybinds",	"MinecraftKeybinds"
 	StaticText ""
 	StaticText "Difficulty Settings", GOLD
 	MinecraftOption "$MCM_PEACEFUL_TEXT", "$MCM_PEACEFUL_SUB",			MCC_Peaceful,			"OnOff"
@@ -44,6 +45,18 @@ OptionValue "PeacefulBehaviors"
 	1, "Minecraft Peaceful"
 	2, "No (De)Spawning"
 	3, "Allow Spawning"
+}
+
+//==============================================================================
+// Keybinds
+//==============================================================================
+
+OptionMenu "MinecraftKeybinds"
+{
+	Title "Minecraft Keybinds"
+	
+	Control "Toggle Peaceful", "NetEvent TM_TogglePeaceful"
+	Control "Toggle Spawning", "NetEvent TM_ToggleSpawning"
 }
 
 //==============================================================================

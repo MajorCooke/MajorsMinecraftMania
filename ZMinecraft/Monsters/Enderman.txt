@@ -565,7 +565,7 @@ extend Class MCEnderman
 	// GetTeleSpots
 	//
 	// Attempts to find a position nearby that doesn't have any damage sectors
-	// or at least doens't take any damage from it. 
+	// or at least doesn't take any damage from it. 
 	
 	private bool InTeleport;
 	private bool GetTeleSpots(out Array<CVector3> Spots, Actor mo = null, 

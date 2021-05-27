@@ -335,5 +335,7 @@ Class MinecraftHandler : EventHandler
 		// Spawn monsters spherically around players.
 		HandleMapSpawns();
 	}
+	
+	
 }
 

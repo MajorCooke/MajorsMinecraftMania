@@ -90,7 +90,8 @@ Struct LimbSwing play
 Class MCBodyPart : MinecraftEntity
 {
 	const StepWait = 8;
-
+	private SpriteID SprID;
+	private int SprFrame;
 	private bool DestroyMe;
 	private int StepDelay;
 	protected bool ForceIdleSway;
@@ -189,6 +190,7 @@ Class MCBodyPart : MinecraftEntity
 		bINVISIBLE = false;
 		bDONTINTERPOLATE = false;
 		bDORMANT = false;
+		SetState(ResolveState("Active"));
 	}
 	
 	override void Deactivate(Actor activator)
@@ -198,6 +200,7 @@ Class MCBodyPart : MinecraftEntity
 		bINVISIBLE = true;
 		bDONTINTERPOLATE = true;
 		bDORMANT = true;
+		SetState(ResolveState("Inactive"));
 	}
 	
 	override void Tick()
@@ -310,6 +313,7 @@ Class MCBodyPart : MinecraftEntity
 		let g = MCBodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
 		if (g)
 		{
+			SetState(ResolveState("Spawn"));
 			g.Warp(self, 
 				(Ofs.X + g.OffX) * cos(pitch), 
 				(Ofs.Y + g.OffY), 
@@ -319,6 +323,7 @@ Class MCBodyPart : MinecraftEntity
 			g.Pitch = Pitch;
 			g.Roll = Roll;
 			g.Scale = Scale;
+			g.Sprite = Sprite;
 			g.Frame = Frame;
 			
 			bINVISIBLE = true;
@@ -500,6 +505,7 @@ Class MCBodyPart : MinecraftEntity
 		CurAng = (Angle, Pitch, Roll) - AngOff;
 		AngOff = (0,0,0);
 	}
+	
 	protected bool doSpring;
 	virtual void DoMotion()		
 	{
@@ -555,6 +561,12 @@ Class MCBodyPart : MinecraftEntity
 	
 	States
 	{
+	Inactive:
+		TNT1 A -1;
+		Stop;
+	Active:
+		TNT1 A 1;
+		TNT1 A 0 { return ResolveState("Spawn");	}
 	Spawn:
 		ASDF A -1;
 		Stop;
@@ -591,7 +603,7 @@ Class MCBodyPartHead : MCBodyPart
 		}
 		
 		int flag = FAF_TOP;
-		double zof = 0;
+		double zof = 0.75;
 		
 		// If the enemy is a player, look at the camera.
 		Target = (Owner.Target != Owner.Goal) ? Owner.Target : null;
@@ -620,10 +632,8 @@ Class MCBodyPartHead : MCBodyPart
 			}
 		}
 		else
-		{
 			flag = FAF_BOTTOM;
-			zof = 0.75;
-		}
+		
 		
 		if (Target && ((Target == TargetHead) || (Target.Health > 0)))
 		{

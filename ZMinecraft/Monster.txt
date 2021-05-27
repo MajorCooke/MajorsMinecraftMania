@@ -5,6 +5,9 @@ By Major Cooke
 The idea behind minecraft enemies is to replicate everything from Minecraft if
 possible. This means creeper explosions, spider climbing, skeletons using weapons
 and a few other cool tricks.
+
+NOTE: The monsters are always invisible, no matter what. Only the body parts are
+drawn as external actors.
 */
 
 Class MinecraftEnemy : MinecraftEntity
@@ -89,6 +92,8 @@ Class MinecraftEnemy : MinecraftEntity
 		
 		// Destroy it if peaceful difficulty is activated, and the monster can
 		// despawn on peaceful. Dead monsters will despawn on their own though.
+		// Entities that won't despawn naturally are neutral/friendly ones like
+		// iron golems, villagers, etc.
 		
 		if (!bKILLED &&
 			(MCC_Peaceful && 
@@ -143,6 +148,10 @@ Class MinecraftEnemy : MinecraftEntity
 					}
 				}
 				
+				// Follow regular Doom rules for damaging sectors. We must use 
+				// GetZAt here since this actor could otherwise be standing on a
+				// connected sector that's not actually touching a floor with
+				// damage.
 				if (MCC_SectorDamage && Pos.Z <= GetZAt(0))
 				{
 					int DmgAmt = sec.DamageAmount,
@@ -260,12 +269,17 @@ Class MinecraftEnemy : MinecraftEntity
 	private uint TempTranslation;
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
 	{
+		if (bKILLED)	return 0;
+	
 		double prevz = Vel.Z;
 		int prevhp = health;
 		int dmg = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		
 		
 		Actor i = inflictor, s = source;
+		
+		// Determining Pain
+		// 
 		
 		bool painless = bNOPAIN || 
 			((flags & DMG_NO_PAIN) || (i && i.bPAINLESS) || (!i && s && s.bPAINLESS));
@@ -274,8 +288,6 @@ Class MinecraftEnemy : MinecraftEntity
 					((dmg > 0 || (damage > 0 && bALLOWPAIN)) || (
 					(i && (i.bCAUSEPAIN || i.bFORCEPAIN)) || 
 					(s && (s.bCAUSEPAIN || s.bFORCEPAIN))));
-		
-	//	dopain = !painless && (dopain || (s && (s.bCAUSEPAIN || s.bFORCEPAIN)));
 		
 		if (dmg > 0 && s && Damagers.Find(s) >= Damagers.Size())
 		{
@@ -292,7 +304,7 @@ Class MinecraftEnemy : MinecraftEntity
 		}
 		
 		
-		
+		// Obviously don't react if the monster died.
 		if (!bKILLED)
 		{
 			if (Targetable(s, false))
@@ -304,10 +316,11 @@ Class MinecraftEnemy : MinecraftEntity
 				}
 			}
 			
+			// Capable of reacting to damage again?
 			if (DamageTimer < 1)
 			{
 				
-				
+				// Is eligible for pain?
 				if (dopain)
 				{
 					DamageTimer = 17;
@@ -337,6 +350,7 @@ Class MinecraftEnemy : MinecraftEntity
 						}
 					}
 					
+					// Let explosions do their own thrusting.
 					if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
 					{	
 						if (!bNOGRAVITY && Gravity > 0.0)
@@ -355,6 +369,7 @@ Class MinecraftEnemy : MinecraftEntity
 						}
 					}
 				}
+				// Record the damage so the monster can do any special reactions.
 				if (dmg > 0)
 				{
 					DmgInfo.i = inflictor;
