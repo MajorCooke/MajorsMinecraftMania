@@ -269,6 +269,7 @@ Class MCBodyPart : MinecraftEntity
 	//--------------------------------------------------------------------------
 	// Custom functions
 	//--------------------------------------------------------------------------
+	// TO DO: Rework attachments so multiple can be added and to different limbs.
 	MCBodyPart SetAttachment(Class<MCBodyPartAttachment> cls)
 	{
 		if (!cls)	return null;
@@ -305,6 +306,9 @@ Class MCBodyPart : MinecraftEntity
 			
 			if (!Gib)	
 			{
+				// Note: This must wait a tic before destruction because, for 
+				// some reason, GZDoom's "kill monsters" command will break
+				// if immediately destroyed. So it requires one tic to destroy.
 				DestroyMe = true;
 				return;
 			}
@@ -336,7 +340,7 @@ Class MCBodyPart : MinecraftEntity
 		if (Attachment)	Attachment.SpawnGib(VelPosLen, Ofs);
 		DestroyMe = true;
 	}
-	bool Destroyed() { return bDESTROYED || DestroyMe;	}
+	bool Destroyed() const { return bDESTROYED || DestroyMe;	} 
 	
 	
 	
@@ -456,10 +460,13 @@ Class MCBodyPart : MinecraftEntity
 		PostAngSet(snap);
 	}
 	
+	// Sets the primary angles, which the offsets are then based on. 
+	// Snap = no interpolation & no spring effect.
 	void SetYaw(double ang, bool snap = true)			{	MainAng.X = ang;	PostAngSet(snap);	}
 	void SetPitch(double pit, bool snap = true)			{	MainAng.Y = pit;	PostAngSet(snap);	}
 	void SetRoll(double rol, bool snap = true)			{	MainAng.Z = rol;	PostAngSet(snap);	}
 	
+	// 
 	void SetYawOffset(double ang, bool snap = true, bool persist = false)		{	AngOff.X = ang; if (persist) AOffX = ang;	PostAngSet(snap);	}
 	void SetPitchOffset(double pit, bool snap = true, bool persist = false)		{	AngOff.Y = pit;	if (persist) AOffY = pit;	PostAngSet(snap);	}
 	void SetRollOffset(double rol, bool snap = true, bool persist = false)		{	AngOff.Z = rol;	if (persist) AOffZ = rol;	PostAngSet(snap);	}
@@ -585,7 +592,7 @@ Class MCBodyPartHead : MCBodyPart
 	Property NoAim: NoAim;
 	Default
 	{
-		MCbodyPartHead.NoAim false;
+		MCBodyPartHead.NoAim false;
 		Radius 1.6;
 		Height 1.6;
 	}
@@ -699,6 +706,11 @@ Class MCBodyPartLeg : MCBodyPart
 
 //==============================================================================
 // Gibbed Parts
+//
+// Flying parts that are affected by how much damage a monster took or how far
+// they were flung. Especially hilarious when a monster dies by falling damage
+// since it just BOINGS back into the air (intentionally done that way for 
+// comedic effect =P).
 //==============================================================================
 
 Class MCBodyPartGib : MinecraftEntity abstract
@@ -739,6 +751,8 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		-NOGRAVITY
 		+CANNOTPUSH
 		+DONTSPLASH
+		-ACTIVATEPCROSS
+		-ACTIVATEIMPACT
 		BounceType "Doom";
 		BounceFactor 0.4;
 		WallBounceFactor 0.8;
@@ -765,6 +779,8 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		}
 	}
 	
+	// Gradually turns the limb to a resting position. Since there's no model
+	// bouncing via vertices this will suffice well enough.
 	void ResetDirection()
 	{
 		if (Timer ~== 0.0)
@@ -790,10 +806,10 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		if (!bNOINTERACTION && WaterLevel > 1)
 			Vel.Z += (Gravity * 0.5);
 		
-		if ((bKILLED && MCC_ShortGibLives) || --LifeTime < 1)
+		if ((bKILLED && ShortLife) || --LifeTime < 1)
 			A_FadeOut(FadeTime);
 	}
-	
+	private bool ShortLife;
 	States
 	{
 	Spawn:
@@ -808,7 +824,11 @@ Class MCBodyPartGib : MinecraftEntity abstract
 			A_Stop();
 			ResetDirection();
 		}
-		---- A -1 { bKILLED = true; }
+		---- A -1 
+		{ 
+			bKILLED = true;
+			ShortLife = MCC_ShortGibLives;
+		}
 		Stop;
 	}
 }
