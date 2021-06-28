@@ -157,7 +157,8 @@ Class MinecraftHandler : EventHandler
 					
 				for (int j = 0; j < 2; j++)
 				{
-					if (!IsSectorBanned(index[j]) && Process.Find(index[j]) < Process.Size())
+					if (!IsSectorBanned(index[j]) && 
+						Process.Find(index[j]) >= Process.Size())
 						Process.Push(index[j]);
 				} 
 			}
