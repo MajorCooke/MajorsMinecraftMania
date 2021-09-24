@@ -37,6 +37,7 @@ Class MinecraftEnemy : MinecraftEntity
 		StepSoundDelay = Max(1, StepSoundDelay);
 	}
 	
+	// Absolutely no morphing whatsoever, or it could risk breaking them.
 	override bool Morph(Actor activator, class<PlayerPawn> playerclass, class<MorphedMonster> monsterclass, int duration, int style, class<Actor> morphflash, class<Actor>unmorphflash)
 	{
 		return false;
@@ -52,10 +53,11 @@ Class MinecraftEnemy : MinecraftEntity
 		if (bKILLED || bDESTROYED)	return;
 		
 		bINVISIBLE = false;
+		UpdateLimbs(false);
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Activate(activator);
 		
-		UpdateLimbs();
+		
 		A_SetShootable();
 		A_ChangeLinkFlags(0);
 		Super.Activate(activator);
@@ -267,33 +269,27 @@ Class MinecraftEnemy : MinecraftEntity
 	private LastDamaged DmgInfo;
 	protected Array<Actor> Damagers;
 	private uint TempTranslation;
-	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	override int DamageMobj(Actor i, Actor s, int damage, Name mod, int flags, double angle)
 	{
 		if (bKILLED)	return 0;
-	
-		double prevz = Vel.Z;
-		int prevhp = health;
-		int dmg = Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		
-		
-		Actor i = inflictor, s = source;
-		
-		// Determining Pain
-		// 
-		
-		bool painless = bNOPAIN || 
-			((flags & DMG_NO_PAIN) || (i && i.bPAINLESS) || (!i && s && s.bPAINLESS));
-			
-		bool dopain = !painless && 
-					((dmg > 0 || (damage > 0 && bALLOWPAIN)) || (
-					(i && (i.bCAUSEPAIN || i.bFORCEPAIN)) || 
-					(s && (s.bCAUSEPAIN || s.bFORCEPAIN))));
-		
-		if (dmg > 0 && s && Damagers.Find(s) >= Damagers.Size())
+		if (MCC_BoomDmgMul && (flags & DMG_EXPLOSION) && 
+			(mod == 'Creeper' || mod == 'Ghast'))
 		{
-			Damagers.Push(source);
+			int dmg = int(double(damage) * GetHealthMul());
+			damage = dmg;
 		}
 		
+		double prevz = Vel.Z;
+		int prevhp = health;
+		int dmg = Super.DamageMobj(i, s, damage, mod, flags, angle);
+		
+		// Add the damager to the list.
+		if (dmg > 0 && s && Damagers.Find(s) >= Damagers.Size())
+		{
+			Damagers.Push(s);
+		}
+		/*
 		if (MCC_Debug == 1 && s && !(s is 'PlayerPawn'))
 		{
 			Name src = "Null";
@@ -302,85 +298,94 @@ Class MinecraftEnemy : MinecraftEntity
 			if (i)	inf = i.GetClassName();
 			Console.Printf("%d: %s from %s, %s", dmg, GetClassName(), src, inf);
 		}
+		*/
+		
+		// Don't react if dead.
+		if (bKILLED)	return dmg;
 		
 		
-		// Obviously don't react if the monster died.
-		if (!bKILLED)
+		// Determining Pain
+		bool painless = bNOPAIN || 
+			((flags & DMG_NO_PAIN) || (i && i.bPAINLESS) || (!i && s && s.bPAINLESS));
+			
+		bool dopain = !painless && 
+					((dmg > 0 || (damage > 0 && bALLOWPAIN)) || (
+					(i && (i.bCAUSEPAIN || i.bFORCEPAIN)) || 
+					(s && (s.bCAUSEPAIN || s.bFORCEPAIN))));
+		
+		if (Targetable(s, false))
 		{
-			if (Targetable(s, false))
+			int rel = CheckClassRelation(s.GetClass());
+			if (rel <= Rel_None || rel == Rel_Neutral || rel == Rel_Hated)
 			{
-				int rel = CheckClassRelation(s.GetClass());
-				if (rel <= Rel_None || rel == Rel_Neutral || rel == Rel_Hated)
+				SetActorRelation(s, Rel_Hated);
+			}
+		}
+		
+		// Capable of reacting to damage again?
+		if (DamageTimer < 1)
+		{
+			
+			// Is eligible for pain?
+			if (dopain)
+			{
+				DamageTimer = 17;
+				TempTranslation = Translation;
+				bBRIGHT = true;
+				
+				SetTranslation("DamageRed");
+				A_StartSound(PainSound, CHAN_VOICE, CHANF_OVERLAP);
+				
+				double ang = angle;
+				
+				// Bounce the actor if taking falling damage.
+				if (damageType == 'Falling')
 				{
-					SetActorRelation(s, Rel_Hated);
+					flags &= ~DMG_THRUSTLESS;
+					flags |= DMG_USEANGLE;
+					ang += 180;
+				}
+				
+				// Disable thrusting if no inflictor/source, unless falling.
+				if (!(flags & DMG_THRUSTLESS))
+				{		
+					if ((!i && !s) || (i && i.bNODAMAGETHRUST))
+					{
+						if (!(flags & DMG_USEANGLE))
+							flags |= DMG_THRUSTLESS;
+					}
+				}
+				
+				// Let explosions do their own thrusting.
+				if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
+				{	
+					if (!bNOGRAVITY && Gravity > 0.0)
+					{
+						Vector2 v = Vel.XY;
+						if (prevz <= 1.0)
+							Vel.Z += 7.0;
+						
+						OnGround = false;
+						
+						if (flags & DMG_USEANGLE)
+							ang = angle;
+						else if (s)	ang = AngleTo(s);
+						else if (i)	ang = AngleTo(i);
+						Thrust(-1, ang);
+					}
 				}
 			}
-			
-			// Capable of reacting to damage again?
-			if (DamageTimer < 1)
+			// Record the damage so the monster can do any special reactions.
+			if (dmg > 0)
 			{
-				
-				// Is eligible for pain?
-				if (dopain)
-				{
-					DamageTimer = 17;
-					TempTranslation = Translation;
-					bBRIGHT = true;
-					
-					SetTranslation("DamageRed");
-					A_StartSound(PainSound, CHAN_VOICE, CHANF_OVERLAP);
-					
-					double ang = angle;
-					
-					// Bounce the actor if taking falling damage.
-					if (damageType == 'Falling')
-					{
-						flags &= ~DMG_THRUSTLESS;
-						flags |= DMG_USEANGLE;
-						ang += 180;
-					}
-					
-					// Disable thrusting if no inflictor/source, unless falling.
-					if (!(flags & DMG_THRUSTLESS))
-					{		
-						if ((!i && !s) || (i && i.bNODAMAGETHRUST))
-						{
-							if (!(flags & DMG_USEANGLE))
-								flags |= DMG_THRUSTLESS;
-						}
-					}
-					
-					// Let explosions do their own thrusting.
-					if (!(flags & (DMG_THRUSTLESS|DMG_EXPLOSION)))
-					{	
-						if (!bNOGRAVITY && Gravity > 0.0)
-						{
-							Vector2 v = Vel.XY;
-							if (prevz <= 1.0)
-								Vel.Z += 7.0;
-							
-							OnGround = false;
-							
-							if (flags & DMG_USEANGLE)
-								ang = angle;
-							else if (s)	ang = AngleTo(s);
-							else if (i)	ang = AngleTo(i);
-							Thrust(-1, ang);
-						}
-					}
-				}
-				// Record the damage so the monster can do any special reactions.
-				if (dmg > 0)
-				{
-					DmgInfo.i = inflictor;
-					DmgInfo.s = source;
-					DmgInfo.damage = damage;
-					DmgInfo.dmg = dmg;
-					DmgInfo.mod = DamageType;
-					DmgInfo.flags = flags;
-					DmgInfo.angle = angle;
-					DmgInfo.used = false;
-				}
+				DmgInfo.i = i;
+				DmgInfo.s = s;
+				DmgInfo.damage = damage;
+				DmgInfo.dmg = dmg;
+				DmgInfo.mod = DamageType;
+				DmgInfo.flags = flags;
+				DmgInfo.angle = angle;
+				DmgInfo.used = false;
 			}
 		}
 		return dmg;

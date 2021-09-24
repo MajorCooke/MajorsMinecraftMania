@@ -22,51 +22,7 @@ extend class MinecraftHandler
 //	private CAArray ClsQueue, ClsQueuePriority, ClsQueueBlacklist;
 	private MCSpawnList SpawnList;
 	private int MaxMobs;
-	
-	private void InitQueues()
-	{
-		/*
-		SpawnQueue = AArray.Create();
-		SpawnQueuePriority = AArray.Create();
-		ClsQueue = CAArray.Create();
-		ClsQueuePriority = CAArray.Create();
-		ClsQueueBlacklist = CAArray.Create();
-		*/
-	}
-	
-	// Checks all queued classes for peaceful despawning. If they do, removes
-	// them from the queue.
-	/*
-	private void CheckClassQueues()
-	{
-		CAArray rays[2];
-		rays[0] = ClsQueue;
-		rays[1] = ClsQueuePriority;
 		
-		for (int i = 0; i < rays.Size(); i++)
-		{
-			if (!rays[i])	continue;
-			
-			Array<Class<Actor> > temp; temp.Clear();
-			// CAArray has a Size() function to get the Classes[index].Size().
-			for (int j = 0; j < rays[i].Size(); j++)
-			{
-				Class<Actor> c1 = rays[i].Classes[j];
-				if (c1)
-				{
-					let check = (Class<MinecraftEnemy>)(c1);
-					if (check)	
-					{
-						let defs = GetDefaultByType(check);
-						if (!defs.PeacefulDespawn)
-							temp.Push(c1);
-					}
-				}
-			}
-			rays[i].Classes.Move(temp);
-		}
-	}
-	*/
 	
 	override void NetworkProcess(ConsoleEvent e)
 	{
@@ -100,19 +56,17 @@ extend class MinecraftHandler
 	// 
 	// If peaceful mode is enabled or monster spawning disabled, forces the
 	// timer to 1 second and holds it there until monsters are allowed to spawn.
+	// Also is responsible for ensuring players have damage reduction against
+	// specific types for balance.
 	//==========================================================================
 	private bool WasPeaceful;
 	private void HandleMapSpawns()
 	{
-		if (!MCC_Spawning ||(MCC_Peaceful && MCC_PeacefulBehavior <= CV_Stay))
+		// Monsters self despawn, but that code is in the monsters themselves.
+		if (!MCC_Spawning || (MCC_Peaceful && MCC_PeacefulBehavior <= CV_Stay))
 		{
-			Timer[S_Spawn] = 35;
-			
-			
-			// Everything Minecraft related must despawn.
-			// Monsters auto-destroy themselves when set to force despawn, so
-			// wipe it all out.
-			
+		
+			Timer[S_Spawn] = 35;			
 		}
 		else if (--Timer[S_Spawn] < 1)
 		{
@@ -250,16 +204,18 @@ extend class MinecraftHandler
 				if (!level.IsPointInLevel(next))
 					continue;
 				
+				// Don't spawn in sectors blocking player respawns.
 				Sector s = Level.PointInSector(next.XY);
 				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()))
 					continue;
 				
+				// Spawning in damaging sectors. Only allow if immune to it.
 				if (MCC_SpawnConditions && 
 					MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
 					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)
 					continue;
 				
-				
+				// Outside of spawn range from players.
 				if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
 					continue;
 				
@@ -278,7 +234,7 @@ extend class MinecraftHandler
 					}
 					if (cont)	continue;
 				}
-					
+				// Found a good spot.
 				MoCue.SetOrigin(next, false);
 				
 				if (MoCue.bSPAWNFLOAT)
@@ -287,13 +243,15 @@ extend class MinecraftHandler
 					next.Z = MoCue.FloorZ;
 					
 				MoCue.SetZ(next.Z);
-				
 				if (MoCue.TryMove(MoCue.Pos.XY, false))
 				{
 					MoCue.ClearInterpolation();
 					MoCue.bNODROPOFF = MoCue.Default.bNODROPOFF;
 					MoCue.Angle = irandom(0,359);
 					MoCue.AlignMoveDir();
+					MoCue.StoreHealthMul();
+					MoCue.StartHealth = int(round(MoCue.Health * MCC_HealthMul));
+					MoCue.Health = MoCue.StartHealth;
 					MoCue.Activate(null);
 					MoCue = null;
 					SpawnFails = 0;

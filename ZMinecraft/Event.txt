@@ -69,7 +69,6 @@ Class MinecraftHandler : EventHandler
 		MountList.Clear();
 		Monsters = AArray.Create();
 		CreateSpawnList();
-		InitQueues();
 		Timer[S_Spawn] = Second;
 		MCC_AIDifficulty_Prev = MCC_AIDifficulty;
 	}
@@ -83,8 +82,6 @@ Class MinecraftHandler : EventHandler
 		if (mo)	
 		{
 			mo.Event = self;
-			mo.StartHealth = int(round(mo.Health * MCC_HealthMul));
-			mo.Health = int(round(mo.Health * MCC_HealthMul));
 			Monsters.Push(mo);
 			MobCount++;
 			

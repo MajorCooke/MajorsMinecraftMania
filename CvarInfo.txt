@@ -1,12 +1,13 @@
 
 
 // Difficulty
-// 0 = Easy, 1 = Normal, 2 = Hard.
-// Easy are simplest and deal the least damage.
-// Normal have increased spawn rates with low damage. Some monsters inflict effects.
-// Hard deals increased damage.
-server int MCC_AIDifficulty = 1;
+// 0 = Easy, 1 = Medium, 2 = Hard.
+// The effects of difficulty vary based on monster.
+// - Zombie move speed (normal, faster, fastest)
+// - Skeleton attack speed (normal, faster, fastest)
+// - Creeper charging move speed (none, half, full)
 server int MCC_Difficulty = 1;
+server int MCC_AIDifficulty = 1;
 
 //==============================================================================
 // Peaceful Behavior
@@ -29,8 +30,6 @@ server int MCC_PeacefulBehavior = 0;
 
 // # monsters the mod will attempt to have spawned at any given time.
 server int MCC_Spawns = 80;
-// Multiplies how many monsters can spawn in packs.
-server float MCC_PackMul = 1.0;
 // Multiplies how many can be spawned at once.
 server float MCC_SpawnMul = 1.0;
 // Toggles monster spawning without being related to peaceful.
@@ -78,6 +77,9 @@ server bool MCC_FallDamage = true;
 server bool MCC_SectorDamage = true;
 server bool MCC_Drowning = true;
 
+// MC explosion damage to MC enemies scales with health.
+server bool MCC_BoomDmgMul = true;
+
 //==============================================================================
 // Individual monster properties
 //==============================================================================
@@ -85,6 +87,7 @@ server bool MCC_Drowning = true;
 //------------------------------------------------------------------------------
 // Creeper
 //------------------------------------------------------------------------------
+
 // Creepers always explode on death
 server bool MCC_CreeperAlwaysBoom = false;
 

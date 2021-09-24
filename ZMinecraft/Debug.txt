@@ -1,3 +1,164 @@
+/*
+
+Class dum play
+{
+	DmgService serv;
+	
+	void dumb()
+	{
+		Actor m1 = null, m2 = null, m3 = null;
+		if (!serv)	serv = new('DmgService');
+		
+		serv.GetObject("test", m1, m2, m3);
+	}
+}
+
+struct DmgServInfo play
+{
+	Actor trg, src, inf;
+	int damage, flags;
+	Name type;
+	double angle;
+	
+	void Reset(Name dmgtype = 'None')
+	{
+		src = inf = null;
+		damage = flags = 0;
+		type = dmgtype;
+		angle = 0;
+	}
+}
+
+Class DmgService : Service
+{
+	private DmgServInfo DSI;
+	
+	override String Get(String request, String str1, String str2, String str3)
+	{
+		Name req = request;
+		Switch(req)
+		{
+			Case 'DamageMobj':	DSI.Reset(str1);	break;
+		}
+		return "";
+	}
+	
+	override Int GetInt(String request, int num1, int num2, int num3)
+	{
+		Name req = request;
+		if (req == 'result')
+		{
+			DSI.damage = num1;
+			DSI.flags = num2;
+			return CalculateDamage();
+		}
+		return -1;
+	}
+
+	override Object GetObject(String request, Object ob1, Object ob2, Object ob3)
+	{
+		Name req = request;
+		if (req == 'Pointers')
+		{
+			DSI.trg = Actor(ob1);
+			DSI.src = Actor(ob2);
+			DSI.inf = Actor(ob3);
+		}
+		return null;
+	}
+	
+	override double GetDouble(String request, double num1, double num2, double num3)
+	{
+		Name req = request;
+		if (req == 'angle')
+			DSI.angle = num1;
+			
+		return 0;
+	}
+	
+	private int CalculateDamage()
+	{
+		//...
+		return 0;
+	}
+}
+*/
+/*
+Class DESpawnerService : Service
+{
+	static const String list[] =
+	{      // <Replacer|Replaced|Weight >
+		"DEImp|DoomImp|10", 
+		"DEStoneImp|DoomImp|1"
+	};
+	private play int Index;
+	
+	override String Get(String r)
+	{
+		Name req = r;
+		
+		if (req == 'Next')
+		{
+			if (Index < list.Size())
+				return list[Index++];
+		}
+		else if (req == 'Reset')
+		{
+			Index = 0;
+		}
+		return "";
+	}
+}
+
+Class DESpawnerContainer play
+{
+	Class<Actor> Replacer, Replacee;
+	Int Weight;
+}
+
+Class DESpawners play
+{
+	Array<DESpawnerContainer> Info;
+	
+	void SetupSpawners()
+	{
+		// Finds services by partial names.
+		ServiceIterator it = ServiceIterator.Find("DESpawner");
+		Service s;
+		Array<String> str; str.Clear();
+		Info.Clear();
+		
+		// Now go through and call each service that has 'DESpawner' in the name.
+		while (s = it.Next())
+		{
+			s.Get("Reset");
+			String inf = ""; 
+			while ((inf = s.Get("Next")) && inf.Length() > 0) //Keeps going until Next returns "".
+			{
+				str.Clear();
+				inf.Split(str, "|", TOF_SKIPEMPTY);
+				
+				if (str.Size() != 3) continue; //Incorrectly formatted.
+				
+				Class<Actor> Check = str[0];
+				if (!Check)	continue; // Bad replacer.
+				Check = str[1];
+				if (!Check)	continue; // Bad replacee.
+				int w = str[2].ToInt();
+				if (w < 1)	continue; // No weight, so don't add.
+
+				// Valid, so record it and keep going.
+				let fo = new('DESpawnerContainer');
+				fo.Replacer = str[0];
+				fo.Replacee = str[1];
+				fo.Weight = w;
+				Info.Push(fo);
+			}
+		}
+	}
+}
+*/
+
 
 Class TestLegR : MCBodyPart
 {

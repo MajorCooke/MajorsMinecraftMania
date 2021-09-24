@@ -2,15 +2,3 @@ GameInfo
 {
 	AddEventHandlers = "MinecraftHandler"
 }
-
-DamageType "CreeperBig"
-{
-	Factor = 1.0
-	ReplaceFactor
-}
-
-DamageType "Creeper"
-{
-	Factor = 1.0
-	ReplaceFactor
-}

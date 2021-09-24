@@ -84,6 +84,7 @@ extend class MinecraftEnemy
 	//--------------------------------------------------------------------------
 	// "Respawns" the monster by clearing all inventory and effects, and other
 	// stuff.
+	/*
 	virtual void Respawn()
 	{
 		if (health < 1 || bDORMANT)	return;
@@ -109,6 +110,12 @@ extend class MinecraftEnemy
 		A_Respawn(RSF_TELEFRAG);
 		Deactivate(null);
 	}
+	*/
+	void StoreHealthMul()
+	{	if (bDORMANT)	HealthMul = Max(1.0, MCC_HealthMul);	}
+	
+	double GetHealthMul()
+	{	return Max(1.0, HealthMul);	}
 	
 	int CheckDamageTimer()
 	{	return DamageTimer;	}

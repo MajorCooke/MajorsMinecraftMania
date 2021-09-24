@@ -35,8 +35,8 @@ Class MCPlayerProtection : PowerProtection
 	int InvulTimer;
 	Default
 	{
-		DamageFactor "CreeperBig", 0.0;
-		DamageFactor "Creeper", 0.25;
+		DamageFactor "Ghast", 0.20;
+		DamageFactor "Creeper", 0.20;
 	}
 	
 	override void InitEffect()
@@ -60,17 +60,8 @@ Class MCPlayerProtection : PowerProtection
 	{
 		if (passive && Owner && damage > 0)	
 		{
-			if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
-			{
-				if (InvulTimer > 0)
-				{	
-					newdamage = -1;
-					return;
-				}
-				InvulTimer = HalfSec;
-				Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
-				processed = true;
-			}
+			newdamage = HandleDamage(damage, damageType, inflictor, source, flags);
+			if (newdamage < 1)	return;
 			Super.ModifyDamage(damage, damageType, newdamage, passive, inflictor, source, flags);
 		}
 	}
@@ -79,21 +70,29 @@ Class MCPlayerProtection : PowerProtection
 	// unless armor is bypassed.
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
 	{
-		if (Owner && damage > 0)
+		if (Owner && damage > 0 && !processed)
 		{
-			if (!processed && (source is "MinecraftEntity" || inflictor is "MinecraftEntity"))
-			{
-				if (InvulTimer > 0)
-				{
-					newdamage = -1;
-					return;
-				}
-				InvulTimer = HalfSec;
-				Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
-				processed = true;
-			}
-			Super.AbsorbDamage(damage, damageType, newdamage, inflictor, source, flags);
+			newdamage = HandleDamage(damage, damageType, inflictor, source, flags);
 		}
+	}
+	
+	// Disables damage if the player was recently hit, is totally frozen, in peaceful
+	// or a voodoo doll was damaged.
+	int HandleDamage(int damage, Name damageType, Actor inflictor, Actor source, int flags)
+	{
+		if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
+		{
+			if (InvulTimer > 0 ||
+				(Owner is "PlayerPawn" &&
+					(MCC_Peaceful || !Owner.Player || Owner.Player.mo != Owner ||
+					(Owner.Player.Cheats & CF_TOTALLYFROZEN))))
+				return -1;
+			
+			InvulTimer = HalfSec;
+			Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
+			processed = true;
+		}
+		return damage;
 	}
 }
 /*

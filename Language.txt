@@ -104,4 +104,7 @@ MCM_CREEPERPLAYERBOOM_SUB = "Players make creepers explode on death.";
 MCM_ZOMBIETWEAKS = "Zombie Tweaks";
 
 MCM_ZOMBIEBABY_TEXT = "Baby Zombies";
-MCM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn?";
+MCM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn? Smaller/faster but 2* slime/explosion damage intake.";
+
+MCM_BOOMDMGMUL_TEXT = "Damage Scaling";
+MCM_BOOMDMGMUL_SUB = "Damage against other minecraft enemies scales with health.";

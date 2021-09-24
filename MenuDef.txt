@@ -35,7 +35,7 @@ OptionValue "SFXValue"
 OptionValue "DifficultySelection"
 {
 	0, "Easy"
-	1, "Normal"
+	1, "Medium"
 	2, "Hard"
 }
 
@@ -69,8 +69,7 @@ OptionMenu "MinecraftMonsterTweaks"
 	Title "Monster Tweaks"
 	Submenu "Specific Monsters", "MinecraftSpecificMonsters"
 	StaticText ""
-//	Submenu "Zombie",				"MinecraftZombieMenu"
-//	Submenu "Skeleton",				"MinecraftSkeletonMenu"
+	StaticText "Spawning Tweaks", GOLD
 	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
 	MinecraftOption "$MCM_SPAWNCONDITIONS_TEXT", "$MCM_SPAWNCONDITIONS_SUB",	MCC_SpawnConditions, "OnOff"
 	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
@@ -78,14 +77,17 @@ OptionMenu "MinecraftMonsterTweaks"
 	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 100.0, 0.1
 	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 100.0, 1.0
 	StaticText ""
-	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
-	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
-	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"YesNo"
-	StaticText ""
+	StaticText "Damage Intake Options", GOLD
+	MinecraftOption "$MCM_BOOMDMGMUL_TEXT",		"$MCM_BOOMDMGMUL_SUB",		MCC_BoomDmgMul,			"YesNo"
 	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
 	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage
 	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"YesNo", MCC_EnvironmentDamage
 	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 			"YesNo", MCC_EnvironmentDamage
+	StaticText ""
+	StaticText "Miscellaneous", GOLD
+	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
+	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
+	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"YesNo"
 }
 
 OptionMenu "MinecraftSpecificMonsters"

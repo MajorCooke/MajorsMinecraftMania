@@ -155,6 +155,7 @@ Class MCRelationManager play
 		return 0;
 	}
 	
+	// Cleans the array of any nullz (basically memory management).
 	void CleanClasses()
 	{
 		int size = Classes.Size();
@@ -175,6 +176,9 @@ Class MCRelationManager play
 	
 	//--------------------------------------------------------------------------
 	// Actor variant
+	// 
+	// The difference between this and classes is this sets for specific actors
+	// instead of an entire blanket carpet.
 	//--------------------------------------------------------------------------
 	
 	void SetActorRelation(Actor who, int status, int priority = 0)
@@ -250,7 +254,7 @@ Class MCRelationManager play
 	//==========================================================================
 	
 	//--------------------------------------------------------------------------
-	// Passes all recorded actors/classes if they have the status type.
+	// Checks if any recorded actors/classes have the status type.
 	// At least one is needed to return true. Any at all.
 	bool CheckStatusType(int status) const
 	{
@@ -277,6 +281,8 @@ Class MCRelationManager play
 		return false;
 	}
 	
+	//--------------------------------------------------------------------------
+	// Fills array 'act' with any actors that have the matching 'status' type.
 	void FindStatusActor(int status, out Array<MCActorRelation> act)
 	{
 		act.Clear();
@@ -292,6 +298,8 @@ Class MCRelationManager play
 		}
 	}
 	
+	//--------------------------------------------------------------------------
+	// Same as FindStatusActor but for classes.
 	void FindStatusClass(int status, out Array<MCClassRelation> cls)
 	{
 		cls.Clear();
@@ -342,7 +350,7 @@ Class MCRelationManager play
 
 //==============================================================================
 //==============================================================================
-
+// Relationship functions
 //==============================================================================
 //==============================================================================
 
@@ -357,6 +365,10 @@ extend class MinecraftEnemy
 	protected MCRelationManager Relations;
 	protected bool OnlyListed, AttackDamagers;
 	
+	
+	//--------------------------------------------------------------------------
+	// If a relationship manager is needed, call this to perform appropriate
+	// steps for setting up.
 	virtual protected void SetupRelations(bool create = false)
 	{	
 		if (create)
@@ -366,6 +378,8 @@ extend class MinecraftEnemy
 		}
 	}
 	
+	//--------------------------------------------------------------------------
+	// Convenience functions for relationships.
 	int CheckClassRelation(Class<Actor> mo) const
 	{	return (!mo || !Relations) ? 0 : Relations.FindClassRelation(mo);	}
 	
@@ -401,6 +415,8 @@ extend class MinecraftEnemy
 		if (Relations) Relations.Clear(whom);
 	}
 	
+	// No need for a CleanClasses because loading a saved game with missing
+	// classes shouldn't ever be done.
 	void CleanActors()
 	{
 		if (Relations) Relations.CleanActors();
@@ -544,10 +560,11 @@ extend class MinecraftEnemy
 	//--------------------------------------------------------------------------
 	override bool OkayToSwitchTarget(Actor other)
 	{
+		// Keep the old target around just in case.
 		Actor OldTarget = Target;
-		Target = other;	
+	//	Target = other;	
 		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
-		Target = OldTarget;
+	//	Target = OldTarget;
 		if (ret)	OOSTimer = 0;
 		return ret;
 	}
@@ -641,9 +658,10 @@ extend class MinecraftEnemy
 
 //==============================================================================
 //==============================================================================
-// Mount/Rider Systems
+// (WIP) Mount/Rider Systems
 //
 // This handles all things dealing with mounting and riding others. 
+// Currently a WIP and still in need of more work.
 //==============================================================================
 //==============================================================================
 
@@ -666,7 +684,7 @@ Class MCMountObject play
 
 Class MCMountInfo : Thinker
 {
-	const CleanTimer = Second;
+	const CleanTimer = 35;
 	
 	private double TotalHeight; // Height of all combined actors.
 	private int Timer;

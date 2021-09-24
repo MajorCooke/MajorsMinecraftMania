@@ -176,6 +176,7 @@ Class MCBodyPart : MinecraftEntity
 		+NOTRIGGER
 		+NOTONAUTOMAP
 		+SEEINVISIBLE
+		+INVISIBLE
 	}
 	
 	override void Activate(Actor activator)

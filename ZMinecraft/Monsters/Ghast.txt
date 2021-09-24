@@ -500,7 +500,10 @@ Class MCGhastFireball : MinecraftEntity
 		TNT1 A 35
 		{
 			bNOINTERACTION = bINVISIBLE = true;
-			Explode(true, 64, 96, 32, flags: 0);
+			Name DmgType = 'Ghast';
+			if (Target && Target.Player)
+				DmgType = 'Normal';
+			Explode(true, 300, 96, 32, 64 * 30, flags: 0, DamageType: DmgType);
 			DestroyOthers();
 		}
 		Stop;

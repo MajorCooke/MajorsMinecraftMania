@@ -11,12 +11,13 @@ extend class MinecraftEnemy
 	
 	MinecraftHandler Event;
 	
-	bool OnGround;
+	protected bool OnGround;
 	private Vector3 PrevVel;
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
 				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
 				ActiveSoundDelay, DamageTimer, DespawnTimer;
 	private bool wasOnGround;
+	private double HealthMul;
 	
 	double DespawnRangeMin, DespawnRangeMax, SpawnRangeMin, SpawnRangeMax;
 	protected MC_QuatTurner Turner;
@@ -89,8 +90,12 @@ extend class MinecraftEnemy
 		+DONTSPLASH
 		+FORCEINFIGHTING
 		
-		DamageFactor "Crush", 2000.0;
+		// Monster
 		DamageFactor "Creeper", 0.25;
+		DamageFactor "Ghast", 0.25;
+		
+		// Environment
+		DamageFactor "Crush", 2000.0;
 		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
 		DamageFactor "Slime", 1.0;
