@@ -74,6 +74,11 @@ MCM_SPAWNCONDITIONS_SUB = "Monsters won't spawn in lava/slime/etc if environment
 MCM_SFX_TEXT = "Particles";
 MCM_SFX_SUB = "Determines how much special FX spawns.";
 
+MCM_NOSECGRAV_TEXT = "Actors use own gravity";
+MCM_NOSECGRAV_SUB = "Sector gravity is ignored and uses full gravity for the selected actors.";
+
+MCM_NOSKILLFACTOR_TEXT = "Prevent Skill Damage Factoring";
+MCM_NOSKILLFACTOR_SUB = "If enabled, players counteract skill based damage factoring.";
 //==============================================================================
 // Monster specific texts
 //==============================================================================

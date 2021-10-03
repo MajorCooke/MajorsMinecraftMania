@@ -60,3 +60,11 @@ enum EMinecraftDimension
 	Dim_Hell =			1 << 1,
 	Dim_End =			1 << 2,
 }
+
+enum EMinecraftNoSecGrav
+{
+	TM_NSG_NONE =		0,
+	TM_NSG_MONSTERS =	1,
+	TM_NSG_GIBMISLS =	1 << 1,
+	TM_NSG_BOTH =		1 << 2
+}

@@ -472,14 +472,14 @@ Class MCCreeper : MinecraftEnemy
 		{
 			
 			SetExplosionCounting(false);
-			return A_Jump(256, IFRandom(1, 4));
+			return A_Jump(256, IRandom(1, 4));
 		}
 		TNT1 AAAAAAAAAA 17 Look();
 	IdleMove:
 		TNT1 A 0 
 		{
 			LookTimer = 0;
-			return A_Jump(256, IFRandom(1, 35*2));
+			return A_Jump(256, IRandom(1, 35*2));
 		}
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();

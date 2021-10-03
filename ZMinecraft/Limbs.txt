@@ -801,12 +801,25 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	{
 		if (IsFrozen())	return;
 		
-		Super.Tick();
-		
-		// Counteract gravity when underwater.
-		if (!bNOINTERACTION && WaterLevel > 1)
-			Vel.Z += (Gravity * 0.5);
-		
+		if (!bNOINTERACTION)
+		{
+			// Counteract gravity when underwater.
+			if (WaterLevel > 0 || 
+				((MCC_NoSectorGravity & TM_NSG_GIBMISLS) && 
+				!bNOGRAVITY && Gravity > 0.0))
+			{
+				double t = Gravity;
+				Gravity = 0;
+				if (WaterLevel < 1)
+					Vel.Z -= t;
+				else
+					Vel.Z += (t * 0.5);
+				Super.Tick();
+				Gravity = t;
+			}
+			else	Super.Tick();
+		}
+		else Super.Tick();
 		if ((bKILLED && ShortLife) || --LifeTime < 1)
 			A_FadeOut(FadeTime);
 	}

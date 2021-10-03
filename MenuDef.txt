@@ -15,6 +15,7 @@ OptionMenu "MinecraftOptions"
 	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
 	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
 	MinecraftOption "$MCM_AIDIFFICULTY_TEXT", "$MCM_AIDIFFICULTY_SUB",	MCC_AIDifficulty, 		"DifficultySelection"
+	MinecraftOption "$MCM_NOSKILLFACTOR_TEXT", "$MCM_NOSKILLFACTOR_SUB",MCC_NoSkillFactor, 		"OnOff"
 	StaticText ""
 	StaticText "Spawner Tweaks", GOLD
 	MinecraftSlider "$MCM_SDMINUTE_TEXT", "$MCM_SDMINUTE_SUB",			MCC_SpawnDelayMinute,	0, 10, 1
@@ -78,16 +79,25 @@ OptionMenu "MinecraftMonsterTweaks"
 	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 100.0, 1.0
 	StaticText ""
 	StaticText "Damage Intake Options", GOLD
-	MinecraftOption "$MCM_BOOMDMGMUL_TEXT",		"$MCM_BOOMDMGMUL_SUB",		MCC_BoomDmgMul,			"YesNo"
-	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"YesNo"
-	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"YesNo", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"YesNo", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 			"YesNo", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_BOOMDMGMUL_TEXT",		"$MCM_BOOMDMGMUL_SUB",		MCC_BoomDmgMul,			"OnOff"
+	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"OnOff"
+	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"OnOff", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"OnOff", MCC_EnvironmentDamage
+	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 			"OnOff", MCC_EnvironmentDamage
 	StaticText ""
 	StaticText "Miscellaneous", GOLD
-	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"YesNo"
-	MinecraftOption "$MCM_DROPITEMS_TEXT", "$MCM_DROPITEMS_SUB",		MCC_DropItems,			"YesNo"
-	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"YesNo"
+	MinecraftOption "$MCM_NOSECGRAV_TEXT",	"$MCM_NOSECGRAV_SUB",		MCC_NoSectorGravity,	"NoSecGrav"
+	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"OnOff"
+	MinecraftOption "$MCM_DROPITEMS_TEXT",	"$MCM_DROPITEMS_SUB",		MCC_DropItems,			"OnOff"
+	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"OnOff"
+}
+
+OptionValue "NoSecGrav"
+{
+	0, "None"
+	1, "Monsters"
+	2, "Gibs & Missiles"
+	3, "All"
 }
 
 OptionMenu "MinecraftSpecificMonsters"

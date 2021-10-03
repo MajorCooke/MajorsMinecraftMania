@@ -12,11 +12,16 @@ mixin Class NormalLimbCount
 	};
 }
 
+// Uses code from PhantomBeta's FastRNG out of Se7envidas.
+// This code is MUCH faster than regular RNG for sure, but there is a catch.
+// The RNG may start to become recursive after a while, so to be on the safe side,
+// if the existence of the RNG is older than 10 seconds, refresh it by recreation.
 mixin Class TM_FastRNG
 {
 	private int FRNGTime;
 	private MC_S7_FastRNG FRNG;
 	
+	// Helper function to recreate the generator if called over the age of 10 seconds.
 	private void UpdateFRNG()
 	{
 		if (!FRNG || Level.MapTime - FRNGTime >= Second * 10)	
@@ -26,18 +31,13 @@ mixin Class TM_FastRNG
 		}
 	}
 	
+	// Gets a float.
 	double FFRandom(double min, double max)
 	{
 		UpdateFRNG();
 		return FRNG.GetFloat(min, max);
 	}
-	
-	int IFRandom(int min, int max)
-	{
-		UpdateFRNG();
-		return FRNG.GetInt(min, max);
-	}
-	
+	// Gets an integer. (Should be named FIRandom for Fast Int Random but eh.)
 	int IRandom(int min, int max)
 	{
 		UpdateFRNG();

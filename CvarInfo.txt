@@ -80,6 +80,18 @@ server bool MCC_Drowning = true;
 // MC explosion damage to MC enemies scales with health.
 server bool MCC_BoomDmgMul = true;
 
+// Which actors ignore sector gravity (use full gravity)?
+// 0 = None
+// 1 = Monsters ignore sector gravity
+// 2 = Gibs & Missiles
+// 4 = All
+server int MCC_NoSectorGravity = 0;
+
+// Different skills can have damage multipliers the player can receive. This can
+// greatly hinder the player since some monsters deal extraordinary damage.
+// I.e. creepers deal 200 to the player up close, 200 * 1.5 skill factor = 300.
+// This counteracts that so they only deal regular amounts.
+server bool MCC_NoSkillFactor = true;
 //==============================================================================
 // Individual monster properties
 //==============================================================================

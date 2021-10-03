@@ -84,8 +84,8 @@ extend class MinecraftEnemy
 	//--------------------------------------------------------------------------
 	// "Respawns" the monster by clearing all inventory and effects, and other
 	// stuff.
-	/*
-	virtual void Respawn()
+	
+	virtual void PrepareRespawn()
 	{
 		if (health < 1 || bDORMANT)	return;
 		
@@ -94,13 +94,8 @@ extend class MinecraftEnemy
 		Array<Inventory> Items; Items.Clear();
 		for (let probe = inv; probe; probe = probe.inv)
 		{
-			let power = Powerup(probe);
-			if (power)	Powers.Push(power);
-			else if (probe)	Items.Push(probe);
+			if (probe)	Items.Push(probe);
 		}
-		
-		for (int i = 0; i < Powers.Size(); i++)
-			if (Powers[i])	Powers[i].EndEffect();
 		
 		for (int i = 0; i < Items.Size(); i++)
 			if (Items[i])	Items[i].Destroy();
@@ -110,7 +105,7 @@ extend class MinecraftEnemy
 		A_Respawn(RSF_TELEFRAG);
 		Deactivate(null);
 	}
-	*/
+	
 	void StoreHealthMul()
 	{	if (bDORMANT)	HealthMul = Max(1.0, MCC_HealthMul);	}
 	
@@ -443,6 +438,8 @@ extend class MinecraftEnemy
 	// 
 	virtual void ChaseExtra() {}
 	
+	
+	
 	private int StepTics;
 	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0, bool _3dmelee = false, double range = 0)
 	{
@@ -480,7 +477,7 @@ extend class MinecraftEnemy
 		bool good = false;
 		// Use regular A_Chase if cannot see.
 		bool sight = CheckSight(Target, CSFlags);
-		if (ChaseTics < 1 && (NotBottomMount || CheckSight(Target, CSFlags))) 
+		if (ChaseTics < 1 && (NotBottomMount || sight)) 
 		{
 			
 			if (Target)
@@ -502,7 +499,7 @@ extend class MinecraftEnemy
 					}
 					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
 					
-					Vector3 old = pos;
+					double oldz = pos.z;
 					if (flags & CHF_DONTMOVE)
 					{
 						good = true;
@@ -512,16 +509,14 @@ extend class MinecraftEnemy
 						double c = cos(Pitch) * Speed;
 						double s = -sin(Pitch) * Speed;
 						
-						
 						Vector2 new = Vec2Angle(Speed, ang);
 						
 						SetZ(pos.z + s);
-						if (TryMove(new, bDROPOFF))
-							good = true;
-						else 
+						good = TryMove(new, bDROPOFF);
+						if (!good)
 						{
-							SetOrigin(old, false);
-							ChaseTics = Second;
+							SetZ(oldz);
+							ChaseTics = 18;
 						}
 					}
 					else //if (Vel.Z == 0.0)
@@ -531,21 +526,19 @@ extend class MinecraftEnemy
 						{
 							good = true;
 							
-							if (max(floorz, old.z) - min(floorz, old.z) <= MaxStepHeight)
+							if (max(floorz, oldz) - min(floorz, oldz) <= MaxStepHeight)
 								SetZ(floorz);
 							
 							if (VelPosLen <= speed)
 								vel.XY = vel.XY * 0.8;
 						}
 						else if (OnGround)
-							ChaseTics = Second;
+							ChaseTics = 18;
 							
 						newflags |= CHF_DONTMOVE;
 					}
 					
 				}
-				
-				
 				
 				// Move was good. Do the chase but without actually moving. 
 				if (good)
@@ -556,42 +549,49 @@ extend class MinecraftEnemy
 					Pitch = HoldAngs.Y;
 					Roll =	HoldAngs.Z;
 				}
-				
-				if (Goal && Target == Goal)
+			}
+		}
+		
+		bool nochase = false;
+		if (CheckGoal(true))
+		{
+			int res = CheckInGoalRange();
+			if (res == GS_Reached)
+				return;
+			else if (res == GS_Chasing)
+			{
+				melee = null;
+				missile = null;
+			}
+		}
+		else
+		{
+			
+			if (missile != null && MislChance > -1)
+			{
+				MislChance = Min(MislChance, 1.0);
+			}
+			
+			if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
+			{
+				let s = ResolveState(melee);
+				if (s)
 				{
-					if (CheckGoal(0, 'Idle'))
+					if (CheckTrace(Target, MeleeRange))
 					{
-						melee = null;
-						missile = null;
+						bJUSTATTACKED = true;
+						SetState(s);
+						nochase = true;
 					}
 				}
 			}
 		}
+		
 		if (!good && (angle % 45 != 0.0))
 			AlignMoveDir();
-		
-		if (missile != null && MislChance > -1)
-		{
-			MislChance = Min(MislChance, 1.0);
-		}
-		
-		if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
-		{
-			let s = ResolveState(melee);
-			if (s)
-			{
-				if (CheckTrace(Target, MeleeRange))
-				{
-					bJUSTATTACKED = true;
-					SetState(s);
-					if (!(PrePos ~== Pos))
-						DoStepSound();
-					return;
-				}
-			}
-		}
-		
-		A_Chase(melee, missile, flags|newflags);
+				
+		if (!nochase)
+			A_Chase(melee, missile, flags|newflags);
 		
 		if (!(PrePos ~== Pos))
 			DoStepSound();
@@ -693,12 +693,16 @@ extend class MinecraftEnemy
 		GS_Chasing,
 		GS_Reached
 	};
-	
-	int CheckGoal(double dist = 0.0, StateLabel next = null)
+	bool CheckGoal(bool istarget = false)
 	{
-		if (dist <= 0.0)	dist = radius;
+		return ((Goal is "MCGoal") && (!istarget || Target == Goal));
+	}
+	
+	int CheckInGoalRange(double dist = 0.0, StateLabel next = 'Idle')
+	{
 		if (Goal && Target == Goal)
 		{
+			if (dist <= 0.0)	dist = radius;
 			bool InZ = (pos.z <= Goal.pos.Z + Goal.Height) &&
 						(pos.z >= Goal.pos.z);
 			if (InZ && Distance2DSquared(Goal) <= (dist ** 2))

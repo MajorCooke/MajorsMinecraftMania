@@ -505,7 +505,7 @@ extend class MinecraftEnemy
 		
 		double ChaseRange = (range <= 0) ? MaxChaseRange : range;
 		if (Tracer && Target == Tracer)		ChaseRange *= 2;
-		else if ((Goal && Target == Goal))	ChaseRange = 22767;
+		else if ((Goal && Target == Goal))	return true;
 		
 		bool targetable = (Targetable(Target, relate));
 		
@@ -547,7 +547,6 @@ extend class MinecraftEnemy
 		{
 			if (clear)	
 				ClearTarget();
-			
 			
 			OOSTimer = 0;
 		}

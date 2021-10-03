@@ -29,6 +29,14 @@ Class MinecraftEntity : Actor
 	}
 }
 
+Class MinecraftProjectile : MinecraftEntity
+{
+	Default
+	{
+		Projectile;
+	}
+}
+
 Class MCPlayerProtection : PowerProtection
 {
 	const HalfSec = 18;
@@ -42,16 +50,14 @@ Class MCPlayerProtection : PowerProtection
 	override void InitEffect()
 	{
 		Super.InitEffect();
-		EffectTics = 1000000;
 		InvulTimer = 0;
 	}
 	
 	override void DoEffect()
 	{
-		EffectTics++;
-		Super.DoEffect();
-		
 		processed = false;
+		Super.DoEffect();
+		EffectTics = 1000;
 		if (InvulTimer > 0)		InvulTimer--;
 	}
 	
@@ -62,6 +68,7 @@ Class MCPlayerProtection : PowerProtection
 		{
 			newdamage = HandleDamage(damage, damageType, inflictor, source, flags);
 			if (newdamage < 1)	return;
+			damage = newdamage;
 			Super.ModifyDamage(damage, damageType, newdamage, passive, inflictor, source, flags);
 		}
 	}
@@ -70,53 +77,35 @@ Class MCPlayerProtection : PowerProtection
 	// unless armor is bypassed.
 	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
 	{
-		if (Owner && damage > 0 && !processed)
+		if (!processed && Owner && damage > 0)
 		{
-			newdamage = HandleDamage(damage, damageType, inflictor, source, flags);
+			newdamage = HandleDamage(newdamage, damageType, inflictor, source, flags);
 		}
 	}
 	
-	// Disables damage if the player was recently hit, is totally frozen, in peaceful
+	// Prevents damage if the player was recently hit, is totally frozen, in peaceful
 	// or a voodoo doll was damaged.
 	int HandleDamage(int damage, Name damageType, Actor inflictor, Actor source, int flags)
 	{
-		if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
+		if (damage > 0 && (source is "MinecraftEntity" || inflictor is "MinecraftEntity"))
 		{
+			processed = true;
 			if (InvulTimer > 0 ||
 				(Owner is "PlayerPawn" &&
 					(MCC_Peaceful || !Owner.Player || Owner.Player.mo != Owner ||
 					(Owner.Player.Cheats & CF_TOTALLYFROZEN))))
 				return -1;
 			
+			// Counteract any skill factors aside 1.0. Doesn't work if factor is <= 0.
+			if (MCC_NoSkillFactor)
+			{
+				double sk = G_SkillPropertyFloat(SKILLP_DamageFactor);
+				if (!(sk ~== 1.0) && sk > 0.0)
+					damage = int(double(damage) / sk);
+			}
 			InvulTimer = HalfSec;
 			Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
-			processed = true;
 		}
 		return damage;
 	}
 }
-/*
-Class MCImmunityFrames : PowerProtection
-{
-	override void InitEffect()
-	{
-		Super.InitEffect();
-		EffectTics = 18;
-	}
-	
-	override void ModifyDamage(int damage, Name damageType, out int newdamage, bool passive, Actor inflictor, Actor source, int flags)
-	{
-		if (passive)
-		{
-			if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
-				newdamage = -1;
-		}
-	}
-	
-	override void AbsorbDamage(int damage, Name damageType, out int newdamage, Actor inflictor, Actor source, int flags)
-	{
-		if (source is "MinecraftEntity" || inflictor is "MinecraftEntity")
-			newdamage = -1;
-	}
-}
-*/
