@@ -1,7 +1,7 @@
 [enu default]
 
-MCM_RELEASE_VERSION = "Alpha 0.21";
-MCM_RELEASE_DATE = "April 2, 2021";
+MCM_RELEASE_VERSION = "Alpha 0.22";
+MCM_RELEASE_DATE = "October 30, 2021";
 
 MCM_OPTIONS_TITLE = "Minecraft Options";
 
