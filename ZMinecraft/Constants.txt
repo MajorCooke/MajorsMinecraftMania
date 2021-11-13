@@ -12,29 +12,36 @@ enum EMinecraftConst
 	Dif_Easy = 0,
 	Dif_Normal,
 	Dif_Hard,
+	Dif_Medium = Dif_Normal,
 	
 	// Peaceful mode constants
-	CV_Despawn = 0,
-	CV_Minecraft,
-	CV_Stay,
-	CV_Spawn,
+	// Note: Monsters will never attack or harm the player in peaceful.
+	CV_Despawn = 0,	// Force despawn
+	CV_Minecraft,	// Hostiles will despawn
+	CV_Stay,		// Monsters won't (de)spawn
+	CV_Spawn,		// Monsters will spawn
 	
 	// Actions
 	E_Sway =	1 << 1,
 	E_Swing =	1 << 2,
 	
-	// Relations
-	Rel_None =	0,
-	Rel_Neutral,
-	Rel_Hate, Rel_Hated = Rel_Hate, Rel_Hostile = Rel_Hate,
-	Rel_Ignored,
-	Rel_Afraid, Rel_Fear = Rel_Afraid,
-	Rel_Follower,
-	Rel_Leader,
+	// Relations to targets/classes
+	Rel_None =	0,	// Treated as regular Doom entity (searched for if player)
+	Rel_Neutral,	// Peaceful until attacked
+	Rel_Hate, 		// Will attack on sight
+	Rel_Ignored,	// Never retaliates
+	Rel_Afraid, 	// Flees from
+	Rel_Follower,	// Follows as its master
+	Rel_Leader,		// Makes followers its children
 	Rel_Max,
 	
-	Res_Both = 0,
-	Res_Actors,
+	// Relationship aliases
+	Rel_Hated = Rel_Hate, Rel_Hostile = Rel_Hate,
+	Rel_Fear = Rel_Afraid,
+	
+	// Relationship Checker
+	Res_Both = 0,	// Both actors and classes
+	Res_Actors,		// Self explanatory.
 	Res_Classes,
 	
 	MCGroup_Unsorted = 1 << 0,

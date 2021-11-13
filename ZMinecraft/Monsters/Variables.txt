@@ -1,4 +1,4 @@
-extend class MinecraftEnemy
+extend class MinecraftMonster
 {
 	enum EMobTypes
 	{
@@ -16,7 +16,7 @@ extend class MinecraftEnemy
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
 				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
 				ActiveSoundDelay, DamageTimer, DespawnTimer;
-	private bool wasOnGround;
+	private bool wasOnGround, Jumping;
 	private double HealthMul;
 	protected bool IgnoreSecGrav;
 	
@@ -34,7 +34,8 @@ extend class MinecraftEnemy
 	protected int IdleTimer, ChaseCheckTimer, LookTimer;
 	protected double SoundPitch, PrevAlpha, OverScale;
 	
-	double FallDmgVel, VelLen, PosLen, VelPosLen, MaxChaseRange, MislChance;
+	double FallDmgVel, VelLen, PosLen, VelPosLen, MislChance,
+		MaxChaseRange, MaxSightRange;
 	
 	meta bool PeacefulDespawn;
 	meta int MobType;
@@ -50,23 +51,27 @@ extend class MinecraftEnemy
 	Property PeacefulDespawn: PeacefulDespawn;
 	Property MobType: 		MobType;
 	Property Passive: 		Passive;
-	Property MaxChaseRange:	MaxChaseRange;
 	Property SoundPitch:	SoundPitch;
 	Property OverScale:		OverScale;
 	Property SightTimeOut:	OOSTimeOut;
+	Property MaxChaseRange:	MaxChaseRange;
+	Property MaxSightRange: MaxSightRange;
 	
 	Default
 	{
-		MinecraftEnemy.MislChance -1;
-		MinecraftEnemy.SpawnRange 	1024, 3072;
-		MinecraftEnemy.DespawnRange	3072, 5120;
-		MinecraftEnemy.SightTimeOut Second * 5;
-		MinecraftEnemy.OverScale 1.0;
-		MinecraftEnemy.SoundPitch 1.0;
-		MinecraftEnemy.FallDmgVel 15.0;
-		MinecraftEnemy.DrownTimer DefaultDrownTimer;
-		MinecraftEnemy.PeacefulDespawn true;
-		MinecraftEnemy.MobType M_Normal;
+		MinecraftMonster.MislChance -1;
+		MinecraftMonster.SpawnRange 	1024, 3072;
+		MinecraftMonster.DespawnRange	3072, 5120;
+		MinecraftMonster.SightTimeOut Second * 5;
+		MinecraftMonster.OverScale 1.0;
+		MinecraftMonster.SoundPitch 1.0;
+		MinecraftMonster.FallDmgVel 15.0;
+		MinecraftMonster.DrownTimer DefaultDrownTimer;
+		MinecraftMonster.PeacefulDespawn true;
+		MinecraftMonster.MobType M_Normal;
+		MinecraftMonster.MaxSightRange 768;
+		MinecraftMonster.MaxChaseRange 2048;
+		MaxTargetRange 768;
 		Monster;
 		Health 100;
 		Speed 4;

@@ -1,5 +1,21 @@
-/*
+/*==============================================================================
+Spider (Normal)
+ 
+Anthropod enemy that can leap at targets and can climb ledges (NYI)
 
+Drops backpacks, health/armor bonuses
+
++ Wide hit box, make it susceptible to shotguns
++ Easy to lose in narrow corridors due to width
+- Leaps at foes very quickly, jumps high
+- No collision with monsters (Makes rockets very dangerous to use)
+- (NYI) Climbs ledges
+- (NYI) Can spawn with jockeys
+
+NYI = Not Yet Implemented
+==============================================================================*/
+
+/*
 Minecraft/Spider/Death
 Minecraft/Spider/Idle
 Minecraft/Spider/Step
@@ -25,7 +41,7 @@ Frames
 
 	
 		
-Class MCSpider : MinecraftEnemy
+Class MCSpider : MinecraftMonster
 {
 	const _Radius = 1.6 + 1.2 + 2.4;
 	const _Height = 2.0;
@@ -63,8 +79,8 @@ Class MCSpider : MinecraftEnemy
 	Default
 	{
 		Health 100;
-		MinecraftEnemy.MislChance 100;
-		MinecraftEnemy.StepSound "Minecraft/Spider/Step", 20;
+		MinecraftMonster.MislChance 100;
+		MinecraftMonster.StepSound "Minecraft/Spider/Step", 20;
 		MCSpider.LeapRange _MeleeRange * 2;
 		MCSpider.Type S_Normal;
 		Radius RealRadius;
@@ -226,8 +242,6 @@ Class MCSpider : MinecraftEnemy
 				Vel.Z += 8.0;
 				OnGround = false;
 			}
-		//	int flag = (OnGround) ? 0 : CHF_DONTMOVE;
-		//	Chase(flags: flag, _3dmelee: true);
 			Chase(_3dmelee: true);
 		}
 		Wait;
@@ -241,7 +255,7 @@ Class MCCaveSpider : MCSpider
 {
 	Default
 	{
-		MinecraftEnemy.OverScale 0.5;
+		MinecraftMonster.OverScale 0.5;
 		MCSpider.Type S_Cave;
 		Tag "Cave Spider";
 		Obituary "%o couldn't fight off the swarming Cave Spiders.";

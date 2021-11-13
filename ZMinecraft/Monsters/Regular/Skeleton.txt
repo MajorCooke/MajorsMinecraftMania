@@ -1,7 +1,19 @@
+/*==============================================================================
+Skeleton (Normal)
+ 
+Undead enemy that shoots arrows. Is rather intelligent for having no brain.
+
+Drops ammo (bullet/shell/rocket/cell)
+
++ Easy to cause infighting
++ No natural resistance
++ Changes target if its arrow hits anyone other than its target
+- Tactical: Backs away from enemies too close to it
+- Shoots faster the closer targets are
+- Can have armor/weapons in higher AI difficulty
+==============================================================================*/
+
 /*
-
-
-
 --- All ---
 Sword:				0.0		-1.0	2.7
 Bow:				0.0		-1.0	2.7		Angles	-90	-45	20
@@ -74,8 +86,6 @@ Class MCSkeleton : MCUndead
 		
 		
 		MeleeRange 512;
-		MaxTargetRange 768;
-		MinecraftEnemy.MaxChaseRange 2048;
 		ActiveSound "Minecraft/Skeleton/Idle";
 		PainSound "Minecraft/Skeleton/Hurt";
 		DeathSound "Minecraft/Skeleton/Death";
@@ -292,7 +302,7 @@ Class MCArrowProjectile : MinecraftProjectile
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
 	
-	private MinecraftEnemy Owner;
+	private MinecraftMonster Owner;
 	Default
 	{
 		Projectile;
@@ -315,7 +325,7 @@ Class MCArrowProjectile : MinecraftProjectile
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		Owner = MinecraftEnemy(Target);
+		Owner = MinecraftMonster(Target);
 	}
 	
 	private void ArrowDeath()

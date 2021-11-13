@@ -78,7 +78,7 @@ Class MinecraftHandler : EventHandler
 		if (!e.Thing || e.Thing.bDESTROYED || e.Thing.bNOINTERACTION)
 			return;
 			
-		let mo = MinecraftEnemy(e.Thing);
+		let mo = MinecraftMonster(e.Thing);
 		if (mo)	
 		{
 			mo.Event = self;
@@ -125,7 +125,7 @@ Class MinecraftHandler : EventHandler
 		Process.Clear();
 		Process.Push(s.Index());
 		
-		int Failsafe = 500;
+		int Failsafe = 2000;
 		while (Process.Size() > 0 && --Failsafe > 0)
 		{
 			// Get the last sector index for processing and remove it from the list.
@@ -167,7 +167,7 @@ Class MinecraftHandler : EventHandler
 	
 	override void WorldThingDied(WorldEvent e)
 	{
-		let mo = MinecraftEnemy(e.Thing);
+		let mo = MinecraftMonster(e.Thing);
 		if (mo)	
 		{
 			MobCount--;
@@ -180,7 +180,7 @@ Class MinecraftHandler : EventHandler
 	
 	override void WorldThingDestroyed(WorldEvent e)
 	{
-		let mo = MinecraftEnemy(e.Thing);
+		let mo = MinecraftMonster(e.Thing);
 		if (mo && !mo.bKILLED) 
 		{
 			MobCount--;
@@ -191,20 +191,37 @@ Class MinecraftHandler : EventHandler
 	/*
 	override void WorldThingDamaged(WorldEvent e)
 	{
-		let src = MinecraftEnemy(e.DamageSource);
+		let src = MinecraftMonster(e.DamageSource);
 		if (src)
 		{
 			let mo = e.Thing;
 			if (mo && mo is 'PlayerPawn' && !mo.FindInventory("MCImmunityFrames"))
 			{
 				mo.A_GiveInventory('MCImmunityFrames',1);
-				if (!(mo is 'MinecraftEnemy'))
+				if (!(mo is 'MinecraftMonster'))
 					mo.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
 			}
 		}
 	}
 	*/
-	bool DropItem(Actor mo, Class<Inventory> Cls, int Amount = -1, int Chance = 256)
+	
+	private void HandleRandomSpawners(out Class<Actor> Cls)
+	{
+		if (!(Cls is 'RandomSpawner'))
+			return;
+		
+		int RecursionCount = RandomSpawner.MAX_RANDOMSPAWNERS_RECURSION;
+		while (Cls is 'RandomSpawner' && RecursionCount > 0)
+		{
+			let def = GetDefaultByType(Cls);
+			if (def)
+			{
+				DropItem n = def.GetDropItems();
+			}
+		}
+	}
+	
+	bool DropItem(Actor mo, Class<Actor> Cls, int Amount = -1, int Chance = 256)
 	{
 		if (!mo || !Cls || Chance < 1 || Amount == 0)	return false;
 		
@@ -265,7 +282,7 @@ Class MinecraftHandler : EventHandler
 			Timer[S_Despawn] = 0;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				let mo = MinecraftMonster(Monsters.Actors[i]);
 				if (!mo || (mo.Target && mo.Targetable(mo.Target)))	continue;
 				
 				double  dmin = mo.DespawnRangeMin,
@@ -318,7 +335,7 @@ Class MinecraftHandler : EventHandler
 			EndermanCount = 0;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				let mo = MinecraftMonster(Monsters.Actors[i]);
 				if (mo && !mo.bKILLED)
 				{
 					mo.CleanActors();

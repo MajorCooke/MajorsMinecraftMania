@@ -1,0 +1,188 @@
+extend class MinecraftMonster
+{
+	// 
+	virtual void ChaseExtra() {}
+	
+	
+	
+	private int StepTics;
+	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0, bool _3dmelee = false, double range = 0)
+	{
+		if (bKILLED)
+			return;
+			
+		Vector3 prepos = pos;
+		
+		bool NotBottomMount = false;
+	
+		int newflags = CHF_NOPLAYACTIVE;
+		
+		// Get a target if invalid.
+		if (!ValidateTarget(false, range, true))
+		{
+			if (!Goal)
+			{
+				Array<Actor> Temp; Temp.Clear();
+				for (int i = 0; i < Damagers.Size(); i++)
+					if (Damagers[i] && Damagers[i].Health > 0)
+						Temp.Push(Damagers[i]);
+				Damagers.Move(Temp);
+				
+				if (Tracer == Target)	Tracer = null;
+				A_ClearTarget();
+				SetState(ResolveState("Idle"));
+				return;
+			}
+			else Target = Goal;
+		}
+		
+		if (ChaseTics > 0)
+			ChaseTics--;
+		
+		bool good = false;
+		// Use regular A_Chase if cannot see.
+		bool sight = CheckSight(Target, CSFlags);
+		if (ChaseTics < 1 && (NotBottomMount || sight)) 
+		{
+			
+			if (Target)
+			{
+				// Turning handled by the inventory item itself if mounted.
+				if (NotBottomMount)
+					good = true;
+				else
+				{
+					HoldAngs = (Angle, Pitch, Roll);
+					
+					double ang = AngleTo(Target);
+					bool fear = CheckFear(Target);
+					if (fear)
+					{
+						ang += 180;
+						melee = missile = null;
+						
+					}
+					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
+					
+					double oldz = pos.z;
+					if (flags & CHF_DONTMOVE)
+					{
+						good = true;
+					}
+					else if (bFLOAT)
+					{
+						double c = cos(Pitch) * Speed;
+						double s = -sin(Pitch) * Speed;
+						
+						Vector2 new = Vec2Angle(Speed, ang);
+						
+						SetZ(pos.z + s);
+						good = TryMove(new, bDROPOFF);
+						if (!good)
+						{
+							SetZ(oldz);
+							ChaseTics = 18;
+						}
+					}
+					else
+					{
+						Vector2 nmpos = Vec2Angle(speed, ang);
+						if (OnGround && Vel.Z == 0.0 && TryMove(nmpos, bDROPOFF))
+						{
+							good = true;
+							
+							if (max(floorz, oldz) - min(floorz, oldz) <= MaxStepHeight)
+								SetZ(floorz);
+							
+							if (VelPosLen <= speed)
+								vel.XY = vel.XY * 0.8;
+						}
+						else if (OnGround)
+							ChaseTics = 18;
+							
+						newflags |= CHF_DONTMOVE;
+					}
+					
+				}
+				
+				// Move was good. Do the chase but without actually moving. 
+				if (good)
+					newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
+				else
+				{
+					Angle = HoldAngs.X;
+					Pitch = HoldAngs.Y;
+					Roll =	HoldAngs.Z;
+				}
+			}
+		}
+		
+		bool nochase = false;
+		if (CheckGoal(true))
+		{
+			int res = CheckInGoalRange();
+			if (res == GS_Reached)
+				return;
+			else if (res == GS_Chasing)
+			{
+				melee = null;
+				missile = null;
+			}
+		}
+		else
+		{
+			
+			if (missile != null && MislChance > -1)
+			{
+				MislChance = Min(MislChance, 1.0);
+			}
+			
+			if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
+			{
+				let s = ResolveState(melee);
+				if (s)
+				{
+					if (CheckTrace(Target, MeleeRange))
+					{
+						bJUSTATTACKED = true;
+						SetState(s);
+						nochase = true;
+					}
+				}
+			}
+		}
+		
+		if (!good && (angle % 45 != 0.0))
+			AlignMoveDir();
+				
+		if (!nochase)
+			A_Chase(melee, missile, flags|newflags);
+		
+		if (!(PrePos ~== Pos))
+			DoStepSound();
+	}
+	
+	void DoStepSound()
+	{
+		if (StepSound != "")
+		{
+			if (--StepTics < 1)
+			{
+				StepTics = StepSoundDelay;
+				A_StartSound(StepSound, flags: CHANF_OVERLAP);
+			}
+		}
+	}
+	
+	
+	// Aligns the moveDir to the closest 45th degree. Otherwise it looks weird
+	// when they go from moving at a custom angle to the normal chase.
+	void AlignMoveDir()
+	{
+		double roundee = Normalize180(angle);
+		if (roundee <= 0.0)	roundee += 360.0;
+		double deg = roundee % 45.0;
+		int DirAdd = (deg >= 22.5) ? 1 : 0;
+		moveDir = uint((roundee / 45.0) + DirAdd) % 8;
+	}
+}

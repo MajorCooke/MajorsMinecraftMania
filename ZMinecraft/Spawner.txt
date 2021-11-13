@@ -4,22 +4,17 @@ extend class MinecraftHandler
 	private void CreateSpawnList()
 	{
 		SpawnList = MCSpawnList.Create();
-		
+		// Parameters are as follows:
 		// Actor name, easy, normal, hard, dimension, and group.
 		SpawnList.Add('MCZombie',			300, 300, 300);
-		SpawnList.Add('MCZombieBaby',		025, 050, 075);
 		SpawnList.Add('MCSkeleton',			300, 300, 300);
+		SpawnList.Add('MCZombieBaby',		025, 050, 075);
 		SpawnList.Add('MCSpider',			075, 100, 125);
 		SpawnList.Add('MCCreeper',			075, 150, 250);
 		SpawnList.Add('MCEnderman',			005, 010, 015,	Dim_Overworld|Dim_Hell|Dim_End,	'Big');
 		SpawnList.Add('MCGhast',			001, 005, 010,	Dim_Hell,	'Big');
 		
 	}
-	
-	const MaxQueue = 10;
-	
-//	private AArray SpawnQueue, SpawnQueuePriority;
-//	private CAArray ClsQueue, ClsQueuePriority, ClsQueueBlacklist;
 	private MCSpawnList SpawnList;
 	private int MaxMobs;
 		
@@ -89,7 +84,7 @@ extend class MinecraftHandler
 			MCC_AIDifficulty_Prev = MCC_AIDifficulty;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftEnemy(Monsters.Actors[i]);
+				let mo = MinecraftMonster(Monsters.Actors[i]);
 				if (mo && !mo.bKILLED && !mo.bDESTROYED)
 					mo.AdjustDifficulty();
 			}
@@ -133,7 +128,7 @@ extend class MinecraftHandler
 	// performance issues.
 	//==========================================================================
 	
-	private MinecraftEnemy MoCue;
+	private MinecraftMonster MoCue;
 	private int SpawnFails;
 	private void PrepareSpawnNormal()
 	{	
@@ -147,7 +142,7 @@ extend class MinecraftHandler
 			
 			SpawnList.FilterSpawns(cls);
 			
-			MoCue = MinecraftEnemy(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
+			MoCue = MinecraftMonster(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
 			if (MoCue)
 			{
 				MoCue.bNODROPOFF = true;
@@ -235,7 +230,7 @@ extend class MinecraftHandler
 					if (cont)	continue;
 				}
 				// Found a good spot.
-				MoCue.SetOrigin(next, false);
+				TM_Global.SetPos(MoCue, next, false);
 				
 				if (MoCue.bSPAWNFLOAT)
 					next.Z = ffrandom(MoCue.FloorZ, MoCue.CeilingZ - MoCue.Height);
@@ -328,11 +323,12 @@ Class MCSpawnList play
 	//
 	// Arguments
 	//	*blacklist
-	//		
+	//		A CAArray object 
 	//	*group 
 	//		Filters the selection by the group given (whitelist)
 	//	*exclude
 	//		If true, blacklists the group instead of whitelist.
+	
 	Class<Actor>, Name PickRandom(CAArray Blacklist = null, Name group = '', 
 		bool exclude = false) const
 	{

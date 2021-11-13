@@ -43,7 +43,7 @@ Class MCGhastDrop : RandomSpawner
 	}
 }
 
-Class MCGhast : MinecraftEnemy
+Class MCGhast : MinecraftMonster
 {
 	const _Radius = 1.6;
 	const _Height = 3.2;
@@ -76,8 +76,8 @@ Class MCGhast : MinecraftEnemy
 		+DROPOFF
 		+BRIGHT
 		
-		MinecraftEnemy.DespawnRange 4096, 8192;
-		MinecraftEnemy.SightTimeOut 0;
+		MinecraftMonster.DespawnRange 4096, 8192;
+		MinecraftMonster.SightTimeOut 0;
 		
 		DamageFactor "DamageSector", 0.0;
 		DamageFactor "Fire", 0.0;
@@ -89,8 +89,8 @@ Class MCGhast : MinecraftEnemy
 		PainSound "Minecraft/Ghast/Scream";
 		DeathSound "Minecraft/Ghast/Death";
 		
-		MinecraftEnemy.MaxChaseRange 3096;
-		MaxTargetRange 2048;
+		MinecraftMonster.MaxChaseRange 3096;
+		MinecraftMonster.MaxSightRange 2048;
 		MaxStepHeight 0;
 		
 		Mass 1000;
@@ -186,7 +186,7 @@ Class MCGhast : MinecraftEnemy
 			ClipVector(Vel);
 			VelLen = Vel.Length();
 		}
-		
+		// Occasionally gets a new vector to float about. Completely sporadic.
 		if (--VelTimer < 1 || (NextVel ~== (0,0,0)))
 		{
 			VelTimer = Second * IRandom(1, 4);
@@ -196,7 +196,6 @@ Class MCGhast : MinecraftEnemy
 		}
 			
 		// If bouncing off geometry, adopt the new direction.
-		// This just isn't working very well.
 		
 		bool thru = bTHRUACTORS;
 		bTHRUACTORS = true;
@@ -209,7 +208,7 @@ Class MCGhast : MinecraftEnemy
 		SetZ(cz);
 		bTHRUACTORS = thru;
 		
-		
+		// Bounce off the line.
 		if (BlockingLine && (!(vel ~== (0,0,0)) || !(PreVel ~== (0,0,0))) && 
 			!(NextVel ~== (0,0,0)))
 		{
@@ -229,13 +228,10 @@ Class MCGhast : MinecraftEnemy
 				double len = NextVel.Length();
 				NextVel = MC_S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
 				Vel = MC_S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
-				
-			//	Console.Printf("Old: %.1f %.1f %.1f | New: %.1f %.1f %.1f", 
-			//		OV.X, OV.Y, OV.Z, NextVel.X, NextVel.Y, NextVel.Z);
 			}
 		}
 		
-		
+		// Bounce off the ceiling or floor.
 		if (BlockingCeiling || Pos.Z + Height >= CeilingZ - 2)
 		{
 			AP.Y = abs(AP.Y);
@@ -250,7 +246,6 @@ Class MCGhast : MinecraftEnemy
 		}
 		
 		
-	//	CurVel = MC_kSpring.FancySpringAngles(Vel, NextVel, CurVel, 0.05, 0.05);
 		Vel += NextVel * 0.15;
 		
 		Super.Tick();

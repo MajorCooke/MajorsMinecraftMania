@@ -87,6 +87,112 @@ Struct LimbSwing play
 	}
 }
 
+extend class MinecraftMonster
+{
+	//--------------------------------------------------------------------------
+	// Initializes Limb array.
+	protected void Init(int limbs)
+	{
+		Limb.Clear();
+		if (limbs < 1)	return;
+		Limb.Reserve(limbs);
+		for (int i = 0; i < Limb.Size(); i++)
+			Limb[i] = null;
+	}
+	
+	
+	
+	// Returns the head actor, mainly for cosmetic head tilts for actors to
+	// look at others properly. Bear in mind that if more than one head is present,
+	// the one earliest on the list will be the one returned.
+	private int HeadIndex;
+	MCBodyPartHead GetHead() const
+	{
+		// Quicker lookup. 
+		if (HeadIndex > -1 && HeadIndex < Limb.Size() &&
+			Limb[HeadIndex] is 'MCBodyPartHead')
+			return MCBodyPartHead(Limb[HeadIndex]);
+			
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i] is 'MCBodyPartHead')
+			{
+				HeadIndex = i;
+				return MCBodyPartHead(Limb[i]);
+			}
+		}
+		
+		HeadIndex = -1;
+		return null;
+	}
+	
+	protected virtual void DestroyLimbs()
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Destroy();
+				Limb[i] = null;
+			}
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	// Causes all the limbs to turn into their gibbed variants and send them
+	// flying all around based on velocity.
+	protected void Gib(double VelLen)
+	{
+		Translation = Default.Translation;
+		bBRIGHT = false;
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				Limb[i].Translation = Translation;
+				Limb[i].bBRIGHT = false;
+				Limb[i].SpawnGib(VelLen);
+			}
+		}
+	}
+
+	virtual void UpdateLimbs(bool interp = true)
+	{
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				Vector3 NA = Angs;
+				if (!(Limb[i] is 'MCBodyPartHead'))
+					NA.Y -= Pitch;
+				
+				Switch (Limb[i].CopyFrames)
+				{
+					Case MCFrames_FromOwner:	
+						Limb[i].Frame = Frame;	
+						break;
+					Case MCFrames_FromMaster:
+					{
+						if (Limb[i].Master)	
+							Limb[i].Frame = Limb[i].Master.Frame; 
+						break;
+					}
+					Default:
+						break;
+				}
+				
+				Limb[i].UpdatePosition(Limb[i].Master, (interp ? WARPF_INTERPOLATE : 0));
+				Limb[i].UpdateScales(OverScale, Scale);
+				Limb[i].SetNextAngles(NA);
+				Limb[i].A_SetRenderStyle(alpha, CurStyle);
+				Limb[i].Translation = Translation;
+				Limb[i].bINVISIBLE = bINVISIBLE;
+				Limb[i].bBRIGHT = bBRIGHT;
+			}
+		}
+	}
+}
+
 Class MCBodyPart : MinecraftEntity
 {
 	const StepWait = 8;
@@ -132,7 +238,7 @@ Class MCBodyPart : MinecraftEntity
 	
 	LimbSway Sway;
 	LimbSwing Swing;
-	MinecraftEnemy Owner;
+	MinecraftMonster Owner;
 	
 	Property StepSound: StepSound;
 	Property StepVolume: StepVolume;
@@ -356,6 +462,9 @@ Class MCBodyPart : MinecraftEntity
 		UpdateScales(OverScale, Scale);
 		UpdatePosition(Master, interp);
 	}
+	
+	//--------------------------------------------------------------------------
+	// 
 	virtual void UpdatePosition(Actor who, bool interp = true)
 	{
 		if (!Owner || Destroyed())	return;
@@ -371,7 +480,7 @@ Class MCBodyPart : MinecraftEntity
 		NP.Z = Owner.Pos.Z + PosOff.Z;
 		Vector3 px, py, pz, origin;
 		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-		origin = NP; + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+		origin = NP + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
 		
 		if (!(origin ~== pos))
 			SetOrigin(origin, interp);
@@ -598,7 +707,7 @@ Class MCBodyPartHead : MCBodyPart
 		Height 1.6;
 	}
 
-	MinecraftEnemy Trg;
+	MinecraftMonster Trg;
 	MCBodyPartHead TargetHead;
 	override void DoMotion()
 	{
@@ -626,9 +735,9 @@ Class MCBodyPartHead : MCBodyPart
 				zof = 0.8;
 		}
 		// Look at the other fellow's head.
-		else if (Target is 'MinecraftEnemy')
+		else if (Target is 'MinecraftMonster')
 		{
-			Trg = MinecraftEnemy(Target);
+			Trg = MinecraftMonster(Target);
 			if (Trg)
 			{
 				TargetHead = Trg.GetHead();

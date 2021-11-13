@@ -90,6 +90,7 @@ Class MCExplosionSprite : Actor
 		+NOBLOCKMAP
 		+ROLLSPRITE
 		+BRIGHT
+		+FORCEXYBILLBOARD
 		Scale 3.5;
 	}
 	
@@ -134,6 +135,7 @@ Class MCExplosionSmoke : Actor
 	{
 		+NOINTERACTION
 		+NOBLOCKMAP
+		+FORCEXYBILLBOARD
 		Scale 4.0;
 	}
 	

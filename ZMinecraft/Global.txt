@@ -1,0 +1,17 @@
+// Global functions that anyone can make use of.
+
+Class TM_Global play
+{
+	//--------------------------------------------------------------------------
+	// Code borrowed from PhantomBeta's Se7envidas
+	static void SetPos(Actor mo, Vector3 npos, bool interp = true)
+	{
+		if (!mo)	return;
+		
+		LinkContext ctx;
+		mo.UnlinkFromWorld(ctx);
+		mo.SetXYZ(npos);
+		mo.LinkToWorld(ctx);
+		mo.FindFloorCeiling();
+	}
+}

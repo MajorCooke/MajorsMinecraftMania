@@ -1,0 +1,279 @@
+extend class MinecraftMonster
+{
+	//--------------------------------------------------------------------------
+	// Searches for potential actors to target.
+	// Takes an actor array and pushes viable actors into it that have a status.
+	bool SearchActors(out Array<Actor> Acts, Vector2 RH, double fov = 90, 
+		bool sight = true)
+	{
+		Acts.Clear();
+		
+		// 
+		if (!CheckStatusType(Rel_Hated) && !CheckStatusType(Rel_Afraid))
+			return false;
+		
+		let it = BlockThingsIterator.CreateFromPos(
+			pos.x, pos.y, pos.z - RH.X, RH.Y + RH.X * 2, RH.X, false);
+			
+		Actor mo = null;
+		
+		while (it.Next())
+		{
+			mo = it.thing;
+			if (!mo || !Targetable(mo))
+				continue;
+			
+			if (sight && (!CheckSight(mo, CSFlags) ||
+				(!bLOOKALLAROUND && fov < 360 && DeltaAngle(Angle, AngleTo(mo)) < fov)))
+				continue;
+			
+			Acts.Push(mo);
+		}
+		return true;
+	}
+
+	//--------------------------------------------------------------------------
+	// Customized looking algorithm.
+	//
+	// This takes into account the Goal pointer and the Tracer pointer.
+	// 
+	// Goal is used for avoiding damaging sectors whenever taking damage, except
+	// if the caller already has a target/tracer.
+	// 
+	// Tracer takes top-most priority, used whenever the customized AlertMonsters 
+	// function is called.
+	//--------------------------------------------------------------------------
+	
+	
+	protected virtual void CustomLook(bool close = false)
+	{
+		if (Passive)	return;
+		
+		
+		double msr = MaxSightRange;
+		MaxSightRange = min(MaxSightRange, MaxChaseRange);
+		if (!Relations)
+		{
+			A_LookEx(LOF_NOSEESOUND|LOF_NOSOUNDCHECK|LOF_NOJUMP, 0, MaxSightRange);
+		}
+		else
+		{
+			Array<Actor> mon; mon.Clear();
+			SearchActors(mon, (MaxSightRange, MaxSightRange), 360);
+			
+			Actor closest = null;
+			double dist = (32767.0 ** 2.0);
+			for (int i = 0; i < mon.Size(); i++)
+			{
+				Actor mo = mon[i];
+				bool rel = CheckRelationTarget(mo);
+				if (!rel)	continue;
+				
+				if (!close)	{	Target = mo;	return;		}
+				else
+				{
+					double dis = Distance3DSquared(mo);
+					if (!closest || dis < dist)
+					{
+						closest = mo;
+						dis = dist;
+					}
+				}
+			}
+			if (closest)	
+			{
+				if (!LastEnemy && Target)	LastEnemy = Target;
+				Target = LastHeard = closest;
+			}
+		}
+		MaxSightRange = msr;
+	}
+	
+	protected void Look(bool time = false)
+	{
+		if (Passive)
+		{
+			if (Target && (Target is "PlayerPawn" || Target.Player))
+				A_ClearTarget();
+		}
+		else if (!time || --LookTimer < 1)
+		{
+			if (time)	LookTimer = LookTimerDefault;
+			
+			{
+				double mrange = MeleeRange;
+				MeleeRange = 1;
+				if (Targetable(Tracer))	
+					A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
+				else
+				{
+					Tracer = null;
+					CustomLook(true);
+				}
+				MeleeRange = mrange;
+			}
+			
+			if (ValidateTarget(true))
+			{
+				if (!bAMBUSH || CheckSight(Target, CSFlags))
+					SetState(ResolveState("See"));
+			}
+			else
+			{
+				if (Tracer == Target)	Tracer = null;
+				ClearTarget();
+			}
+		}
+	}
+	
+	protected void LookWander()
+	{
+		Vector3 PrePos = Pos;
+		Look(true);
+		A_Wander();
+		if (!(PrePos ~== Pos))	
+			DoStepSound();
+	}
+	
+	virtual void SetPassive(bool on)	{	Passive = on;	}
+	virtual void SetNeutral(bool on)	{	Neutral = on;	}
+	private int ChaseTics;
+	
+	//==========================================================================
+	// Handles range and calls Targetable to make sure the target is valid.
+	//
+	// *clear
+	//		If the target isn't valid, clears it if true.
+	//
+	// *range
+	//		If > 0, overrides the chase range.
+	
+	// *chasing
+	//		Only set to true when called by Chase, otherwise this can cause issues.
+	// 
+	// *relate
+	//		If true, checks if targetable via relationships.
+	// 
+	// *TargetOnly
+	//		If true, ignores Last<Heard/Enemy/LookActor> pointers.
+	//==========================================================================
+	private int OOSTimer; // Out of sight timer
+	protected int OOSTimeOut;
+	const LookTimerDefault = 17;
+	
+	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, 
+	bool relate = true, bool TargetOnly = false)
+	{
+	
+		if (!Target)
+		{
+			if (Tracer)	Target = Tracer;
+			else if (Goal)	Target = Goal;
+			else return false;
+		}
+		
+		if (Target == self)
+		{
+			ClearTarget();
+			return false;
+		}
+		
+		double ChaseRange = range;
+		if (ChaseRange <= 0)
+		{
+			if (chasing)	ChaseRange = MaxChaseRange;
+			else			ChaseRange = Min(MaxSightRange, MaxChaseRange);
+		}
+		
+		if (Tracer && Target == Tracer)		ChaseRange *= 2;
+		else if ((Goal && Target == Goal))	return true;
+		
+		bool targetable = (Targetable(Target, relate));
+		
+		if (!TargetOnly && !targetable)
+		{
+			Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
+			
+			for (int i = 0; i < temp.Size(); i++)
+			{
+				targetable = (Targetable(temp[i], relate));
+				if (targetable)
+				{
+					Target = temp[i];
+					break;
+				}
+			}
+		}
+		
+		// We have a target. If the actor's out of sight/range for more than
+		// the timeout (5 seconds), clear the target.
+		if (targetable)
+		{
+			bool sight = CheckSight(Target, CSFlags);
+			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
+				(chasing && !sight))
+			{
+				OOSTimer++;
+				
+				if (!chasing || OOSTimer >= OOSTimeOut)
+				{
+					targetable = false;
+					OOSTimer = 0;
+				}
+			}
+			else OOSTimer = 0;
+		}
+		
+		if (!targetable)
+		{
+			if (clear)	
+				ClearTarget();
+			
+			OOSTimer = 0;
+		}
+		return targetable;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Handles filtering of applicable targets, including checking the 
+	// relationship list.
+	//--------------------------------------------------------------------------
+	override bool OkayToSwitchTarget(Actor other)
+	{
+		// Keep the old target around just in case.
+		Actor OldTarget = Target;
+	//	Target = other;	
+		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
+	//	Target = OldTarget;
+		if (ret)	OOSTimer = 0;
+		return ret;
+	}
+	
+	protected bool Afraid;
+	virtual bool Targetable(Actor mo, bool relate = true) const
+	{
+		// Doesn't exist, is self or is passive.
+		if (!mo || mo == self || passive)	
+			return false;
+		
+		// The actor's a goal so yes, it is targetable.
+		if (Goal && mo == Goal)
+			return true;
+		
+		//  Dead, unshootable or not targetable.
+		if (mo.bKILLED || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY) ||
+			mo.bDORMANT)
+			return false;
+		
+		// Peaceful mode disallows targeting players.
+		if (MCC_Peaceful && mo is 'PlayerPawn')
+			return false;
+			
+		// Don't target players that are (totally) frozen because this could fuck up
+		// scripts badly and get them to kill a defenseless player.
+		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
+			return false;
+		
+		return (!relate || CheckRelationTarget(mo));
+	}
+}

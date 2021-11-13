@@ -1,3 +1,18 @@
+//==============================================================================
+// Creeper
+// 
+// Silent monster that explodes as its main way of attacking. Has server options
+// for exploding when killed.
+// 
+// Drops weapons rarely.
+//
+// + Short sighted
+// + Explosion deals 1000 to non-native monsters (~4+ kills a cyberdemon up close)
+// - No active sound
+// - Large explosion radius
+// - Explodes when falling from tall ledges
+//==============================================================================
+
 /*
 Minecraft/Creeper/Pain
 Minecraft/Creeper/Death
@@ -29,7 +44,7 @@ Class MCCreeperWeaponSpawner : RandomSpawner
 
 // Because someone is going to want to use them against the Creeper Ghoul from
 // Ghoul's Forest. I just know it. >:)
-Class MCCreeper : MinecraftEnemy
+Class MCCreeper : MinecraftMonster
 {
 	const ExploRange = 256.0;
 	const ExploFall = (ExploRange * 0.5);
@@ -61,10 +76,9 @@ Class MCCreeper : MinecraftEnemy
 		MCCreeper.HissingRange 350; // Once hissing starts, get this far away to stop.
 		MeleeRange 128;
 		
-		MinecraftEnemy.MaxChaseRange 768;
-		MaxTargetRange 512;
+		MinecraftMonster.MaxChaseRange 1024;
+		MinecraftMonster.MaxSightRange 512;
 		
-		Health 100;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;

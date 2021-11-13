@@ -1,16 +1,14 @@
-//==============================================================================
-// Zombie
-// 
-// Undead monsters that are surprisingly aware at knowing what to avoid... mostly.
-// A common enemy that can spawn in packs.
-//
-// + Slow, lumbering
-// + Weakness: Head
-// + Burns in bright areas with a sky overhead
-// - Has a chance to turn into a Skeleton if the head is exploited too much
-// 		without killing it
-// - Can call other zombies to fight with it, which can make more spawn.
-//==============================================================================
+/*==============================================================================
+Zombie
+
+Undead monsters that are surprisingly aware at knowing what to avoid... mostly.
+A common enemy that can spawn in packs.
+
++ Slow, lumbering
+- Rotten flesh reduces damage slightly
+- Can call other zombies to fight with it, which can make more spawn.
+- Can have armor/weapons in higher AI difficulty
+//============================================================================*/
 
 /*
 
@@ -29,7 +27,7 @@ Gib Arms: 	0.0,	+-1.2,	3.6
 Gib Leg:	0.0,	+-0.4,	1.2
 */
 
-extend class MinecraftEnemy
+extend class MinecraftMonster
 {
 	enum EAMFlags
 	{
@@ -85,7 +83,7 @@ extend class MinecraftEnemy
 			mo.bAMBUSH = true;
 			mo.CopyFriendliness(self, change, false);
 			
-			let mon = MinecraftEnemy(mo);
+			let mon = MinecraftMonster(mo);
 			if (mon)	
 			{
 				mon.Tracer = mo.Target;
@@ -112,7 +110,7 @@ Class MCZombieBaby : MCZombie
 {
 	Default
 	{
-		MinecraftEnemy.OverScale 0.5;
+		MinecraftMonster.OverScale 0.5;
 		ActiveSound "Minecraft/ZombieBaby/Idle";
 		PainSound "Minecraft/ZombieBaby/Pain";
 		DeathSound "Minecraft/ZombieBaby/Death";
@@ -163,20 +161,20 @@ Class MCZombie : MCUndead
 	Default
 	{
 		
-		MinecraftEnemy.PeacefulDespawn false; // Remove once testing is complete.
-		MinecraftEnemy.Passive false;
+		MinecraftMonster.PeacefulDespawn false; // Remove once testing is complete.
+		MinecraftMonster.Passive false;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
 		Health 100;
 		Speed _Speed;
 		MeleeRange RealRadius + 8;
-		MaxTargetRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
+		MinecraftMonster.MaxSightRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
 		
 		ActiveSound "Minecraft/Zombie/Idle";
 		PainSound "Minecraft/Zombie/Pain";
 		DeathSound "Minecraft/Zombie/Death";
-	//	MinecraftEnemy.StepSound "Minecraft/Zombie/Step";
+	//	MinecraftMonster.StepSound "Minecraft/Zombie/Step";
 		
 		DamageFactor "Normal", 0.92;
 		

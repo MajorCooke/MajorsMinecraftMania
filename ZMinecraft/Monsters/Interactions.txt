@@ -354,7 +354,7 @@ Class MCRelationManager play
 //==============================================================================
 //==============================================================================
 
-extend class MinecraftEnemy
+extend class MinecraftMonster
 {
 	//==========================================================================
 	// Relation stuff
@@ -430,171 +430,11 @@ extend class MinecraftEnemy
 		return Relations.CheckStatusType(status);
 	}
 	
-	//--------------------------------------------------------------------------
-	// Searches for potential actors to target.
-	// Takes an actor array and pushes viable actors into it that have a status.
-	bool SearchActors(out Array<Actor> Acts, Vector2 RH, double fov = 90, 
-		bool sight = true)
-	{
-		Acts.Clear();
-		
-		// 
-		if (!CheckStatusType(Rel_Hated) && !CheckStatusType(Rel_Afraid))
-			return false;
-		
-		let it = BlockThingsIterator.CreateFromPos(
-			pos.x, pos.y, pos.z - RH.X, RH.Y + RH.X * 2, RH.X, false);
-			
-		Actor mo = null;
-		
-		while (it.Next())
-		{
-			mo = it.thing;
-			if (!mo || !Targetable(mo))
-				continue;
-			
-			if (sight && (!CheckSight(mo, CSFlags) ||
-				(!bLOOKALLAROUND && fov < 360 && DeltaAngle(Angle, AngleTo(mo)) < fov)))
-				continue;
-			
-			Acts.Push(mo);
-		}
-		return true;
-	}
-	
 	//==========================================================================
-	// Handles range and calls Targetable to make sure the target is valid.
-	//
-	// *clear
-	//		If the target isn't valid, clears it if true.
-	//
-	// *range
-	//		If > 0, overrides the chase range.
 	
-	// *chasing
-	//		Only set to true when called by Chase, otherwise this can cause issues.
-	// 
-	// *relate
-	//		If true, checks if targetable via relationships.
-	// 
-	// *TargetOnly
-	//		If true, ignores Last<Heard/Enemy/LookActor> pointers.
-	//==========================================================================
-	private int OOSTimer; // Out of sight timer
-	protected int OOSTimeOut;
-	const LookTimerDefault = 17;
 	
-	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, 
-	bool relate = true, bool TargetOnly = false)
-	{
 	
-		if (!Target)
-		{
-			if (Tracer)	Target = Tracer;
-			else if (Goal)	Target = Goal;
-			else return false;
-		}
-		
-		if (Target == self)
-		{
-			ClearTarget();
-			return false;
-		}
-		
-		MaxChaseRange = Max(MaxChaseRange, MaxTargetRange);
-		
-		double ChaseRange = (range <= 0) ? MaxChaseRange : range;
-		if (Tracer && Target == Tracer)		ChaseRange *= 2;
-		else if ((Goal && Target == Goal))	return true;
-		
-		bool targetable = (Targetable(Target, relate));
-		
-		if (!TargetOnly && !targetable)
-		{
-			Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
-			
-			for (int i = 0; i < temp.Size(); i++)
-			{
-				targetable = (Targetable(temp[i], relate));
-				if (targetable)
-				{
-					Target = temp[i];
-					break;
-				}
-			}
-		}
-		
-		// We have a target. If the actor's out of sight/range for more than
-		// the timeout (5 seconds), clear the target.
-		if (targetable)
-		{
-			bool sight = CheckSight(Target, CSFlags);
-			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
-				(chasing && !sight))
-			{
-				OOSTimer++;
-				
-				if (!chasing || OOSTimer >= OOSTimeOut)
-				{
-					targetable = false;
-					OOSTimer = 0;
-				}
-			}
-			else OOSTimer = 0;
-		}
-		
-		if (!targetable)
-		{
-			if (clear)	
-				ClearTarget();
-			
-			OOSTimer = 0;
-		}
-		return targetable;
-	}
 	
-	//--------------------------------------------------------------------------
-	// Handles filtering of applicable targets, including checking the 
-	// relationship list.
-	//--------------------------------------------------------------------------
-	override bool OkayToSwitchTarget(Actor other)
-	{
-		// Keep the old target around just in case.
-		Actor OldTarget = Target;
-	//	Target = other;	
-		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
-	//	Target = OldTarget;
-		if (ret)	OOSTimer = 0;
-		return ret;
-	}
-	
-	protected bool Afraid;
-	virtual bool Targetable(Actor mo, bool relate = true) const
-	{
-		// Doesn't exist, is self or is passive.
-		if (!mo || mo == self || passive)	
-			return false;
-		
-		// The actor's a goal so yes, it is targetable.
-		if (Goal && mo == Goal)
-			return true;
-		
-		//  Dead, unshootable or not targetable.
-		if (mo.bKILLED || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY) ||
-			mo.bDORMANT)
-			return false;
-		
-		// Peaceful mode disallows targeting players.
-		if (MCC_Peaceful && mo is 'PlayerPawn')
-			return false;
-			
-		// Don't target players that are (totally) frozen because this could fuck up
-		// scripts badly and get them to kill a defenseless player.
-		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
-			return false;
-		
-		return (!relate || CheckRelationTarget(mo));
-	}
 	
 	bool CheckRelationTarget(Actor mo) const
 	{

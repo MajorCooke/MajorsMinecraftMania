@@ -1,3 +1,16 @@
+/*==============================================================================
+Endermen
+ 
+Alien anthropomorphic being that can teleport. Dormant until a player looks at
+his head from any direction.
+
+Drops weapons and powerups rarely
+
++ Neutral mob that only retaliates when hurt
+- Very fast, aggressive, and strong melee attacks
+- Teleports around and out of damaging sectors
+==============================================================================*/
+
 /*
 $limit Minecraft/Enderman/Death	0
 $limit Minecraft/Enderman/Stare 0
@@ -25,7 +38,7 @@ Legs:			0.0		~.4		3.0
 
 //
 const EndermanTargetDistance = 2048.0;
-Class MCEnderman : MinecraftEnemy
+Class MCEnderman : MinecraftMonster
 {
 	const _Radius = 1.2;
 	const _Height = 9.4;
@@ -173,8 +186,8 @@ Class MCEndermanDrop : RandomSpawner
 {
 	Default
 	{
-		DropItem "BlurSphere", 256, 10;
-		DropItem "Berserk", 256, 10;
+		DropItem "BlurSphere", 256, 1;
+		DropItem "Berserk", 256, 1;
 		DropItem "InvulnerabilitySphere", 256, 1;
 	}
 }
@@ -422,10 +435,12 @@ extend Class MCEnderman
 		StaredAt = false;
 		StareTimer = StareCount = 0;
 		StaredBy = null;
+		AngerTarget = null;
 	}
 	
 	bool IsAngry() { return Angry; }
 	
+	private Actor AngerTarget;
 	void SetAngry(Actor at, bool snd = false, bool stare = false)
 	{
 		// If the staring actor is looking at the head, don't move until eye
@@ -449,11 +464,13 @@ extend Class MCEnderman
 		if (Angry)	
 		{
 			Target = at;
+			AngerTarget = at;
 			if (!WasAngry && snd)
 				A_StartSound("Minecraft/Enderman/Stare", 9, CHANF_OVERLAP, 1, ATTN_NONE);
 			ActiveSound = "Minecraft/Enderman/Scream";
 			if (Limb[Head])	Limb[Head].Frame = Fr_B;
 			Speed = AngerSpeed;
+			SetActorRelation(Target, Rel_Hated);
 			SetState(ResolveState("See"));
 		}
 		// Anger management successful.
@@ -474,9 +491,41 @@ extend Class MCEnderman
 		}
 	}
 	
+	// Jiggle the limbs about
+	private void JiggleLimbs()
+	{
+		if (Angry)
+		{
+			double r = 2.0 / (Scale.Y * OverScale);
+			Vector3 jiggle = (FFRandom(-r, r), FFRandom(-r, r), 0);
+			
+			for (int i = 0; i < Limb.Size(); i++)
+			{
+				let Lim = Limb[i];
+				if (!Lim)	continue;
+				
+				if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
+				else			Lim.UpdatePosition(Lim.Master, false);				
+			}
+		}
+		else if (WasAngry)
+		{
+			
+			for (int i = 0; i < Limb.Size(); i++)
+			{
+				let Lim = Limb[i];
+				if (!Lim)	continue;
+				
+				if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
+				else			Lim.UpdatePosition(Lim.Master, false);
+			}
+		}
+	}
+	
+	// Jiggling limbs and handling of target mismatch.
 	override void Tick()
 	{
-		if (health < 1 || IsFrozen() || bDESTROYED)
+		if (bKILLED || IsFrozen() || bDESTROYED)
 		{
 			Super.Tick();
 			return;
@@ -485,40 +534,26 @@ extend Class MCEnderman
 		if (MoveWait > 0)	MoveWait--;
 
 		StaredAt = false;
-			
+		
 		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
-		{
-			if (Angry)
-			{
-				double r = 2.0 / (Scale.Y * OverScale);
-				Vector3 jiggle = (FFRandom(-r, r), FFRandom(-r, r), 0);
-				
-				for (int i = 0; i < Limb.Size(); i++)
-				{
-					let Lim = Limb[i];
-					if (!Lim)	continue;
-					
-					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
-					else			Lim.UpdatePosition(Lim.Master, false);				
-				}
-			}
-			else if (WasAngry)
-			{
-				
-				for (int i = 0; i < Limb.Size(); i++)
-				{
-					let Lim = Limb[i];
-					if (!Lim)	continue;
-					
-					if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
-					else			Lim.UpdatePosition(Lim.Master, false);
-				}
-			}
-		}
+			JiggleLimbs();
+		
 		WasAngry = Angry;
 		
 		Super.Tick();
+		
+		if (Target)
+		{
+			if (Target.bKILLED || Target.bDESTROYED || 
+				(Target != Goal && Target != AngerTarget &&
+				CheckClassRelation(Target.GetClass()) != Rel_Hated))
+			{
+				SetAngry(null);
+			}
+		}
 	}
+	
+	
 	
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
 	{
