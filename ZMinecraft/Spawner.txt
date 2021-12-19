@@ -17,34 +17,6 @@ extend class MinecraftHandler
 	}
 	private MCSpawnList SpawnList;
 	private int MaxMobs;
-		
-	
-	override void NetworkProcess(ConsoleEvent e)
-	{
-		int num = e.Player;
-		let plr = players[num].mo;
-		
-		if (e.Name == 'TM_TogglePeaceful')
-		{
-			Cvar p = Cvar.GetCvar("MCC_Peaceful");
-			bool res = p.GetBool();
-			if (p)	p.SetBool(!res);
-			
-			if (!res)			Console.Printf("Peaceful Mode On");
-			else				Console.Printf("Peaceful Mode Off");
-			return;
-		}
-		
-		if (e.Name == 'TM_ToggleSpawning')
-		{
-			Cvar p = Cvar.GetCvar("MCC_Spawning");
-			bool res = p.GetBool();
-			if (p)	p.SetBool(!res);
-			
-			if (!res)			Console.Printf("Spawning On");
-			else				Console.Printf("Spawning Off");
-		}
-	}
 	
 	//==========================================================================
 	// Performs the countdown to attempt spawning monsters.

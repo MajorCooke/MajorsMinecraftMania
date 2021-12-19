@@ -40,7 +40,7 @@ extend class MinecraftMonster
 
 	virtual void AlertMonsters(double dist, Actor targ = null, Class<Actor> filter = null, int limit = 0, int flags = 0)
 	{
-		if (dist <= 0.0)	return;
+		if (dist <= 0.0)	dist = MaxChaseRange;
 		if (!targ)
 		{
 			if (Target)	targ = Target;
@@ -49,7 +49,7 @@ extend class MinecraftMonster
 		
 		if (targ is GetClass())	return;
 		
-		if (targ.health < 1 || !targ.bSHOOTABLE ||
+		if (targ.bKILLED || !targ.bSHOOTABLE ||
 			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
 			return;
 		
@@ -59,7 +59,7 @@ extend class MinecraftMonster
 		while (it.Next())
 		{
 			mo = it.thing;
-			if (!mo || mo.Health < 1)	continue;
+			if (!mo || mo.bKILLED)	continue;
 			
 			if (filter)
 			{
@@ -120,12 +120,6 @@ Class MCZombieBaby : MCZombie
 		// Much less to melt.
 		DamageFactor "Fire", 2.0;
 		DamageFactor "Slime", 2.0;
-	}
-	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		
 	}
 	
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)

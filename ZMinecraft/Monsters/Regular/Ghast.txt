@@ -256,7 +256,7 @@ Class MCGhast : MinecraftMonster
 	
 	void AimAtTarget()
 	{
-		if (ValidateTarget(false, 0, true))
+		if (ValidateTarget(false, flags: VTF_Chase))
 		{
 			A_FaceTarget(0);
 			FaceDir(45);
@@ -271,18 +271,6 @@ Class MCGhast : MinecraftMonster
 	void Burst()
 	{
 		Explode(true, 0, Max(Radius * 2, Height), 0, 0);
-		/*
-		int end = 192;
-		int half = end / 2;
-		Class<Actor> explo = 'MCExplosionSprite';
-		for (int i = 0; i < end; i++)
-		{
-			explo = (i <= half) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
-			A_SpawnItemEx(explo,
-				ffrandom(-Radius, Radius) * 2, ffrandom(-Radius, Radius) * 2, Height * ffrandom[rng](0.0, 2.0),
-				angle: randompick(0, 90), flags: SXF_NOCHECKPOSITION);
-		}
-		*/
 	}
 	
 	void SpawnFireball()
@@ -354,7 +342,7 @@ Class MCGhast : MinecraftMonster
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
 
-Class MCGhastFireball : MinecraftEntity
+Class MCGhastFireball : MinecraftProjectile
 {
 	const HOffset = 0.45;
 	const RealDamage = 10;
@@ -368,15 +356,14 @@ Class MCGhastFireball : MinecraftEntity
 		Projectile;
 		Speed 40;
 		Damage 0;
-		Radius 12;
-		Height 24;
+		Radius 20;
+		Height 40;
 		+FORCEXYBILLBOARD
 		+FORCERADIUSDMG
-		+NOBLOCKMAP
 		+SKYEXPLODE
 		+EXPLODEONWATER
-		+BRIGHT
 		+HITTRACER
+		+BRIGHT
 	}
 	
 	override void PostBeginPlay()
@@ -408,14 +395,15 @@ Class MCGhastFireball : MinecraftEntity
 	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
-		if (other is 'MCGhastFireball')	return true;
+		if (other is 'MCGhastFireball' || other is 'MCGhastFireballReflect')	
+			return true;
 		
 		return (!passive);
 	}
 	
 	override int SpecialMissileHit(Actor victim)
 	{
-		if (Target && victim == Target)
+		if (victim == Target)
 			return 1;
 	
 		int flags = DMG_EXPLOSION;
@@ -455,18 +443,28 @@ Class MCGhastFireball : MinecraftEntity
 	
 	void MoveParts()
 	{
+		if (bKILLED)	return;
+		
+		if (Speed < Default.Speed)
+		{
+			Speed += 1.0;
+			Vel3DFromAngle(Speed, angle, pitch);
+		}
+	
 		if (Flame)	Flame.Warp(self, -1, 0, 24 * Scale.X, flags: WARPF_NOCHECKPOSITION|WARPF_INTERPOLATE);
 		
 		if (HitBox)
 		{
-			
 			double mid = Pos.Z + Height * 0.5;
-		//	double mmd = Hitbox.Pos.Z + Hitbox.Height * 0.5;
 			Vector3 np = pos; np.z = mid - Hitbox.Height * 0.5;
 			HitBox.SetOrigin(np + vel * 0.5, false);
 			HitBox.Angle = Angle;
 			HitBox.Pitch = Pitch;
 		}
+		
+		if (Timer > 0 && --Timer < 1)
+			SetState(ResolveState("Death"));
+		
 	}
 	
 	States
@@ -475,30 +473,25 @@ Class MCGhastFireball : MinecraftEntity
 		X216 G 1 NoDelay
 		{
 			Speed = 0;
+			A_Stop();
 			A_StartSound("Minecraft/Ghast/Fireball", CHAN_BODY, CHANF_OVERLAP);
 		}
-		---- A 1
-		{
-			
-			if (Speed < Default.Speed)
-			{
-				Speed += 1.0;
-				Vel3DFromAngle(Speed, angle, pitch);
-			}
-			MoveParts();
-			
-			if (Timer > 0 && --Timer < 1)
-				Destroy();
-		}
+		---- A 1 MoveParts();
 		Wait;
 	Death:
 		TNT1 A 35
 		{
 			bNOINTERACTION = bINVISIBLE = true;
+			A_Stop();
 			Name DmgType = 'Ghast';
-			if (Target && Target.Player)
+			if (Target && Target is "PlayerPawn")
 				DmgType = 'Normal';
-			Explode(true, 300, 96, 32, 64 * 30, flags: 0, DamageType: DmgType);
+				
+			if (!bKILLED)
+			{
+				Explode(true, 300, 96, 32, 64 * 30, flags: 0, DamageType: DmgType);
+				bKILLED = true;
+			}
 			DestroyOthers();
 		}
 		Stop;

@@ -75,3 +75,10 @@ enum EMinecraftNoSecGrav
 	TM_NSG_GIBMISLS =	1 << 1,
 	TM_NSG_BOTH =		1 << 2
 }
+
+enum EValidateTargetFlags
+{
+	VTF_TargetOnly =	1,
+	VTF_Chase =			1 << 1,
+	VTF_Damage =		1 << 2,
+}

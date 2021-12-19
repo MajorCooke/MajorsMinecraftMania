@@ -166,7 +166,7 @@ Class MCEnderman : MinecraftMonster
 	See:
 		TNT1 A 1 
 		{
-			if (!ValidateTarget(true, TargetOnly: true))
+			if (!ValidateTarget(true, flags: VTF_TargetOnly))
 			{
 				SetAngry(null);
 				return ResolveState('Idle');

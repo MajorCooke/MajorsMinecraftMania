@@ -368,7 +368,7 @@ Class MCArrowProjectile : MinecraftProjectile
 	}
 }
 
-Class MCStraySkeleton : MCSkeleton
+Class MCSkeletonStray : MCSkeleton
 {
 	Default
 	{
@@ -382,7 +382,7 @@ Class MCStraySkeleton : MCSkeleton
 	}
 }
 
-Class MCWitherSkeleton : MCSkeleton
+Class MCSkeletonWither : MCSkeleton
 {
 	const WitherScale = 9.0;
 	Default

@@ -191,7 +191,7 @@ extend class MinecraftMonster
 		if (AttackDelay > 0 || !Targetable(Target) || !CheckTrace(Target, MeleeRange))
 			return false;
 		
-		if (damage < 0)	
+		if (damage < 1)	
 		{
 			damage = MeleeDamage;
 			if (damage < 1)

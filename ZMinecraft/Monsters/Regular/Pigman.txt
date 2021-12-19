@@ -47,7 +47,7 @@ Class MCPigman : MinecraftMonster
 	}
 }
 
-Class MCPigmen : MCPigman {}
+Class MCPigmanBaby : MCPigman {}
 
 //==============================================================================
 // Zombie Pigmen
@@ -63,7 +63,7 @@ Class MCPigmen : MCPigman {}
 // far away.
 //==============================================================================
 
-Class MCZombiePigman : MCUndead
+Class MCPigmanZombie : MCUndead
 {
 	Default
 	{
@@ -75,5 +75,7 @@ Class MCZombiePigman : MCUndead
 		Obituary "%o was butchered, then sold as fresh meat by the Zombie Pigmen.";
 	}
 }
-// Same thing, different spelling.
-Class MCZombiePigmen : MCZombiePigman {}
+
+Class MCPigmanZombieBaby : MCPigmanZombie
+{
+}

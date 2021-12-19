@@ -321,7 +321,6 @@ Class MCCreeper : MinecraftMonster
 			ChargeTimer--;
 		
 		if (Targetable(Target) && 
-			//ValidateTarget(false, HissingRange) && 
 			CheckSight(Target, CSFlags))
 		{
 		//	if (!OnGround && Vel.Z < -9.0)

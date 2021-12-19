@@ -378,6 +378,15 @@ extend class MinecraftMonster
 		}
 	}
 	
+	protected void ClearBlockingInfo()
+	{
+		BlockingMobj = null;
+		BlockingLine = null;
+		BlockingFloor = null;
+		BlockingCeiling = null;
+		Blocking3DFloor = null;
+	}
+	
 	//--------------------------------------------------------------------------
 	// Convenience functions for relationships.
 	int CheckClassRelation(Class<Actor> mo) const

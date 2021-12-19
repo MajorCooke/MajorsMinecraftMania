@@ -13,7 +13,7 @@ drawn as external actors.
 
 
 
-Class MinecraftMonster : MinecraftEntity
+Class MinecraftMonster : MinecraftEntity abstract
 {
 	//==========================================================================
 	// Base overrides
@@ -116,16 +116,16 @@ Class MinecraftMonster : MinecraftEntity
 			return;
 		}
 		
-		if (!OnGround && (MCC_NoSectorGravity & TM_NSG_MONSTERS) && 
-			!bNOGRAVITY && Gravity > 0.0)
+		PrevVel = Vel;
+		
+		if ((MCC_NoSectorGravity & TM_NSG_MONSTERS) && 
+			!OnGround && !bNOGRAVITY && Gravity > 0.0)
 		{
-			double t = Gravity;
-			Gravity = 0;
-			Vel.Z -= t;
 			Super.Tick();
-			Gravity = t;
+			double grav = GetGravity();
+			Vel.Z += grav - Gravity;
 		}
-		else	Super.Tick();
+		else Super.Tick();
 			
 		if (!Target)	Pitch = 0;
 		
@@ -156,6 +156,7 @@ Class MinecraftMonster : MinecraftEntity
 				if (MCC_FallDamage &&
 					FallDmgVel != 0.0 && 
 					Vel.Z >= 0.0 && PrevVel.Z <= FallDmgVel &&
+					!bNOGRAVITY && 
 					!(sec.Flags & Sector.SECF_NOFALLINGDAMAGE))
 				{
 					if (DoFallDamage())
@@ -272,14 +273,13 @@ Class MinecraftMonster : MinecraftEntity
 		}
 		*/
 		UpdateLimbs();
-		
+		PrevVel = Vel;
 		PrevTrans = Translation;
 		PrevScale = Scale;
 		PrevAngs = Angs;
 		PrevPos = Pos;
 		PrevAlpha = Alpha;
 		PrevStyle = CurStyle;
-		PrevVel = Vel;
 	}
 	
 	

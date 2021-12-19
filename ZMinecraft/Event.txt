@@ -46,7 +46,45 @@ Class MinecraftHandler : EventHandler
 	AArray Monsters;
 	private Array<SkyViewpoint> skies;
 	
-	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		int num = e.Player;
+		let plr = players[num].mo;
+		
+		if (e.Name == 'TM_TogglePeaceful')
+		{
+			Cvar p = Cvar.GetCvar("MCC_Peaceful");
+			bool res = p.GetBool();
+			if (p)	p.SetBool(!res);
+			
+			if (!res)			Console.Printf("Peaceful Mode On");
+			else				Console.Printf("Peaceful Mode Off");
+			return;
+		}
+		
+		if (e.Name == 'TM_ToggleSpawning')
+		{
+			Cvar p = Cvar.GetCvar("MCC_Spawning");
+			bool res = p.GetBool();
+			if (p)	p.SetBool(!res);
+			
+			if (!res)			Console.Printf("Spawning On");
+			else				Console.Printf("Spawning Off");
+			return;
+		}
+		
+		if (e.Name == 'TM_Launch')
+		{
+			let it = ThinkerIterator.Create('MinecraftMonster', Thinker.STAT_DEFAULT);
+			MinecraftMonster mo;
+			while (mo = MinecraftMonster(it.Next()))
+			{
+				if (mo && !mo.bDORMANT && !mo.bNOGRAVITY && mo.Gravity > 0.0 && !mo.bKILLED)
+					if (mo.vel.z < 100.0)
+						mo.vel.z = 100.0;
+			}
+		}
+	}
 	
 	static MinecraftHandler Fetch()
 	{
@@ -101,7 +139,7 @@ Class MinecraftHandler : EventHandler
 	
 	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
 	// 2. Iterate through all lines that have a front or back sector connecting
-	// to it.
+	// to it, and ban them too.
 	
 	private bool BanSector(Sector s)
 	{

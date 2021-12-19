@@ -94,26 +94,35 @@ extend class MinecraftMonster
 		if (Passive)
 		{
 			if (Target && (Target is "PlayerPawn" || Target.Player))
-				A_ClearTarget();
+				ClearTarget();
 		}
 		else if (!time || --LookTimer < 1)
 		{
 			if (time)	LookTimer = LookTimerDefault;
 			
+			
+			int VTFlags = 0;
 			{
 				double mrange = MeleeRange;
-				MeleeRange = 1;
-				if (Targetable(Tracer))	
+				if (MeleeRange > Radius + 1)
+					MeleeRange = Radius + 1;
+					
+				if (Targetable(Tracer) || Targetable(Target))
+				{
 					A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
+					VTFlags = VTF_Chase;
+				}
 				else
 				{
 					Tracer = null;
+					ClearTarget();
 					CustomLook(true);
 				}
 				MeleeRange = mrange;
 			}
 			
-			if (ValidateTarget(true))
+			
+			if (ValidateTarget(true, flags: VTFlags))
 			{
 				if (!bAMBUSH || CheckSight(Target, CSFlags))
 					SetState(ResolveState("See"));
@@ -161,8 +170,11 @@ extend class MinecraftMonster
 	protected int OOSTimeOut;
 	const LookTimerDefault = 17;
 	
-	protected bool ValidateTarget(bool clear = false, double range = 0, bool chasing = false, 
-	bool relate = true, bool TargetOnly = false)
+	
+	
+	protected bool ValidateTarget(bool clear = false, double range = 0, int flags = 0, 
+	bool relate = true)
+//	bool chasing = false, bool relate = true, bool TargetOnly = false)
 	{
 	
 		if (!Target)
@@ -178,6 +190,7 @@ extend class MinecraftMonster
 			return false;
 		}
 		
+		bool chasing = (flags & (VTF_Chase|VTF_Damage));
 		double ChaseRange = range;
 		if (ChaseRange <= 0)
 		{
@@ -190,7 +203,7 @@ extend class MinecraftMonster
 		
 		bool targetable = (Targetable(Target, relate));
 		
-		if (!TargetOnly && !targetable)
+		if (!(flags & VTF_TargetOnly) && !targetable)
 		{
 			Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
 			
@@ -204,14 +217,13 @@ extend class MinecraftMonster
 				}
 			}
 		}
-		
 		// We have a target. If the actor's out of sight/range for more than
 		// the timeout (5 seconds), clear the target.
 		if (targetable)
 		{
-			bool sight = CheckSight(Target, CSFlags);
+			chasing = (flags & VTF_Chase);
 			if (Distance3DSquared(Target) > (ChaseRange ** 2) ||
-				(chasing && !sight))
+				(chasing && !CheckSight(Target, CSFlags)))
 			{
 				OOSTimer++;
 				
@@ -241,10 +253,7 @@ extend class MinecraftMonster
 	override bool OkayToSwitchTarget(Actor other)
 	{
 		// Keep the old target around just in case.
-		Actor OldTarget = Target;
-	//	Target = other;	
 		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
-	//	Target = OldTarget;
 		if (ret)	OOSTimer = 0;
 		return ret;
 	}

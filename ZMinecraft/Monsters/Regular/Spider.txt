@@ -251,7 +251,7 @@ Class MCSpider : MinecraftMonster
 	}
 }
 
-Class MCCaveSpider : MCSpider
+Class MCSpiderCave : MCSpider
 {
 	Default
 	{

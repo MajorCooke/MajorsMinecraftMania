@@ -1,0 +1,10 @@
+//==============================================================================
+// Blaze
+// 
+// Floating monster that spews small fireballs which can ignite targets/terrain.
+// 
+//==============================================================================
+
+Class MCBlaze : MinecraftMonster
+{
+}

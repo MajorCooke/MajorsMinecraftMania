@@ -180,12 +180,17 @@ extend class MinecraftMonster
 	// or if the actor is incapable of receiving fall damage.
 	virtual bool DoFallDamage()
 	{
-		if (bNOGRAVITY || bFLOAT || GetGravity() <= 0.0 || waterlevel >= 3)
-			return false;
-			
-		int dmg = Clamp(abs(PrevVel.z) - FallDmgVel, 0, TELEFRAG_DAMAGE - 1);
+	//	int dmg = Clamp(abs(PrevVel.z) - FallDmgVel, 0, TELEFRAG_DAMAGE - 1);
+		int dmg = Max(0, int(abs(PrevVel.z) - FallDmgVel));
+		
+		// falling speed * 1% health * DamageFactor "Falling", #.#
+		double ddmg = double(SpawnHealth()) * 0.01 * 
+			double(ApplyDamageFactor("Falling", 1000) * 0.001);
+		
+		dmg = Clamp(dmg * int(round(ddmg)), 0, TELEFRAG_DAMAGE - 1);
+		if (MCC_Debug == 5)
+			Console.Printf("Velocity: %d -- Damage: %d", PrevVel.Z, dmg);
 		if (dmg < 1)	return false;
-	//	Console.Printf("Velocity: %d -- Damage: %d", PrevVel.Z, dmg);
 		return (DamageMobj(null, null, dmg, 'Falling') > 0);
 	}
 	

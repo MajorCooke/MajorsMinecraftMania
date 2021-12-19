@@ -18,7 +18,7 @@ extend class MinecraftMonster
 		int newflags = CHF_NOPLAYACTIVE;
 		
 		// Get a target if invalid.
-		if (!ValidateTarget(false, range, true))
+		if (!ValidateTarget(false, range, VTF_Chase))
 		{
 			if (!Goal)
 			{
@@ -29,7 +29,7 @@ extend class MinecraftMonster
 				Damagers.Move(Temp);
 				
 				if (Tracer == Target)	Tracer = null;
-				A_ClearTarget();
+				ClearTarget();
 				SetState(ResolveState("Idle"));
 				return;
 			}
@@ -65,7 +65,7 @@ extend class MinecraftMonster
 					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
 					
 					double oldz = pos.z;
-					if (flags & CHF_DONTMOVE)
+					if ((flags & CHF_DONTMOVE) || Jumping)
 					{
 						good = true;
 					}
@@ -87,17 +87,48 @@ extend class MinecraftMonster
 					else
 					{
 						Vector2 nmpos = Vec2Angle(speed, ang);
-						if (OnGround && Vel.Z == 0.0 && TryMove(nmpos, bDROPOFF))
+						if (OnGround && Vel.Z == 0.0)
 						{
-							good = true;
+							FCheckPosition tm;
+							ClearBlockingInfo();
 							
-							if (max(floorz, oldz) - min(floorz, oldz) <= MaxStepHeight)
-								SetZ(floorz);
-							
-							if (VelPosLen <= speed)
-								vel.XY = vel.XY * 0.8;
+							if (TryMove(nmpos, bDROPOFF, false, tm))
+							{
+								good = true;
+																
+								if (max(floorz, oldz) - min(floorz, oldz) <= MaxStepHeight)
+									SetZ(floorz);
+								
+								if (VelPosLen <= speed)
+									vel.XY = vel.XY * 0.8;
+							}
+							else // Try to see if jumping is applicable.
+							{
+								/*
+								let bm = BlockingMobj;
+								if (bm)
+								{
+									if (bm.pos.z + bm.height < (bm.pos.z + bm.height) * 0.5)
+									{
+										Jumping = true;
+									}
+								}
+								else
+								{
+									//Vel.Z = Sqrt(2 * GetGravity() * JumpHeight);
+									let BL = BlockingLine;
+									if (BL)
+									{
+										int fg = BL.Flags;
+										int f2 = BL.Flags2;
+										
+										if (!(fg & Line.)
+									}
+								}
+								*/
+							}
 						}
-						else if (OnGround)
+						if (!good && OnGround)
 							ChaseTics = 18;
 							
 						newflags |= CHF_DONTMOVE;

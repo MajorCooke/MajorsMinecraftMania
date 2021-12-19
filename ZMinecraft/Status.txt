@@ -1,0 +1,125 @@
+//==============================================================================
+// 
+// Status Effects
+// 
+//==============================================================================
+
+Class MCStatusEffect : Powerup abstract
+{
+	enum EStatusEffect
+	{	
+		SE_Speed = 1,
+		SE_Slow,
+		SE_Strength,
+		SE_Weakness,
+		SE_Regen,
+		SE_Poison,
+		SE_PoisonFatal,
+		SE_Vision,
+		SE_Blind,
+		SE_Luck,
+		SE_WaterBreathe,
+		SE_Resist,
+		SE_FireResist
+	};
+	
+	meta int Type, Cap;
+	private int Strength;
+	
+	Property Type: Type;
+	Property Cap: Cap;
+	
+	Default
+	{
+		MCStatusEffect.Cap 5;
+	}
+	
+	override void DoEffect()
+	{
+		if (bDESTROYED)	return;
+		
+		Super.DoEffect();
+		
+		DoStatus();
+	}
+	
+	void SetStrength(int s)
+	{
+		Strength = Clamp(s, -Cap, Cap);
+	}
+	
+	// Used for checking if the actor can have this effect.
+	static bool CheckCompatible(Actor mo)	
+	{
+		if (mo is 'MCBoss')
+			return false;
+		
+		let mcm = MinecraftMonster(mo);
+		if (mcm)
+		{
+			
+		}
+		
+		return true;
+	}
+	
+	protected bool CanEffect()
+	{
+		return (Strength > 0);
+	}
+	
+	// 
+	private void DoStatus()	
+	{
+		
+	
+		if (Strength == 0)	return;
+		
+		
+	}
+}
+
+Class PoisonEffect : MCStatusEffect
+{
+}
+
+
+
+Class WeaknessEffect : MCStatusEffect
+{
+}
+
+Class WitherEffect : MCStatusEffect
+{
+}
+
+Class StrengthEffect : MCStatusEffect
+{
+}
+// AKA lingering instant health.
+Class RegenerationEffect : MCStatusEffect
+{
+}
+// +20% speed per level.
+Class SpeedEffect : MCStatusEffect
+{
+}
+// -15% speed per level.
+Class SlownessEffect : MCStatusEffect
+{
+}
+// +20% damage resistance per level.
+Class ResistanceEffect : MCStatusEffect
+{
+}
+
+// Immunity to fire and slime damage.
+Class FireResistanceEffect : MCStatusEffect
+{
+	
+}
+// When the player's on fire. Only inflicted by mobs with fire damagetype NATIVELY.
+Class ONFIREEffect : MCStatusEffect
+{
+}
+
