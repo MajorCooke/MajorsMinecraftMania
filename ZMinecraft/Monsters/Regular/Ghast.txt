@@ -412,11 +412,10 @@ Class MCGhastFireball : MinecraftProjectile
 		if (victim)
 		{
 			
+			ret = (bRIPPER) ? -1 : 0;
+			
 			if (victim is 'MCGhast' && Target is 'PlayerPawn')
-			{
-				ret = (bRIPPER) ? -1 : 0;
 				dmg = Max(victim.Health * 10, victim.SpawnHealth());
-			}
 			else
 				dmg *= irandom(1, (bSTRIFEDAMAGE) ? 4 : 8);
 			

@@ -102,7 +102,7 @@ extend class MinecraftMonster
 		
 		// Environment
 		DamageFactor "Crush", 2000.0;
-		DamageFactor "Falling", 3.0;
+		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
 		DamageFactor "Slime", 1.0;
 		DamageFactor "DamageSector", 1.0;

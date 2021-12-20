@@ -79,7 +79,7 @@ OptionMenu "MinecraftMonsterTweaks"
 	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 100.0, 1.0
 	StaticText ""
 	StaticText "Damage Intake Options", GOLD
-	MinecraftOption "$MCM_BOOMDMGMUL_TEXT",		"$MCM_BOOMDMGMUL_SUB",		MCC_BoomDmgMul,			"OnOff"
+	MinecraftOption "$MCM_DMGMUL_TEXT",			"$MCM_DMGMUL_SUB",			MCC_DmgMul,				"OnOff"
 	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"OnOff"
 	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"OnOff", MCC_EnvironmentDamage
 	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"OnOff", MCC_EnvironmentDamage

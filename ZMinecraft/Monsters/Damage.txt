@@ -7,8 +7,7 @@ extend class MinecraftMonster
 	{
 		if (bKILLED)	return 0;
 		
-		if (MCC_BoomDmgMul && (flags & DMG_EXPLOSION) && 
-			(mod == 'Creeper' || mod == 'Ghast'))
+		if (MCC_DmgMul && (s is 'MinecraftEntity'))
 		{
 			int dmg = int(double(damage) * GetHealthMul());
 			damage = dmg;
@@ -23,20 +22,9 @@ extend class MinecraftMonster
 		{
 			Damagers.Push(s);
 		}
-		/*
-		if (MCC_Debug == 1 && s && !(s is 'PlayerPawn'))
-		{
-			Name src = "Null";
-			Name inf = "Null";
-			if (s)	src = s.GetClassName();
-			if (i)	inf = i.GetClassName();
-			Console.Printf("%d: %s from %s, %s", dmg, GetClassName(), src, inf);
-		}
-		*/
 		
 		// Don't react if dead.
 		if (bKILLED)	return dmg;
-		
 		
 		// Determining Pain
 		bool painless = bNOPAIN || 
@@ -182,16 +170,19 @@ extend class MinecraftMonster
 	{
 	//	int dmg = Clamp(abs(PrevVel.z) - FallDmgVel, 0, TELEFRAG_DAMAGE - 1);
 		int dmg = Max(0, int(abs(PrevVel.z) - FallDmgVel));
-		
-		// falling speed * 1% health * DamageFactor "Falling", #.#
-		double ddmg = double(SpawnHealth()) * 0.01 * 
-			double(ApplyDamageFactor("Falling", 1000) * 0.001);
-		
-		dmg = Clamp(dmg * int(round(ddmg)), 0, TELEFRAG_DAMAGE - 1);
-		if (MCC_Debug == 5)
-			Console.Printf("Velocity: %d -- Damage: %d", PrevVel.Z, dmg);
+		dmg = Clamp(dmg * int(round(double(StartHealth) * 0.01)), 0, TELEFRAG_DAMAGE - 1);
+			
 		if (dmg < 1)	return false;
-		return (DamageMobj(null, null, dmg, 'Falling') > 0);
+		
+		int ret = DamageMobj(null, null, dmg, 'Falling');
+		
+		if (MCC_Debug == 5)
+		{
+			Console.Printf("Velocity: %d -- Damage: %d", 
+				PrevVel.Z, ret);
+		}
+		
+		return ret;
 	}
 	
 	void CleanDamagers()
