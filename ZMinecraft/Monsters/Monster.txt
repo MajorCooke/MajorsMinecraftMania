@@ -95,6 +95,13 @@ Class MinecraftMonster : MinecraftEntity abstract
 		// Process nothing if destroyed.
 		if (bDESTROYED)	return;
 		
+		// Process nothing if dead or frozen.
+		if (bKILLED || IsFrozen())
+		{
+			Super.Tick();
+			return;
+		}
+		
 		// Destroy it if peaceful difficulty is activated, and the monster can
 		// despawn on peaceful. Dead monsters will despawn on their own though.
 		// Entities that won't despawn naturally are neutral/friendly ones like
@@ -108,29 +115,25 @@ Class MinecraftMonster : MinecraftEntity abstract
 			Destroy();
 			return;
 		}
-		
-		// Process nothing if dead or frozen.
-		if (bKILLED || IsFrozen())
-		{
-			Super.Tick();
-			return;
-		}
-		
-		PrevVel = Vel;
+	//	PrevVel = Vel;
 		
 		if ((MCC_NoSectorGravity & TM_NSG_MONSTERS) && 
-			!OnGround && !bNOGRAVITY && Gravity > 0.0)
+			Pos.Z > FloorZ && !bNOGRAVITY && Gravity > 0.0)
 		{
 			Super.Tick();
-			double grav = GetGravity();
-			Vel.Z += grav - Gravity;
+			if (Pos.Z > FloorZ)
+			{
+				double grav = GetGravity();
+				Vel.Z += grav - Gravity;
+			}
 		}
 		else Super.Tick();
 			
-		if (!Target)	Pitch = 0;
+		
 		
 		if (!bDORMANT)
 		{
+			if (!Target)	Pitch = 0;
 			if (Lifetime < 5)	Lifetime++;
 			if (!DmgInfo.Used)
 			{
