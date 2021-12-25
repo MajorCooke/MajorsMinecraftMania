@@ -356,8 +356,8 @@ Class MCGhastFireball : MinecraftProjectile
 		Projectile;
 		Speed 40;
 		Damage 0;
-		Radius 20;
-		Height 40;
+		Radius 16;
+		Height 32;
 		+FORCEXYBILLBOARD
 		+FORCERADIUSDMG
 		+SKYEXPLODE
@@ -403,7 +403,7 @@ Class MCGhastFireball : MinecraftProjectile
 	
 	override int SpecialMissileHit(Actor victim)
 	{
-		if (victim == Target)
+		if (victim == Target || !victim.bSHOOTABLE)
 			return 1;
 	
 		int flags = DMG_EXPLOSION;
