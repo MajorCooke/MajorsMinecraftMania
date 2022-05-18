@@ -1,0 +1,63 @@
+This document will detail various aspects on how to allow mods to interact safely
+with Triple M.
+
+-----------
+AMMO PEARLS
+-----------
+Have an ammo type that you don't want your mod being refilled or wish to change
+the weight of, or how much it gives? This is for you.
+
+First, a fundamental breakdown on how they work.
+
+* Ammo Pearls give ammo only to weapons present in player inventory
+* Ammo is given via percentage
+* Ammo max serves as the weight for random selection (just like RandomSpawners)
+	+ The larger the capacity, the greater the chance to be chosen
+* Pearls will always give a minimum of 1
+
+Ammo types can be blacklisted or adjusted via a special Service class. All that's
+needed is to copy the code below and place it into any ZScript file. 
+Triple M will take care of the rest.
+
+	*** VARIABLES ***
+When adding a variable, separate it with a colon (:) followed by a number. All
+properties can be put in any order except for AmmoName. Separate each property
+with | character.
+
+Properties you can add are as follows:
+* <AmmoName> - Required, and must be first. Specify the name of the ammo class
+	to be added. No colon.
+* <Weight> - Sets the weight of the ammo. Default is -1, meaning it uses the 
+	current maximum amount.
+
+[BEGIN ZSCRIPT CODE]
+
+// Make sure to rename the #### to whatever you wish.
+Class ####_TM_AmmoService : Service
+{
+	static const Name lines[] =
+	{
+		// Example
+	//	"<AmmoName> | Weight:<-1>",
+		"D4Carrion	| Weight:0"
+	};
+	
+	// DO NOT MODIFY ANY OF THE CODE BELOW. LEAVE IT AS IS.
+	override String GetString(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	override String GetStringUI(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	private String ProcessCmdStr(String req, String str, int i, double d, Object o) const
+	{
+		if (req ~== "GetAmmoInfo")
+		{
+			if (i >= 0 && i < lines.Size())
+				return lines[i];
+		}
+		return "";
+	}
+}
+
+[END ZSCRIPT CODE]

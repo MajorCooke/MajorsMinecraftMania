@@ -1,0 +1,314 @@
+/*==============================================================================
+Ziglin (aka Zombified Piglin)
+Undead
+
+
+Neutral mobs that are docile unless attacked, in which case they perform mob
+mentality and attack whomever attacked the ziglin crying foul.
+ 
++ Careless when attacking, easily running over cliffs
++ Attacks regular piglins when attacked
+- Fast when attacking
+- Does not forgive unless someone else attacks them first, or the player gets
+far away.
+================================================================================
+
+Minecraft/Ziglin/Idle
+Minecraft/Ziglin/Angry
+Minecraft/Ziglin/Pain
+Minecraft/Ziglin/Death
+
+*/
+
+Class TM_Ziglin : TM_Undead
+{
+	mixin NormalLimbCount;
+	
+	const _Radius = 1.6;
+	const _Height = 6.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	const _Speed = 4.0;
+	const BabySpeed = _Speed * 1.4;
+	
+	Default
+	{
+		TM_Monster.CanArmor true;
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		Health 200;
+		Mass 150;
+		Speed _Speed;
+		MeleeRange RealRadius + 8;
+		TM_Monster.MaxSightRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
+		
+		ActiveSound "Minecraft/Ziglin/Idle";
+		PainSound "Minecraft/Ziglin/Pain";
+		DeathSound "Minecraft/Ziglin/Death";
+		DamageFactor "Drowning", 0.0;
+		DamageFactor "Fire", 0.0;
+		DamageFactor "Slime", 0.0;
+		Tag "Ziglin";
+		Obituary "%o was butchered, then sold as fresh meat by a Ziglin.";
+		
+		BloodColor "DarkGreen";
+	}
+	
+
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		int rng = irandom(10, 30);
+		
+		Drops.Add('TM_PearlHealth', rng);
+		Drops.Add('TM_PearlArmor', rng);
+		
+		return Super.DropItems(src, inf, mod);
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Init(LimbCount);
+		
+		Limb[Head] = TM_BodyPart(Spawn('TM_PiglinHead', pos));
+		Limb[Body] = TM_BodyPart(Spawn('TM_PiglinBody', pos));
+		Limb[ArmR] = TM_BodyPart(Spawn('TM_PiglinArmR', pos));
+		Limb[ArmL] = TM_BodyPart(Spawn('TM_PiglinArmL', pos));
+		Limb[LegR] = TM_BodyPart(Spawn('TM_PiglinLegR', pos));
+		Limb[LegL] = TM_BodyPart(Spawn('TM_PiglinLegL', pos));
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			let Lim = Limb[i];
+			if (Lim)
+			{
+				if (i <= Body)		Lim.Master = self;
+				else				Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.Scale = Scale;
+				Lim.Frame = Fr_B;
+			}
+		}
+		
+		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
+		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
+		Limb[ArmR].SetPosOffsets((0.0,  1.2, 4.4));
+		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
+		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
+		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
+		
+		let head = Limb[Head];
+		if (head)
+		{
+			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1));
+			if (ear)	
+			{
+				ear.SetYaw(-90);
+				ear.SetPitch(-30);
+				ear.Frame = Fr_B;
+			}
+		}
+		
+		Limb[ArmR].SetPitch(-90);
+		Limb[ArmL].SetPitch(-90);
+		
+		if (!CanArmor)	return;
+		
+		SpawnArmor();
+		SpawnWeapon();
+	}
+	
+	override void SpawnWeapon()
+	{
+		int chances[WR_ArmR + 1];
+		bool skip = true;
+		for (int i = WR_ArmL; i <= WR_ArmR; i++)
+		{
+			chances[i] = irandom(0,200);
+			if (skip && chances[i] > 100)
+			{
+				skip = false;
+				continue;
+			}
+			int 						frm = WP_Gold;
+				 if (chances[i] <= 20)	frm = WP_Netherite;
+			else if (chances[i] <= 50)	frm = WP_Diamond;
+			else if (Chances[i] <= 100)	frm = WP_Iron;
+			
+			SetArmor(i, frm);
+		}
+	}
+	
+	/*
+	override void SpawnWeapon()
+	{
+		SetArmor(WR_ArmR, WP_Gold);
+	}
+	*/
+	private void SetAngry(bool on)
+	{
+		if (on)
+			Speed = Default.Speed * 2;
+		else
+		{
+			Speed = Default.Speed;
+			LastEnemy = null;
+			ClearTarget();
+			
+		}	
+		bDROPOFF = Angry = on;
+	}
+	
+	private bool Angry;
+	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle)
+	{
+		if (bKILLED || dmg < 1 || src is GetClass())	
+			return;
+			
+		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
+		
+		if (src && !src.bKILLED && Targetable(src) && src == Target)
+		{
+			Speed = Default.Speed * 2;
+			SetAngry(true);
+			AngerDelay = irandom(1, 15);
+			RemoveGoal();
+			// intentionally not checking Dif_Hard since they always do this.
+			if (TMV_AIDifficulty == Dif_Medium)
+				DoAlertMonsters(src);
+		}
+	}
+	
+	private void DoAlertMonsters(Actor src)
+	{
+		AlertMonsters(MaxTargetRange * 2, src, GetClass(), 0, AM_SIGHT);
+	}
+	
+	override void SetupRelations()
+	{
+		Super.SetupRelations(true);
+		SetClassRelation('PlayerPawn', Rel_Neutral, true);
+	}
+	
+	int AngerDelay;
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if (bKILLED || IsFrozen())
+			return;
+			
+		if (Angry)
+		{
+			ActiveSound = "";
+		}
+		else
+		{
+			ActiveSound = Default.ActiveSound;
+		}
+		
+		if (Angry)
+		{
+			
+			if (--AngerDelay < 1)
+			{
+				/*
+				if (!ValidateTarget(true))
+				{
+					SetAngry(false);
+					return;
+				}
+				*/
+				AngerDelay = irandom(Second * 1, Second * 3);
+				A_StartSound("Minecraft/Ziglin/Angry", CHAN_VOICE, CHANF_OVERLAP, pitch: ffrandom(1.5, 2.25));
+				if (TMV_AIDifficulty > Dif_Medium)
+					DoAlertMonsters(Target);
+			}
+		}
+	}
+	
+	override void EnterIdle()
+	{
+		SetAngry(false);
+		Super.EnterIdle();
+	}
+	
+	override void EnterSee()
+	{
+		SetAngry(true);
+		Super.EnterSee();
+	}
+	
+	States
+	{
+	See:
+		---- A 1 Chase("Melee", null);
+		wait;
+	Melee:
+		TNT1 A 1 DoMelee(random[rng](20, 30));
+		Goto See;
+	}
+}
+
+Class TM_PiglinHead : TM_BodyPartHead {}
+Class TM_PiglinBody : TM_BodyPartBody {}
+Class TM_PiglinArmL : TM_BodyPartArm 
+{
+	Default
+	{
+		TM_BodyPart.SideID TMS_Left;
+	}
+}
+Class TM_PiglinArmR : TM_BodyPartArm 
+{
+	Default
+	{
+		TM_BodyPart.SideID TMS_Right;
+	}
+}
+Class TM_PiglinLegL : TM_BodyPartLeg 
+{
+	Default
+	{
+		TM_BodyPart.SideID TMS_Left;
+		TM_BodyPart.VelSineOffset 180;
+	}
+}
+Class TM_PiglinLegR : TM_BodyPartLeg 
+{
+	Default
+	{
+		TM_BodyPart.SideID TMS_Right;
+	}
+}
+Class TM_PiglinEar : TM_BodyPart 
+{
+	Default
+	{
+		TM_BodyPart.CurAction (E_Swing|E_Sway);
+		TM_BodyPart.SwingAngleDir 0, 0.25, 0;
+		TM_BodyPart.SwingSpeed 4.0;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+	}
+}
+
+Class TM_PiglinEarGib : TM_BodyPartGib {}
+Class TM_PiglinBodyGib : TM_BodyPartGib {}
+Class TM_PiglinHeadGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, 0.8;	}	}
+
+Class TM_PiglinArmRGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -.8;	}	}
+
+Class TM_PiglinArmLGib : TM_BodyPartGib	
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -.8;	}	}
+
+Class TM_PiglinLegRGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -1.2;	}	}
+Class TM_PiglinLegLGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -1.2;	}	}

@@ -35,10 +35,22 @@ Legs:			0.0		~.4		3.0
 */
 
 
+Class TM_EndermanWeaponSpawner : RandomSpawner
+{
+	Default
+	{
+		DropItem 'Shotgun', 		255, 60;
+		DropItem 'SuperShotgun',	255, 50;
+		DropItem 'Chaingun', 		255, 40;
+		DropItem 'RocketLauncher',	255, 30;
+		DropItem 'PlasmaRifle',		255, 15;
+		DropItem 'BFG9000',			255, 1;
+	}
+}
 
 //
 const EndermanTargetDistance = 2048.0;
-Class MCEnderman : MinecraftMonster
+Class TM_Enderman : TM_Monster
 {
 	const _Radius = 1.2;
 	const _Height = 9.4;
@@ -50,7 +62,7 @@ Class MCEnderman : MinecraftMonster
 	const AngerSpeed = 7.0;
 	
 	mixin NormalLimbCount;
-	private Array<CVector3> LimbVec;
+	private Array<TM_CVector3> LimbVec;
 	
 	Default
 	{
@@ -77,10 +89,10 @@ Class MCEnderman : MinecraftMonster
 	{
 		if (!Super.DropItems(src, inf, mod))
 			return false;
-			
-		if (!A_DropItem('MCEndermanDrop',-1, 32))
-		if (!A_DropItem('MCCreeperWeaponSpawner',-1, 20))
-		Event.DropItem(self, 'Backpack', -1, 64);
+		
+		A_DropItem('TM_EndermanWeaponSpawner',-1, 80);
+		if (!A_DropItem('TM_EndermanDrop',-1, 32))
+			Event.DropItem(self, 'Backpack', -1, 64);
 		
 		return true;
 	}
@@ -90,12 +102,12 @@ Class MCEnderman : MinecraftMonster
 		Super.PostBeginPlay();
 		AttackDamagers = false;
 		Init(LimbCount);
-		Limb[Head] = MCBodyPart(Spawn('MCEndermanHead', pos));
-		Limb[Body] = MCBodyPart(Spawn('MCEndermanBody', pos));
-		Limb[ArmR] = MCBodyPart(Spawn('MCEndermanArmRight', pos));
-		Limb[ArmL] = MCBodyPart(Spawn('MCEndermanArmLeft', pos));
-		Limb[LegR] = MCBodyPart(Spawn('MCEndermanLegRight', pos));
-		Limb[LegL] = MCBodyPart(Spawn('MCEndermanLegLeft', pos));
+		Limb[Head] = TM_BodyPart(Spawn('TM_EndermanHead', pos));
+		Limb[Body] = TM_BodyPart(Spawn('TM_EndermanBody', pos));
+		Limb[ArmR] = TM_BodyPart(Spawn('TM_EndermanArmRight', pos));
+		Limb[ArmL] = TM_BodyPart(Spawn('TM_EndermanArmLeft', pos));
+		Limb[LegR] = TM_BodyPart(Spawn('TM_EndermanLegRight', pos));
+		Limb[LegL] = TM_BodyPart(Spawn('TM_EndermanLegLeft', pos));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
 			let lim = Limb[i];
@@ -119,7 +131,7 @@ Class MCEnderman : MinecraftMonster
 		LimbVec.Reserve(Limb.Size());
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			let vec = CVector3.Create((0,0,0));
+			let vec = TM_CVector3.Create((0,0,0));
 			LimbVec[i] = vec;
 		}
 		
@@ -135,34 +147,16 @@ Class MCEnderman : MinecraftMonster
 			if (Limb[i])	Limb[i].SetPosOffsets(LimbVec[i].v);
 		
 		
-		UpdateLimbs();
+		
 	}
-	
+	override void EnterIdle() 
+	{	
+		SetAngry(null);	
+		Super.EnterIdle();
+	}
 	
 	States
 	{
-	Spawn:
-		TNT1 AA 35;
-		Goto IdleMove;
-	Idle:
-		TNT1 A 0 
-		{
-			SetAngry(null);
-			return A_Jump(256, IRandom(1, 4));
-		}
-		TNT1 AAAAAAAAAA 17 Look();
-	IdleMove:
-		TNT1 A 0 
-		{
-			SetAngry(null);
-			LookTimer = 0;
-			return A_Jump(256, IRandom(1, 35*2));
-		}
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		Goto Idle;
 	See:
 		TNT1 A 1 
 		{
@@ -182,7 +176,7 @@ Class MCEnderman : MinecraftMonster
 	}
 }
 
-Class MCEndermanDrop : RandomSpawner
+Class TM_EndermanDrop : RandomSpawner
 {
 	Default
 	{
@@ -204,12 +198,12 @@ Class MCEndermanDrop : RandomSpawner
 //==============================================================================
 
 
-extend class MinecraftHandler
+extend class TM_Handler
 {
-	transient private EnderTracer etrc;
+	transient private TM_Tracer etrc;
 	private void DoEnderTrace()
 	{
-		if (!etrc)	etrc = new('EnderTracer');
+		if (!etrc)	etrc = new('TM_Tracer');
 		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
@@ -219,15 +213,15 @@ extend class MinecraftHandler
 			Actor plr = players[i].mo;
 			if (!plr)	continue;
 			
-			Vector3 ang = MC_Map.AnglesToVector(plr.angle, plr.pitch);
+			Vector3 ang = TM_Map.AnglesToVector(plr.angle, plr.pitch);
 			Vector3 pos = plr.Vec2OffsetZ(0,0,plr.player.viewz);
 			
 			bool Pushed = false;
 			etrc.HitList.Clear();
 			etrc.Trace(pos, plr.CurSector, ang, EndermanTargetDistance, 0);
 			
-			Array<EnderHitList> hl; hl.Move(etrc.HitList);
-			MCEnderman mo = null;
+			Array<TM_TraceHitList> hl; hl.Move(etrc.HitList);
+			TM_Enderman mo = null;
 			for (int i = 0; i < hl.Size(); i++)
 			{
 				if (!hl[i])	continue;
@@ -255,16 +249,16 @@ extend class MinecraftHandler
 // event handler to keep things nice and simple.
 //==============================================================================
 
-Class EnderHitList
+Class TM_TraceHitList
 {
-	MCEnderman mo;
+	TM_Enderman mo;
 	Vector3 HitPos, HitVector;
 }
 
-Class EnderTracer : LineTracer
+Class TM_Tracer : LineTracer
 {
 	Array<Actor> Endermen;
-	Array<EnderHitList> HitList;
+	Array<TM_TraceHitList> HitList;
 	override ETraceStatus TraceCallback() 
 	{
 		switch (Results.HitType) 
@@ -275,10 +269,10 @@ Class EnderTracer : LineTracer
 				return TRACE_Stop;
 			case TRACE_HitActor:
 			{
-				let mo = MCEnderman(Results.HitActor);
+				let mo = TM_Enderman(Results.HitActor);
 				if (mo)
 				{
-					let et = new('EnderHitList');
+					let et = new('TM_TraceHitList');
 					et.mo = mo;
 					et.HitPos = Results.HitPos;
 					et.HitVector = Results.HitVector;
@@ -306,68 +300,68 @@ Class EnderTracer : LineTracer
 	}
 }
 
-Class MCEndermanArm : MCBodyPartArm
+Class TM_EndermanArm : TM_BodyPartArm
 {
 	Default
 	{
-		MCBodyPart.SwingAngleCap 30.0;
-		MCBodyPart.Gib 'MCEndermanArmGib';
-		MCBodyPart.CurAction (E_Swing|E_Sway);
+		TM_BodyPart.SwingAngleCap 30.0;
+		TM_BodyPart.Gib 'TM_EndermanArmGib';
+		TM_BodyPart.CurAction (E_Swing|E_Sway);
 		Radius 0.2;
 		Height 6.0;
 	}
 }
 
-Class MCEndermanArmRight : MCEndermanArm
+Class TM_EndermanArmRight : TM_EndermanArm
 {	
 	Default	
 	{	
-		MCBodyPart.SineOffset 180, 180, 180;
-		MCBodyPart.VelSineOffset 180;
+		TM_BodyPart.SineOffset 180, 180, 180;
+		TM_BodyPart.VelSineOffset 180;
 	}
 }
 
-Class MCEndermanArmLeft : MCEndermanArm {}
+Class TM_EndermanArmLeft : TM_EndermanArm {}
 
-Class MCEndermanBody : MCBodyPart	{}
+Class TM_EndermanBody : TM_BodyPart	{}
 
-Class MCEndermanHead : MCBodyPartHead	{}
+Class TM_EndermanHead : TM_BodyPartHead	{}
 
-Class MCEndermanLeg : MCBodyPartLeg
+Class TM_EndermanLeg : TM_BodyPartLeg
 {
 	Default
 	{
-		MCBodyPart.SwingAngleCap 30.0;
-		MCBodyPart.Gib 'MCEndermanLegGib';
+		TM_BodyPart.SwingAngleCap 30.0;
+		TM_BodyPart.Gib 'TM_EndermanLegGib';
 		Radius 0.2;
 		Height 6.0;
 	}
 }
 
-Class MCEndermanLegRight : MCEndermanLeg {}
+Class TM_EndermanLegRight : TM_EndermanLeg {}
 
-Class MCEndermanLegLeft : MCEndermanLeg
+Class TM_EndermanLegLeft : TM_EndermanLeg
 {	
 	Default
 	{
-		MCBodyPart.Gib 'MCEndermanLegGib';
-		MCBodyPart.SineOffset 180, 180, 180;
-		MCBodyPart.VelSineOffset 180;
+		TM_BodyPart.Gib 'TM_EndermanLegGib';
+		TM_BodyPart.SineOffset 180, 180, 180;
+		TM_BodyPart.VelSineOffset 180;
 	}
 }
 
-Class MCEndermanBodyGib : MCBodyPartGib	{}
+Class TM_EndermanBodyGib : TM_BodyPartGib	{}
 
-Class MCEndermanHeadGib : MCBodyPartGib
-{	Default {	MCBodyPartGib.Offsets 0, 0, 1.6;	}	}
+Class TM_EndermanHeadGib : TM_BodyPartGib
+{	Default {	TM_BodyPartGib.Offsets 0, 0, 1.6;	}	}
 
-Class MCEndermanArmGib : MCBodyPartGib
-{	Default {	MCBodyPartGib.Offsets 0, 0, -2.8;	}	}
+Class TM_EndermanArmGib : TM_BodyPartGib
+{	Default {	TM_BodyPartGib.Offsets 0, 0, -2.8;	}	}
 
-Class MCEndermanLegGib : MCBodyPartGib
-{	Default {	MCBodyPartGib.Offsets 0, 0, -2.8;	}	}
+Class TM_EndermanLegGib : TM_BodyPartGib
+{	Default {	TM_BodyPartGib.Offsets 0, 0, -2.8;	}	}
 
-extend Class MCEnderman
+extend Class TM_Enderman
 {
 	//--------------------------------------------------------------------------
 	// Not naturally hateful of players.
@@ -466,12 +460,15 @@ extend Class MCEnderman
 			Target = at;
 			AngerTarget = at;
 			if (!WasAngry && snd)
+			{
 				A_StartSound("Minecraft/Enderman/Stare", 9, CHANF_OVERLAP, 1, ATTN_NONE);
+				WasAngry = true;
+			}
 			ActiveSound = "Minecraft/Enderman/Scream";
 			if (Limb[Head])	Limb[Head].Frame = Fr_B;
 			Speed = AngerSpeed;
 			SetActorRelation(Target, Rel_Hated);
-			SetState(ResolveState("See"));
+			EnterSee();
 		}
 		// Anger management successful.
 		else
@@ -484,7 +481,7 @@ extend Class MCEnderman
 			for (int i = 0; i < Limb.Size(); i++)
 				if (i == Head && Limb[i])
 				{
-					Limb[I].Frame = Fr_A;
+					Limb[i].Frame = Fr_A;
 					break;
 				}
 			Speed = NormalSpeed;
@@ -504,8 +501,7 @@ extend Class MCEnderman
 				let Lim = Limb[i];
 				if (!Lim)	continue;
 				
-				if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v + jiggle, false);
-				else			Lim.UpdatePosition(Lim.Master, false);				
+				Lim.SetAbsOffsets(jiggle);		
 			}
 		}
 		else if (WasAngry)
@@ -516,8 +512,7 @@ extend Class MCEnderman
 				let Lim = Limb[i];
 				if (!Lim)	continue;
 				
-				if (i <= Body)	Lim.SetPosOffsets(LimbVec[i].v, false);
-				else			Lim.UpdatePosition(Lim.Master, false);
+				Lim.SetAbsOffsets((0,0,0));
 			}
 		}
 	}
@@ -534,13 +529,14 @@ extend Class MCEnderman
 		if (MoveWait > 0)	MoveWait--;
 
 		StaredAt = false;
+		WasAngry = Angry;
 		
 		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
 			JiggleLimbs();
 		
-		WasAngry = Angry;
-		
 		Super.Tick();
+		
+		
 		
 		if (Target)
 		{
@@ -553,7 +549,7 @@ extend Class MCEnderman
 		}
 	}
 	
-	
+	override bool CanWaterDamage() { return true; }
 	
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
 	{
@@ -589,7 +585,7 @@ extend Class MCEnderman
 			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
 				return false;
 		}
-		else if (other is 'MCArrowProjectile')
+		else if (other is 'TM_ArrowProjectile')
 		{
 			if (IRandom(0,3))	return false;
 		}
@@ -603,7 +599,7 @@ extend Class MCEnderman
 	// or at least doesn't take any damage from it. 
 	
 	private bool InTeleport;
-	private bool GetTeleSpots(out Array<CVector3> Spots, Actor mo = null, 
+	private bool GetTeleSpots(out Array<TM_CVector3> Spots, Actor mo = null, 
 		double dist = -1, double iter = -1, bool condition = true)
 	{
 		Spots.Clear();
@@ -619,7 +615,7 @@ extend Class MCEnderman
 		Vector3 poz = mo.pos;
 		double curz = mo.pos.z;
 		Vector2 grid = (FRandom(-half, half), FRandom(-half, half));
-	//	grid = MC_Map.SnapVector2Uniform(grid, iter);
+	//	grid = TM_Map.SnapVector2Uniform(grid, iter);
 		k = grid.x;
 		l = grid.y;
 		bool ndrop = bNODROPOFF;
@@ -635,9 +631,9 @@ extend Class MCEnderman
 				Sector s = Level.PointInSector(off.xy);
 				
 				// Debug info for showing locations.
-				if (MCC_Debug == 10)
+				if (TMV_Debug == 10)
 				{
-					let mo = Spawn('MCExplosionSprite', off);
+					let mo = Spawn('TM_ExplosionSprite', off);
 					if (mo)	mo.Scale *= 0.5;
 				}
 				
@@ -657,12 +653,12 @@ extend Class MCEnderman
 				SetZ(off.Z);
 				if (CheckPosition(off.XY))
 				{
-					if (MCC_Debug == 9)
+					if (TMV_Debug == 9)
 					{
-						let mo = Spawn('MCExplosionSprite', off);
+						let mo = Spawn('TM_ExplosionSprite', off);
 						if (mo)	mo.Scale *= 0.5;
 					}
-					let v = CVector3.Create(off);
+					let v = TM_CVector3.Create(off);
 					Spots.Push(v);
 				}
 				SetZ(curz);
@@ -677,7 +673,7 @@ extend Class MCEnderman
 	
 	protected bool DoTeleport()
 	{
-		Array<CVector3> Spots;
+		Array<TM_CVector3> Spots;
 		GetTeleSpots(Spots, self, -1, 64);
 		double curz = pos.z;
 		Vector3 v;
@@ -760,7 +756,7 @@ extend Class MCEnderman
 				SetZ(off.Z);
 				if (CheckPosition(off.XY))
 				{
-					let v = CVector3.Create(off);
+					let v = TM_CVector3.Create(off);
 					Spots.Push(v);
 				}
 				SetZ(curz);

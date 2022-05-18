@@ -1,21 +1,40 @@
-extend class MinecraftHandler
+extend class TM_MapEvent
+{
+	bool SetSpawnList(out TM_SpawnList list)
+	{
+		if (!list)	return false;
+		
+		return false;
+	}
+}
+
+extend class TM_Handler
 {
 	// The primary spawn list.
 	private void CreateSpawnList()
 	{
-		SpawnList = MCSpawnList.Create();
+		SpawnList = TM_SpawnList.Create();
+		
+		let ev = TM_MapEvent.Fetch();
+		if (ev && ev.SetSpawnList(SpawnList))
+			return;
+		
 		// Parameters are as follows:
 		// Actor name, easy, normal, hard, dimension, and group.
-		SpawnList.Add('MCZombie',			300, 300, 300);
-		SpawnList.Add('MCSkeleton',			300, 300, 300);
-		SpawnList.Add('MCZombieBaby',		025, 050, 075);
-		SpawnList.Add('MCSpider',			075, 100, 125);
-		SpawnList.Add('MCCreeper',			075, 150, 250);
-		SpawnList.Add('MCEnderman',			005, 010, 015,	Dim_Overworld|Dim_Hell|Dim_End,	'Big');
-		SpawnList.Add('MCGhast',			001, 005, 010,	Dim_Hell,	'Big');
+		SpawnList.Add('TM_Zombie',			300, 300, 300);
+		SpawnList.Add('TM_Skeleton',		300, 300, 300);
+		SpawnList.Add('TM_ZombieBaby',		025, 050, 150, cv: "TMV_ZombieBaby");
+		SpawnList.Add('TM_Spider',			075, 100, 125);
+		SpawnList.Add('TM_Creeper',			075, 150, 250);
+		SpawnList.Add('TM_Ziglin',			010, 075, 150,	Dim_Hell);
+		SpawnList.Add('TM_SkeletonWither',	010, 030, 050,	Dim_Hell);
+		SpawnList.Add('TM_Blaze',			010, 020, 030,	Dim_Hell);
+		SpawnList.Add('TM_Enderman',		010, 020, 025,	Dim_Overworld|Dim_Hell|Dim_End,	'Big');
+		SpawnList.Add('TM_Ghast',			001, 005, 010,	Dim_Hell,	'Big');
+		
 		
 	}
-	private MCSpawnList SpawnList;
+	private TM_SpawnList SpawnList;
 	private int MaxMobs;
 	
 	//==========================================================================
@@ -30,7 +49,7 @@ extend class MinecraftHandler
 	private void HandleMapSpawns()
 	{
 		// Monsters self despawn, but that code is in the monsters themselves.
-		if (!MCC_Spawning || (MCC_Peaceful && MCC_PeacefulBehavior <= CV_Stay))
+		if (!TMV_Spawning || (TMV_Peaceful && TMV_PeacefulBehavior <= CV_Stay))
 		{
 		
 			Timer[S_Spawn] = 35;			
@@ -43,20 +62,23 @@ extend class MinecraftHandler
 				{
 					if (!playeringame[i] || !players[i].mo)	continue;
 					let plr = players[i].mo;
-					if (plr && !plr.FindInventory('MCPlayerProtection'))
-						plr.A_GiveInventory('MCPlayerProtection',1);
+					if (plr && !plr.FindInventory('TM_PlayerProtection'))
+						plr.A_GiveInventory('TM_PlayerProtection',1);
 				}
 			}
-			TriggerMapSpawns();
+			if (SpawnList && SpawnList.NoSpawns)
+				Timer[S_Spawn] = 35;
+			else
+				TriggerMapSpawns();
 		}
-		WasPeaceful = MCC_Peaceful;
+		WasPeaceful = TMV_Peaceful;
 		
-		if (MCC_AIDifficulty_Prev != MCC_AIDifficulty)
+		if (TMV_AIDifficulty_Prev != TMV_AIDifficulty)
 		{
-			MCC_AIDifficulty_Prev = MCC_AIDifficulty;
+			TMV_AIDifficulty_Prev = TMV_AIDifficulty;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftMonster(Monsters.Actors[i]);
+				let mo = TM_Monster(Monsters.Actors[i]);
 				if (mo && !mo.bKILLED && !mo.bDESTROYED)
 					mo.AdjustDifficulty();
 			}
@@ -71,11 +93,11 @@ extend class MinecraftHandler
 		int ret = -1;
 		
 		int reset = Max(35,
-			Minute * MCC_SpawnDelayMinute + 
-			Second * MCC_SpawnDelaySecond + 
-			Second * irandom(0,MCC_SpawnDelayRandom));
+			Minute * TMV_SpawnDelayMinute + 
+			Second * TMV_SpawnDelaySecond + 
+			Second * irandom(0,TMV_SpawnDelayRandom));
 		
-		MaxMobs = int(round(MCC_Spawns * MCC_SpawnMul));
+		MaxMobs = int(round(TMV_Spawns * TMV_SpawnMul));
 		
 		if (MobCount < MaxMobs)
 		{
@@ -100,7 +122,7 @@ extend class MinecraftHandler
 	// performance issues.
 	//==========================================================================
 	
-	private MinecraftMonster MoCue;
+	private TM_Monster MoCue;
 	private int SpawnFails;
 	private void PrepareSpawnNormal()
 	{	
@@ -112,9 +134,9 @@ extend class MinecraftHandler
 		{
 			Class<Actor> cls = SpawnList.PickRandom();
 			
-			SpawnList.FilterSpawns(cls);
+		//	SpawnList.FilterSpawns(cls);
 			
-			MoCue = MinecraftMonster(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
+			MoCue = TM_Monster(Actor.Spawn(cls, (0,0,0), ALLOW_REPLACE));
 			if (MoCue)
 			{
 				MoCue.bNODROPOFF = true;
@@ -127,25 +149,98 @@ extend class MinecraftHandler
 		//----------------------------------------------------------------------
 		// Now try to position them one at a time for activating.
 		
-		AttemptMonsterPlacement();
 		if (MoCue)
 		{
-			if (++SpawnFails >= 10)
+			AttemptMonsterPlacement();
+			if (MoCue && ++SpawnFails >= 10)
 			{
 				MoCue.Destroy();
 				MoCue = null;
 			}
 		}
+	}	
+	
+	bool CheckSectorDamage(Sector ss)
+	{
+		if (!ss || !MoCue)	return false;
+		
+		if (MoCue.CanEnvironmentDamage() && MoCue.CanSectorDamage())
+		{
+			// Damaging Sectors
+			if (ss.DamageAmount > 0 && !MoCue.IsImmune(ss.DamageType))
+				return true;
+			
+			// Terrain definition
+			let ter = ss.GetFloorTerrain(sector.ceiling);
+			if (!ter || Ter.DamageAmount < 1 || MoCue.IsImmune(ter.DamageMOD))	
+				ter = ss.GetFloorTerrain(sector.floor);
+			if (ter && ter.DamageAmount > 0 && !MoCue.IsImmune(ter.DamageMOD))
+				return true;
+			
+		}
+		return false;
 	}
-	
-	
+	/*
+	void GetZPositions(out Array<double> spawnZ, out Array<TM_XFloor> XSwim, Vector3 curPos, Vector3 newPos)
+	{
+		spawnZ.Clear();
+		Vector2 curPos = newPos.xy;
+		Sector s = level.pointInSector(curPos);
+		while (s.Portals[Sector.floor])
+		{
+			SectorPortal info = level.SectorPortals[s.Portals[Sector.floor]];
+			Sector newSec = info.mDestination;
+			if (!newSec)
+				break;
+			
+			curPos += info.mDisplacement;
+			s = newSec;
+		}
+
+		spawnZ.Push(s.floorPlane.ZAtPoint(curPos));
+		do
+		{
+			for (uint i = 0; i < s.Get3DFloorCount(); ++i)
+			{
+				F3DFloor ff = s.Get3DFloor(i);
+				if (!(ff.flags & F3DFloor.FF_EXISTS))
+					continue;
+				
+				double tz = ff.top.ZAtPoint(curPos.xy);
+				double bz = ff.bot.ZAtPoint(curPos.xy);
+				
+				if (ff.flags & F3DFloor.FF_SWIMMABLE)
+				{
+					
+				}
+				
+				spawnZ.Push(tz);
+			}
+			
+			if (!s.Portals[Sector.ceiling])
+				break;
+			
+			SectorPortal info = level.SectorPortals[s.Portals[Sector.ceiling]];
+			Sector newSec = info.mDestination;
+			if (!newSec)
+				break;
+			
+			curPos += info.mDisplacement;
+			s = newSec;
+		} while (true);
+	}
+	*/
 	void AttemptMonsterPlacement()
 	{
-		
 		// Not exactly player aware but honestly, GZDoom isn't in a state of
 		// multiplayer friendly at the moment so just get the closest player and
-		// spawn around them.
-			
+		// spawn around them. When the time comes, I'll refactor this.
+		bool envirodmg = MoCue.CanEnvironmentDamage();
+		bool drowndmg = MoCue.CanDrown();
+		bool secdmg = MoCue.CanSectorDamage();
+		
+		
+		
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
 			if (!playeringame[i] || !players[i].mo)	continue;
@@ -165,59 +260,195 @@ extend class MinecraftHandler
 				ang = irandom(0, inc) * j;
 				int dist = irandom(MoCue.SpawnRangeMin, MoCue.SpawnRangeMax);
 				Vector3 next; next.XY = plr.Vec2Angle(dist, ang);
+				//TM_Global.SnapVector3(np, (32, 32, 32), offset);
+				TM_Global.SnapVector2(next.XY, (32, 32), (16, 16));
 				
 				next.Z = MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
+				
 				
 				if (!level.IsPointInLevel(next))
 					continue;
 				
 				// Don't spawn in sectors blocking player respawns.
+				// Don't allow spawning inside skyboxes.
 				Sector s = Level.PointInSector(next.XY);
-				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()))
+				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()) ||
+					s.GetUDMFInt("user_nospawn") > 0)
 					continue;
 				
-				// Spawning in damaging sectors. Only allow if immune to it.
-				if (MCC_SpawnConditions && 
-					MCC_EnvironmentDamage && MCC_SectorDamage && s.DamageAmount > 0 &&
-					MoCue.GetDamageFactor(s.DamageType, s.DamageAmount, true) > 0)
-					continue;
-				
-				// Outside of spawn range from players.
-				if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
-					continue;
-				
-				// Don't allow spawning in skyboxes.
-				if (skies.Size() > 0)
+				bool TryGood = false;
+				int xcount = s.Get3DFloorCount();
+				// 3D floors are present in this sector. Iterate through them and
+				// try to find good Z positions for trying.
+				if (xcount > 0)
 				{
-					bool cont = false;
-					for (int ii = 0; ii < skies.Size(); ii++)
-					{
-						if (skies[ii] && 
-							skies[ii].CheckSight(MoCue, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+					Array<double> TryZ; TryZ.Clear();
+					
+					double fz = s.LowestFloorAt(next.XY);
+					double tz = s.HighestCeilingAt(next.XY);
+					double cz = tz;
+					
+					
+					TryZ.Push(fz);
+					
+					// Won't fit regardless of 3d floors, so skip it.
+					if (abs(tz - fz) < MoCue.Height)
+						continue;
+						
+					Array<TM_XFloor> XSwim; XSwim.Clear();
+					
+					if (envirodmg && 
+						(drowndmg || secdmg))
+					{					
+						for (int m = 0; m < xcount; m++)
 						{
-							cont = true;
-							break;
+							let xf = s.Get3DFloor(m);
+							if (xf && xf.Flags & (F3DFloor.FF_EXISTS|F3DFloor.FF_SWIMMABLE))
+							{
+								let txf = TM_XFloor.NewXFloorPtr(xf, m);
+								
+								if (txf && txf.Swimmable)	
+								{
+									XSwim.Push(txf);
+								}
+							}
 						}
 					}
-					if (cont)	continue;
-				}
-				// Found a good spot.
-				TM_Global.SetPos(MoCue, next, false);
-				
-				if (MoCue.bSPAWNFLOAT)
-					next.Z = ffrandom(MoCue.FloorZ, MoCue.CeilingZ - MoCue.Height);
-				else
-					next.Z = MoCue.FloorZ;
+					/*
+					double headz = MoCue.Height * 0.5;
+					double headtop = headz;
+					let head = MoCue.GetHead();
+					if (head) 
+					{
+						headz = head.Pos.Z - MoCue.Pos.Z;
+						headtop = headz + head.Height * 0.75;
+					//	headoff = level.Vec3Diff(MoCue.Pos, 
+					}
+					*/
+					bool liq = false;
+					do
+					{
+						
+						Sector ss; F3DFloor xf;
+						[cz, ss, xf] = s.NextLowestFloorAt(next.X, next.Y, cz - 1, FFCF_3DRESTRICT);
+						
+						if (xf)	ss = xf.model;
+						
+						/*
+						Array<TM_XFloor> XXSwim; XXSwim.Clear();
+						if (TM_Global.InLiquidSector(XXSwim, next, (MoCue.Radius, MoCue.Height), true))
+						{
+							liq = true;
+							break;
+						}
+						*/
+						
+						
+						// This array only contains contents if the mob can take
+						// damage from drowning or sectors. Better than calling
+						// TryMove and SetZ a bunch of times. 
+						for (int m = 0; m < XSwim.Size(); m++)
+						{
+							ss = XSwim[m].XSector;
+							if (!ss)	continue;
+							
+							double topz = ss.ceilingplane.ZAtPoint(next.XY);
+							double botz = ss.floorplane.ZAtPoint(next.XY);
+							// Damaging sector.
+							
+							//if (Top < botz || pos.Z > topz)
+							
+							if (cz + MoCue.Height < botz || cz > topz)
+								continue;
+							
+							if (CheckSectorDamage(ss))
+							{
+								liq = true;
+								break;
+							}
+							
+						}
+						
+						// Standing in a liquid sector that can harm it, so skip it.
+						if (liq)	break;
+						
+						TryZ.Push(cz + 1);
+					} 
+					while(cz > fz)
 					
-				MoCue.SetZ(next.Z);
-				if (MoCue.TryMove(MoCue.Pos.XY, false))
+					if (liq) continue;
+					
+					// Go through and remove all Z positions that are outside
+					// the range of ZMin and ZMax.
+					if (s.GetUDMFInt("user_LimitZ") > 1)
+					{
+						int zmin = s.GetUDMFInt("user_ZMin");
+						int zmax = s.GetUDMFInt("user_ZMax");
+						
+						Array<double> temp; temp.Clear();
+						for (int i = 0; i < TryZ.Size(); i++)
+						{
+							double try = TryZ[i];
+							if (try >= zmin && try <= zmax)
+								temp.Push(try);
+						}
+						TryZ.Move(temp);
+					}
+					
+					TM_Global.SetPos(MoCue, next, false);
+					
+					while (TryZ.Size() > 0)
+					{
+						int rng = irandom(0, TryZ.Size() - 1);
+						Vector3 to = (next.XY, TryZ[rng]);
+						
+						if (level.Vec3Diff(to, plr.pos).Length() > MoCue.SpawnRangeMax)
+						{	TryZ.Delete(rng);	continue;	}
+						
+						MoCue.SetZ(to.Z);
+						MoCue.FindFloorCeiling();
+						MoCue.UpdateWaterLevel(false);
+						
+						if (MoCue.WaterLevel < 3 || !MoCue.CanDrown())
+							TryGood = MoCue.TryMove(to.XY, true);
+						
+						// Found a good spot. Prepare it for activation.
+						if (TryGood)	break;
+						
+						// Not a good spot so delete the attempt.
+						TryZ.Delete(rng);
+					}
+					
+				}
+				else
+				{
+					if (CheckSectorDamage(s))
+						continue;
+					
+					// Outside of spawn range from players.
+					if (level.Vec3Diff(next, plr.pos).Length() > MoCue.SpawnRangeMax)
+						continue;
+					
+					// Found a good spot, now check its position.
+					TM_Global.SetPos(MoCue, next, false);
+					
+					
+					if (MoCue.bSPAWNFLOAT)
+						next.Z = ffrandom(MoCue.FloorZ, MoCue.CeilingZ - MoCue.Height);
+					else
+						next.Z = MoCue.FloorZ;
+					MoCue.SetZ(next.Z);
+					TryGood = MoCue.TryMove(MoCue.Pos.XY, false);
+				}
+				
+				if (TryGood)
 				{
 					MoCue.ClearInterpolation();
 					MoCue.bNODROPOFF = MoCue.Default.bNODROPOFF;
 					MoCue.Angle = irandom(0,359);
 					MoCue.AlignMoveDir();
 					MoCue.StoreHealthMul();
-					MoCue.StartHealth = int(round(MoCue.Health * MCC_HealthMul));
+					MoCue.StartHealth = int(round(MoCue.Health * TMV_HealthMul));
 					MoCue.Health = MoCue.StartHealth;
 					MoCue.Activate(null);
 					MoCue = null;
@@ -232,24 +463,29 @@ extend class MinecraftHandler
 //==============================================================================
 // Spawn Lists
 //
-// MCSpawn contains the classname, group it belongs to, and weight of the spawn.
+// TM_Spawn contains the classname, group it belongs to, and weight of the spawn.
 // The weight behaves exactly like RandomSpawner's.
 //==============================================================================
-Class MCSpawn play
+Class TM_Spawn play
 {
-	Class<Actor> ClassName;
+	Class<Actor> ClassName;	// Name of the monster to spawn
+	Class<Actor> SubClass;	// If valid, serves as an alternative to spawn with weight
 	Name Group;
-	Int Weight[3], Dimension;
+	Int Weight[3], 
+		Dimension;
+	String CV;
+	transient CVar SVar;
 }
 
-Class MCSpawnList play
+Class TM_SpawnList play
 {
+	bool NoSpawns; // Disables all spawns.
 	mixin TM_FastRNG;
-	private Array<MCSpawn> Classes;
+	private Array<TM_Spawn> Classes;
 	
-	static MCSpawnList Create()
+	static TM_SpawnList Create()
 	{
-		let s = new('MCSpawnList');
+		let s = new('TM_SpawnList');
 		s.Clear();
 		return s;
 	}
@@ -258,7 +494,20 @@ Class MCSpawnList play
 	// Adds a class. Must be valid and weight > 0 or it won't add.
 	// If the class is already existing, update it instead of wasting memory.
 	// Also, only changes the group if not '' (blank). Use 'None' to clear.
+	/*
 	void Add(Class<Actor> cls, int easy, int med, int hard, int dim = Dim_Overworld, Name g = '')
+	{
+		AddClass(cls, null, easy, med, hard, dim, g);
+	}
+	
+	void AddSub(Class<Actor> cls, Class<Actor> sub, int easy, int med, int hard, int dim = Dim_Overworld, Name g = '')
+	{
+		AddClass(cls, sub, easy, med, hard, dim, g);
+	}
+	*/
+	
+	void Add(Class<Actor> cls, int easy, int med, int hard, 
+			int dim = Dim_Overworld, Name g = '', String cv = "")
 	{
 		int size = Classes.Size();
 		
@@ -267,8 +516,10 @@ Class MCSpawnList play
 			if (cls == Classes[i].ClassName)
 			{
 				Classes[i].Weight[Dif_Easy] = easy;
-				Classes[i].Weight[Dif_Normal] = med;
+				Classes[i].Weight[Dif_Medium] = med;
 				Classes[i].Weight[Dif_Hard] = hard;
+			//	Classes[i].SubClass = sub;
+				Classes[i].cv = cv;
 				if (g == 'None' || !cls)	Classes[i].Group = '';
 				else if (g != '')			Classes[i].Group = g;
 				
@@ -276,12 +527,14 @@ Class MCSpawnList play
 			}
 		}
 		
-		let sp = new('MCSpawn');
+		let sp = new('TM_Spawn');
 		sp.ClassName = cls;
+	//	sp.SubClass = sub;
 		sp.Weight[Dif_Easy] = easy;
-		sp.Weight[Dif_Normal] = med;
+		sp.Weight[Dif_Medium] = med;
 		sp.Weight[Dif_Hard] = hard;
 		sp.Dimension = dim;
+		sp.cv = cv;
 		sp.Group = (g == 'None') ? '' : g;
 		
 		Classes.Push(sp);
@@ -301,7 +554,7 @@ Class MCSpawnList play
 	//	*exclude
 	//		If true, blacklists the group instead of whitelist.
 	
-	Class<Actor>, Name PickRandom(CAArray Blacklist = null, Name group = '', 
+	Class<Actor>, Name PickRandom(TM_CAArray Blacklist = null, Name group = '', 
 		bool exclude = false) const
 	{
 		if (Classes.Size() < 1)
@@ -309,10 +562,10 @@ Class MCSpawnList play
 	
 		bool any = (group == '' || group == 'None');
 		
-		Array<MCSpawn> Queue;	Queue.Clear();
+		Array<TM_Spawn> Queue;	Queue.Clear();
 		int Weight = 0;
 		int Size = Classes.Size();
-		int Diff = MCC_Difficulty;
+		int Diff = TMV_Difficulty;
 		
 		// Get all applicable entities.
 		for (int i = 0; i < Classes.Size(); i++)
@@ -329,6 +582,11 @@ Class MCSpawnList play
 			if (!any && ((exclude && group == c.Group) || (!exclude && group != c.Group)))
 				continue;
 			
+			// Check if the cvar exists. If it does and is disabled, skip it.
+			if (!c.SVar) 
+				c.SVar = CVar.FindCVar(c.cv);
+			if (c.SVar && !c.SVar.GetBool())
+				continue;
 			Queue.Push(c);
 			Weight += c.Weight[diff];
 		}
@@ -355,26 +613,25 @@ Class MCSpawnList play
 		
 		return null, '';
 	}
-	
+	/*
+	void GetSubClasses(Class<Actor> cls, out Array<TM_Spawn> sub)
+	{
+		sub.Clear();
+		if (!cls)	return;
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			let sc = Classes[i];
+			if (!sc || sc.SubClass != cls)	continue;
+			
+			sub.Push(sc);
+		}
+	}
+	*/
 	void FilterSpawns(in out Class<Actor> cls)
 	{
-		if (cls == 'MCZombieBaby' && !MCC_ZombieBaby)
-			cls = 'MCZombie';
+		if (cls == 'TM_ZombieBaby' && !TMV_ZombieBaby)
+			cls = 'TM_Zombie';
 	}
 }
 
-/*
-Class MCSpawnGroup play
-{
-	Name GroupName;
-	Array<MCSpawn> Group;
-	
-	static MCSpawnGroup Create(Name g)
-	{
-		let gr = new('MCSpawnGroup');
-		gr.GroupName = g;
-		gr.Group.Clear();
-		return gr;
-	}
-}
-*/
+

@@ -1,30 +1,8 @@
-//
-
-Class MCZombieSpawner : RandomSpawner
-{
-	Default
-	{
-		DropItem "MCZombie",		255, 10;
-	//	DropItem "MCHusk",			255, 4;
-	//	DropItem "MCDrowned",		255, 1;
-	}
-}
-
-Class MCSkeletonSpawner : RandomSpawner
-{
-	Default
-	{
-		DropItem "MCSkeleton",			255, 10;
-	//	DropItem "MCStraySkeleton",		255,  5;
-	//	DropItem "MCWitherSkeleton",	255,  1;
-	}
-}
-
 //==============================================================================
 // Minecraft Event Handler
 //==============================================================================
 
-Class MinecraftHandler : EventHandler
+Class TM_Handler : EventHandler
 {
 	mixin TM_FastRNG;
 	const DespawnTimer = Second * 5;
@@ -37,34 +15,40 @@ Class MinecraftHandler : EventHandler
 		S_Max
 	};
 	
+	TM_AArray 	Monsters, 
+				Blocks,
+				Bridges;
 	private Array<Int> BannedSectors;
-	private int MobCount, EndermanCount;
+	private int MobCount, EndermanCount, BlockCount, FireCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
-	private Array<MCMountInfo> MountList;
-	AArray SmokeCount;
-	AArray Monsters;
+	private Array<TM_MountInfo> MountList;
 	private Array<SkyViewpoint> skies;
+	
+	static TM_Handler Fetch()
+	{
+		return TM_Handler(Find("TM_Handler"));
+	}
 	
 	override void NetworkProcess(ConsoleEvent e)
 	{
 		int num = e.Player;
-		let plr = players[num].mo;
+		let plr = PlayerPawn(players[num].mo);
+		if (!plr)	return;
 		
 		if (e.Name == 'TM_TogglePeaceful')
 		{
-			Cvar p = Cvar.GetCvar("MCC_Peaceful");
+			Cvar p = Cvar.GetCvar("TMV_Peaceful");
 			bool res = p.GetBool();
 			if (p)	p.SetBool(!res);
 			
 			if (!res)			Console.Printf("Peaceful Mode On");
 			else				Console.Printf("Peaceful Mode Off");
-			return;
 		}
 		
-		if (e.Name == 'TM_ToggleSpawning')
+		else if (e.Name == 'TM_ToggleSpawning')
 		{
-			Cvar p = Cvar.GetCvar("MCC_Spawning");
+			Cvar p = Cvar.GetCvar("TMV_Spawning");
 			bool res = p.GetBool();
 			if (p)	p.SetBool(!res);
 			
@@ -73,22 +57,78 @@ Class MinecraftHandler : EventHandler
 			return;
 		}
 		
-		if (e.Name == 'TM_Launch')
+		else if (e.Name == 'TM_Launch')
 		{
-			let it = ThinkerIterator.Create('MinecraftMonster', Thinker.STAT_DEFAULT);
-			MinecraftMonster mo;
-			while (mo = MinecraftMonster(it.Next()))
+			let it = ThinkerIterator.Create('TM_Monster', Thinker.STAT_DEFAULT);
+			TM_Monster mo;
+			while (mo = TM_Monster(it.Next()))
 			{
 				if (mo && !mo.bDORMANT && !mo.bNOGRAVITY && mo.Gravity > 0.0 && !mo.bKILLED)
 					if (mo.vel.z < 100.0)
 						mo.vel.z = 100.0;
 			}
+			return;
 		}
-	}
-	
-	static MinecraftHandler Fetch()
-	{
-		return MinecraftHandler(Find("MinecraftHandler"));
+		
+		else if (e.Name == 'TM_NextMode' || e.Name == 'TM_NextSub')
+		{
+			let it = TM_Item(plr.InvSel);
+			if (it)
+			{
+				Name nn = e.Name;
+				Switch(nn)
+				{
+					Case 'TM_NextMode': it.CycleMode(e.args[0]);	return;
+					Case 'TM_NextSub':	it.CycleSubMode(e.args[0]);	return;
+				}
+			}
+			return;
+		}
+		else if (e.Name == 'TM_SpawnFire')
+		{
+			int type = e.Args[0];
+			if (type < FIRE_Min || type > FIRE_Max)
+			{
+				Console.Printf("First argument must be [0, %d]", FIRE_Min, FIRE_Max);
+				return;
+			}
+			let defs = GetDefaultByType("TM_Block_Fire");
+			double dist = plr.Radius * 2 + defs.Radius * 2;
+			Vector3 spos = plr.Vec3Angle(dist, plr.angle);
+			
+			SpawnFireBlock(plr, null, spos, (-1, -1), null, type, (e.Args[1] > 0));
+		}
+		else if (e.Name == 'TM_RemoveFire')
+		{
+			
+			int type = e.Args[0];
+			if (type < FIRE_Min || type > FIRE_Max)
+			{
+				Console.Printf("First argument must be [%d, %d]", FIRE_Min, FIRE_Max);
+				return;
+			}
+			int count = 0;
+			for (int i = 0; i < Blocks.Size(); i++)
+			{
+				let fire = TM_Block_Fire(Blocks.Actors[i]);
+				if (fire && fire.GetType() == type)
+				{
+					fire.Destroy();
+					count++;
+				}
+			}
+			String typename = "Undefined";
+			Switch(type)
+			{
+				Case FIRE_Normal:	typename = "normal"; break;
+				Case FIRE_Void:		typename = "void"; break;
+				Case FIRE_Soul:		typename = "soul"; break;
+				Case FIRE_Hell:		typename = "hell"; break;
+			}
+			
+			Console.Printf("%d %s fire blocks destroyed", count, typename);
+			return;
+		}
 	}
 	
 	override void OnRegister()
@@ -101,30 +141,48 @@ Class MinecraftHandler : EventHandler
 		Super.OnRegister();
 	}
 	
+	
 	override void WorldLoaded(WorldEvent e)
 	{
 		BannedSectors.Clear();
 		MountList.Clear();
-		Monsters = AArray.Create();
+		Monsters = TM_AArray.Create();
+		Blocks = TM_AArray.Create();
+		StatusEffects = TM_AArray.Create();
 		CreateSpawnList();
 		Timer[S_Spawn] = Second;
-		MCC_AIDifficulty_Prev = MCC_AIDifficulty;
+		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
+		
+		
 	}
-	
+		
 	override void WorldThingSpawned(WorldEvent e)
 	{
-		if (!e.Thing || e.Thing.bDESTROYED || e.Thing.bNOINTERACTION)
+		Actor mo = e.Thing;
+		if (!mo || mo.bDESTROYED || (mo.bNOINTERACTION && !(mo is 'TM_Block')))
 			return;
+		
+		
 			
-		let mo = MinecraftMonster(e.Thing);
-		if (mo)	
+		let mon = TM_Monster(e.Thing);
+		if (mon)	
 		{
-			mo.Event = self;
-			Monsters.Push(mo);
+			mon.Event = self;
+			Monsters.Push(mon);
 			MobCount++;
 			
-			if (mo is 'MCEnderman')
+			if (mon is 'TM_Enderman')
 				EndermanCount++;
+			return;
+		}
+		let bl = TM_Block(e.Thing);
+		if (bl)
+		{
+			bl.Event = self;
+			Blocks.Push(bl);
+			BlockCount++;
+			if (bl is 'TM_Block_Fire')
+				FireCount++;
 			return;
 		}
 		
@@ -136,6 +194,8 @@ Class MinecraftHandler : EventHandler
 		}
 		
 	}
+	
+	
 	
 	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
 	// 2. Iterate through all lines that have a front or back sector connecting
@@ -200,48 +260,52 @@ Class MinecraftHandler : EventHandler
 		}
 		
 		if (Failsafe < 1)
-			Console.Printf("WARNING! Sector iteration broke the failsafe!");
+		{
+			Console.Printf("Triple M WARNING! Sector iteration broke the failsafe!");
+			BannedSectors.Clear();
+		}
 	}
-	
+		
 	override void WorldThingDied(WorldEvent e)
 	{
-		let mo = MinecraftMonster(e.Thing);
-		if (mo)	
+		let mo = TM_Entity(e.Thing);
+		if (!mo)	return;
+		
+		if (mo is 'TM_Monster')	
 		{
 			MobCount--;
 			Monsters.Delete(mo);
-			
-			if (mo is 'MCEnderman')
+			if (mo is 'TM_Enderman')
 				EndermanCount--;
+		}
+		else if (mo is 'TM_Block')
+		{
+			BlockCount--;
+			if (mo is 'TM_Block_Fire')
+				FireCount--;
+			Blocks.Delete(mo);
 		}
 	}
 	
 	override void WorldThingDestroyed(WorldEvent e)
 	{
-		let mo = MinecraftMonster(e.Thing);
-		if (mo && !mo.bKILLED) 
+		let mo = TM_Entity(e.Thing);
+		if (mo && !mo.bKILLED)
 		{
-			MobCount--;
-			if (mo is 'MCEnderman')
-				EndermanCount--;
-		}
-	}
-	/*
-	override void WorldThingDamaged(WorldEvent e)
-	{
-		let src = MinecraftMonster(e.DamageSource);
-		if (src)
-		{
-			let mo = e.Thing;
-			if (mo && mo is 'PlayerPawn' && !mo.FindInventory("MCImmunityFrames"))
+			if (mo is 'TM_Monster')
 			{
-				mo.A_GiveInventory('MCImmunityFrames',1);
-				if (!(mo is 'MinecraftMonster'))
-					mo.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
+				MobCount--;
+				if (mo is 'TM_Enderman')
+					EndermanCount--;
+			}
+			else if (mo is 'TM_Block')
+			{				
+				if (mo is 'TM_Block_Fire')
+					FireCount--;
+				BlockCount--;
 			}
 		}
 	}
-	*/
 	
 	private void HandleRandomSpawners(out Class<Actor> Cls)
 	{
@@ -263,9 +327,16 @@ Class MinecraftHandler : EventHandler
 	{
 		if (!mo || !Cls || Chance < 1 || Amount == 0)	return false;
 		
+		if (Cls is 'TM_FlyingItem')
+		{
+			let check = TM_FlyingItem(mo.A_DropItem(Cls, -1, Chance));
+			if (check && amount > 1)	check.Amount *= Amount;
+			return true;
+		}
+		
 		Array<Actor> drops;	drops.Clear();
 		bool good = false;
-		if (MCC_CombineItems || Amount < 1)
+		if (TMV_CombineItems || Amount < 1)
 		{
 			Actor check = null;
 			check = mo.A_DropItem(Cls, -1, Chance);
@@ -274,7 +345,16 @@ Class MinecraftHandler : EventHandler
 			if (check is 'RandomSpawner')
 				return true;
 			if (check is 'Inventory')
+			{	// TM_Items are always combined.
+				let it = TM_Item(check);
+				if (it)	
+				{
+					it.Amount *= Amount;
+					return true;
+				}
 				drops.Push(check);
+			}	
+			
 		}
 		else
 		{
@@ -287,8 +367,14 @@ Class MinecraftHandler : EventHandler
 					good = true;
 					continue;
 				}
-				else if (check && check is 'Inventory')
+				else if (check is 'Inventory')
 				{
+					let it = TM_Item(check);
+					if (it)	
+					{
+						it.Amount *= Amount;
+						return true;
+					}
 					drops.Push(check);
 				}
 			}
@@ -301,32 +387,53 @@ Class MinecraftHandler : EventHandler
 			Inventory Item = Inventory(drops[i]);
 			if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
 			{
-				let DropTimer = MCDropTimer.Create(Item);
-				if (MCC_CombineItems && Amount > 0)
+				let DropTimer = TM_DropTimer.Create(Item);
+				if (TMV_CombineItems && Amount > 0)
 					Item.Amount *= Amount;
 			}
 		}
 		return true;
 	}
 	
-	private int MCC_AIDifficulty_Prev;
+	private int TMV_AIDifficulty_Prev;
+	private bool once;
 	override void WorldTick()
 	{
 		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap' || level.IsFrozen())
 			return;
 		
+		if (!once)
+		{
+			once = true;
+			for (int i = 0; i < MAXPLAYERS; i++)
+			{
+				if (playeringame[i] && players[i].mo)
+				{
+					let mo = players[i].mo;
+					if (mo) 
+					{
+						if (!mo.FindInventory('TM_PlayerProtection'))
+							mo.GiveInventory('TM_PlayerProtection', 1);
+					}
+				}
+			}
+			
+			SetupAmmoService();
+		}
+		/*
 		if (MobCount > 0 && ++Timer[S_Despawn] >= DespawnTimer)
 		{
 			Timer[S_Despawn] = 0;
 			for (int i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftMonster(Monsters.Actors[i]);
+				let mo = TM_Monster(Monsters.Actors[i]);
 				if (!mo || (mo.Target && mo.Targetable(mo.Target)))	continue;
 				
-				double  dmin = mo.DespawnRangeMin,
-						dmax = mo.DespawnRangeMax;
+				double  dmin = mo.DespawnRangeMin ** 2,
+						dmax = mo.DespawnRangeMax ** 2;
 				
-				if (mo.A_CheckRange(mo.DespawnRangeMin, "Null", true))
+			//	if (mo.A_CheckRange(mo.DespawnRangeMin, "Null", true))
+				if (mo.CheckRange(mo.DespawnRangeMin, true))
 				{
 					
 					double closest = dmax ** 2;
@@ -334,52 +441,60 @@ Class MinecraftHandler : EventHandler
 					{
 						if (!playeringame[i])	continue;
 						let plr = players[i].mo;	
-						if (!plr || plr.bKILLED)	continue;
+						if (!plr)	continue;
 						
 						closest = min(mo.Distance2DSquared(plr), closest);
 					}
 					
-					if (closest < dmin)
+					if (closest <= dmin)
 						continue;
 					else if (closest >= dmax)
+					{
+						if (TMV_Debug == 16)
+							Console.Printf("%s despawned by range");
 						mo.Destroy();
+					}
 					else
 					{
-						double scalar = MC_Functions.GetFalloff(dmin, dmax, closest);
+						double scalar = TM_Global.GetFalloff(dmin, dmax, closest);
 						int chance = int(round(1000.0 * scalar));
 						if (irandom(1, 1000) <= chance)
+						{
+							if (TMV_Debug == 16)
+								Console.Printf("%s removed by chance", mo.GetClassName());
 							mo.Destroy();
+						}
 					}
+					
 				}
 			}
 		}
-		
+		*/
 		// If there's enderman around, check player LOS and trigger them if
 		// staring at their heads.
-		if (EndermanCount > 0)
+		if (EndermanCount > 0 || FireCount > 0)
 			DoEnderTrace();
 		
 		if (++Timer[S_Clean] >= CleanTimer)
 		{
 			Timer[S_Clean] = 0;
 			Monsters.Clean();
-			/*
-			SpawnQueue.Clean();
-			SpawnQueuePriority.Clean();
-			ClsQueue.Clean();
-			ClsQueuePriority.Clean();
-			*/
+			Blocks.Clean();
+			StatusEffects.Clean();
 			MobCount = 0;
 			EndermanCount = 0;
-			for (int i = 0; i < Monsters.Size(); i++)
+			BlockCount = 0;
+			
+			int i = 0;
+			for (i = 0; i < Monsters.Size(); i++)
 			{
-				let mo = MinecraftMonster(Monsters.Actors[i]);
+				let mo = TM_Monster(Monsters.Actors[i]);
 				if (mo && !mo.bKILLED)
 				{
 					mo.CleanActors();
 					mo.CleanDamagers();
 					MobCount++;
-					if (mo is 'MCEnderman')
+					if (mo is 'TM_Enderman')
 						EndermanCount++;
 				}
 			}
@@ -388,7 +503,149 @@ Class MinecraftHandler : EventHandler
 		// Spawn monsters spherically around players.
 		HandleMapSpawns();
 	}
-	
-	
 }
 
+
+// Map specific event handlers. These do several things based on maps.
+// 1. Shrinks the player radius if between [16, 20] to 15.
+// 2. Teleports players to the nearest 
+Class TM_MapEvent : EventHandler
+{
+	private Array<Inventory> Items;
+	private Array<Actor> Spots;
+	private int DmgOverride;
+	
+	static TM_MapEvent Fetch()
+	{
+		return TM_MapEvent(Find("TM_MapEvent"));
+	}
+	
+	override void WorldThingSpawned(WorldEvent e)
+	{
+		// Add Teleport Destination things to the array, but only if they don't
+		// have any TIDs. This will serve as player teleports upon hitting
+		// Hellfire Lava, which is used specifically in places where there's no
+		// escape.
+		let mo = e.Thing;
+		
+		let inv = Inventory(mo);
+		if (inv)
+		{
+			Items.Push(inv);
+			return;
+		}
+		
+		if (mo is 'TeleportFog' || mo.GetReplacee(mo.GetClass()) is 'TeleportFog')
+		{
+			let plr = mo.Target;
+			if (plr is "PlayerPawn" && !plr.bTHRUACTORS)
+			{
+				let it = BlockThingsIterator.Create(plr);
+				while (it.Next())
+				{
+					let targ = it.thing;
+					if (!targ || !targ.bShootable || targ == plr || targ.bNOTELEFRAG || 
+						targ.bTHRUACTORS ||	(targ.bTHRUSPECIES && targ.species == plr.species))
+						continue;
+						
+					if (TM_S7_Math.TestAABB(
+						plr.pos, (plr.radius, plr.height),
+						targ.pos, (targ.radius, targ.height)))
+						targ.DamageMobj(plr, plr, Actor.TELEFRAG_DAMAGE, "Telefrag", DMG_THRUSTLESS);
+				}
+			}
+		}
+		
+		if (mo is 'TeleportDest' && mo.TID == 0)
+			Spots.Push(mo);
+	}
+	
+	const CleanTrigger = Second * 5;
+	private int Timer;
+	private bool once;
+	override void WorldTick()
+	{
+		if (++Timer >= CleanTrigger)
+		{
+			Timer = 0;
+			Array<Inventory> temp; temp.Clear();
+			for (int i = 0; i < Items.Size(); i++)
+			{
+				if (Items[i] && !Items[i].Owner && Items[i].bDROPPED)
+					temp.Push(Items[i]);
+			}
+			Items.Move(temp);
+		}
+		Array<Inventory> Tele; Tele.Clear();
+		for (int i = 0; i < Items.Size(); i++)
+		{
+			if (Items[i] && !Items[i].Owner && Items[i].WaterLevel > 2)
+				if (playeringame[0] && players[0].mo && !players[0].mo.bKILLED)
+					Items[i].SetOrigin(players[0].mo.pos, false);
+		}
+		
+		
+		
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])
+				continue;
+				
+			let mo = players[i].mo;
+			if (!mo || mo.bKILLED)	continue;
+			
+			// Allow players to better fit into the blocks, akin to minecraft.
+			// Player default radius is 16 so they won't fit without this change.
+			if (mo.radius > 15 && mo.radius <= 20)
+				mo.A_SetSize(15);
+				
+			if (mo.WaterLevel > 0 && Spots.Size() > 0)
+			{
+				int num = mo.floorterrain;
+				int count = mo.CurSector.Get3DFloorCount();
+				for (int j = 0; j < count; j++)
+				{
+					let XF = mo.CurSector.Get3DFloor(j);
+					if (XF && (XF.flags & (F3DFloor.FF_EXISTS|F3DFloor.FF_SWIMMABLE)))
+					{
+						double botz = XF.bottom.ZAtPoint(mo.pos.XY);
+						double topz = XF.top.ZAtPoint(mo.pos.XY);
+						
+						if (mo.pos.z > topz && mo.pos.z + mo.height < botz)
+							continue;
+						/*
+						mo.floorterrain = XF.model.GetTerrain(Sector.ceiling);
+						let ter = mo.GetTerrain();
+						mo.floorterrain = num;
+						*/
+						let ter = XF.Model.GetFloorTerrain(Sector.ceiling);
+						if (ter && ter.DamageAmount > 0 && ter.DamageMOD == 'HellFire')
+						{
+							Actor closest = null;
+							double dist = 32767 ** 2;
+							for (int k = 0; k < Spots.Size(); k++)
+							{
+								if (Spots[k])
+								{
+									double d = mo.Distance3DSquared(Spots[k]);
+									if (d < dist)
+									{
+										closest = Spots[k];
+										dist = d;
+									}
+								}
+							}
+							if (closest)
+							{
+								let inv = TM_PlayerProtection(mo.FindInventory('TM_PlayerProtection'));
+								if (inv)	inv.InvulTimer += Second;
+								mo.Teleport(closest.pos, mo.angle, TELF_DESTFOG);
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,516 @@
+Class TM_Block_TNT : TM_Block
+{
+	int Timer;
+	Default
+	{
+		TM_Block.ShowDamage false;
+		TM_Block.Repair -1, 1;
+		TM_Block.Flammable FLF_Flammable;
+		Health 100;
+		DamageFactor "Fire", 1.0;
+		-STOPRAILS
+		Tag "TNT";
+		DeathSound "Minecraft/Grass";
+	}
+	
+	override int TakeSpecialDamage(Actor i, Actor s, int damage, Name mod)
+	{
+		if (mod == 'Fire' || mod == 'Lava' || mod == 'Slime')
+			return damage;
+			
+		if (mod == 'Creeper' || mod == 'Ghast')
+			return health;
+	
+		Actor dmgr = s;
+		if (!dmgr && i && i.Target)	 	dmgr = i.Target;
+		
+		// Don't ignite if it's not from the player and not one of the above
+		// damage types.
+		if (!(dmgr is 'PlayerPawn'))
+			return -1;
+			
+		return health; // Instant break.
+	}
+	
+	override bool Used(Actor user)
+	{
+		if (user && !user.bKILLED)
+		{
+			A_Die('Mine'); // Drop as an item.
+			return true;
+		}
+		return false;
+	}
+	
+	override void Die(Actor s, Actor i, int flags, Name mod)
+	{
+		Super.Die(s, i, flags, mod);
+		if (mod == 'Mine')
+		{
+			A_DropItem("TM_Item_TNT", 1);
+			return;
+		}
+		bool explo = (flags & DMG_EXPLOSION);
+		// Override all timers and set it to Minecraft's.
+		if (explo)
+			Timer = Second + random(-17, 17);
+		else if (Timer < 1)
+			Timer = Second * 4;
+		
+		let tnt = TM_Ent_TNT(Spawn('TM_Ent_TNT', pos, ALLOW_REPLACE));
+		if (tnt)
+		{
+			tnt.target = target;
+			tnt.master = master;
+			tnt.tracer = tracer;
+			tnt.ReactionTime = Timer;
+			tnt.ByExplosion = explo;
+			tnt.Vel.Z = 5;
+			tnt.VelFromAngle(FFRandom(0.5, 2.0), random(0,359));
+		}
+	}
+	
+	
+	
+	States
+	{
+	Spawn:
+		ASDF A -1;
+		Wait;
+	Death:
+		TNT1 A 10 A_StartSound(DeathSound, CHAN_BODY, CHANF_OVERLAP);
+		Stop;
+	}
+}
+
+//==============================================================================
+// TNT Item
+//==============================================================================
+
+Class TM_Item_TNT : TM_Item
+{
+	enum ETNTModes
+	{
+		PlaceDist =	394,
+	
+		TNTM_Start = 0,
+		TNTM_Toss,		// Throws a lit TNT entity.
+		TNTM_Place,		// Places passive TNT block
+		TNTM_End,
+		
+		TNTM_Min = TNTM_Start + 1,
+		TNTM_Max = TNTM_End - 1,
+		
+		TNTS_Min = 1,	// Minimum timer
+		TNTS_Max = 4,	// Maximum timer
+		
+		
+	}
+	
+	private TM_Block_TNT block;
+	private PlayerPawn plr;
+	private bool Usable;
+	Default
+	{
+		TM_Item.ModeSub TNTM_Toss, TNTS_Min; // Mode, Seconds
+		
+		Inventory.Icon "TMTNTIcon";
+		Tag "TNT";
+	}
+	
+	override void UpdateTag()
+	{
+		String s = GetBaseTag();
+		String _mode = "Mode: ";
+		{
+			String add = "";
+			Switch(Mode)
+			{
+				Case TNTM_Toss:		add = "Toss Ignited";	break;
+				Case TNTM_Place:	add = "Place Dormant";	break;
+			}
+			// Now combine them. In ZScript, '..' means combine strings.
+			_mode = _mode..add;
+		}
+		
+		String _sub = String.Format("Timer: %d seconds", sub);
+		s = String.Format("%s\n%s\n%s", s, _mode, _sub);
+		SetTag(s);
+	}
+	
+	override bool NextMode(bool prev)
+	{
+		if (prev && (--Mode < TNTM_Min || Mode > TNTM_Max))
+			Mode = TNTM_Max;
+		else	if (++Mode > TNTM_Max || Mode < TNTM_Min)
+			Mode = TNTM_Min;
+			
+		
+		return true;
+	}
+	override bool NextSubMode(bool prev)	
+	{
+		if (prev && (--Sub < TNTS_Min || Sub > TNTS_Max))
+			Sub = TNTS_Max;
+		else if (++Sub > TNTS_Max || Sub < TNTS_Min)
+			Sub = TNTS_Min;
+		return true;
+	}
+	
+	
+	
+	//--------------------------------------------------------------------------
+	// Helper stuff for DoEffect.
+	private int BlockSide;
+	private Vector3 HitPos;
+	transient private TM_BlockTracer trc;
+	
+	private void AdjustPos(Vector3 np, int siding)
+	{
+		BlockSide = siding;
+		HitPos = np;
+	}
+	
+	private void ShiftPos(int id, double off, int siding)
+	{
+		BlockSide = siding;
+		Switch (id)
+		{
+			Case V_X:	HitPos.X += off;	return;
+			Case V_Y:	HitPos.Y += off;	return;
+			Case V_Z:	HitPos.Z += off;	return;
+		}
+	}
+	
+	private void AdjustPhantomBlock()
+	{
+	
+		BlockSide = 0;
+		HitPos = trc.results.HitPos;
+		int type = trc.results.HitType;
+		
+		if (type == TRACE_HitActor)
+		{
+			let mo = TM_Block(trc.results.HitActor);
+			
+				 if (HitPos.Z >= mo.pos.Z + mo.Height)	AdjustPos(mo.pos + (0, 0, mo.Height), Side_Top);
+			else if (HitPos.Z <= mo.pos.Z)				AdjustPos(mo.pos - (0, 0, mo.Height), Side_Bottom);
+			else 
+			{
+				
+				// Side
+				double ang = TM_S7_Math.GetAnglesTo(level, mo.pos, HitPos);
+				ang = TM_Global.SnapDouble(ang, 90);
+				
+				double absang = abs(ang);
+				HitPos = mo.pos;
+				
+				// Adjust based on angle.
+					 if (absang >= 180)	ShiftPos(V_X, -BlockRadius, Side_West);
+				else if (absang >= 90)	
+				{
+					int sign = TM_GlobalMaths.Sign(ang);
+					if (sign > 0)	ShiftPos(V_Y, BlockRadius * 2, Side_North);
+					else			ShiftPos(V_Y, -BlockRadius * 2, Side_South);
+				}
+				else				ShiftPos(V_X, BlockRadius * 2, Side_East);
+								
+			//	if (TMV_Debug == 6)
+			//		Console.Printf("%.02f | %d %d %d", ang, HitPos.X, HitPos.Y, HitPos.Z);
+			} // Now finally set the position.
+			block.SetPos(HitPos);
+		} // No blocks hit.
+		else block.SetPos(HitPos);
+	}
+	
+	private void AdjustTraceResults(int type, TM_BlockHitList block)
+	{
+		trc.Results.HitType = type;
+		trc.Results.HitActor = block.mo;
+		trc.Results.HitVector = block.HitVector;
+		trc.Results.HitPos = block.HitPos;
+	}
+	private bool DoTrace()
+	{
+		if (!Owner || !plr)	return false;
+		if (!trc)	trc = TM_BlockTracer(new('TM_BlockTracer'));
+		
+		
+		Vector3 ang = TM_Map.AnglesToVector(plr.angle, plr.pitch);
+		Vector3 _pos = plr.Vec2OffsetZ(0,0,plr.player.viewz);
+		trc.BlockList.Clear();
+		trc.Start = _pos;
+		trc.Trace(_pos, plr.CurSector, ang, PlaceDist, 0);
+		
+		
+		
+		// Some actors can overlap and do some weird, fucky things. This trace 
+		// will get at least two blocks and use the one that's closest.
+		
+		if (trc.BlockList.Size() > 1)
+		{
+			let b1 = TM_Block(trc.BlockList[0].mo);
+			let b2 = TM_Block(trc.BlockList[1].mo);
+			
+		//	bool below = _pos.z < trc.BlockList[0].HitPos.Z;
+			
+			if (b1.pos != b2.pos)
+			{	
+				// Get the closest one.
+				int ind = 0;
+				double closest = 32767;
+				double Len[2];
+				for (int i = 0; i < 2; i++)
+				{
+					Len[i] = level.Vec3Diff(trc.BlockList[i].HitPos, _pos).Length();
+					if (Len[i] < closest)
+					{
+						closest = Len[i];
+						ind = i;
+					}
+				}
+			//	int ind = (Len[0] <= Len[1]) ? 0 : 1;
+				if (TMV_Debug == 6)
+					Console.Printf("%.02f | %.02f", Len[0], Len[1]);
+				
+				AdjustTraceResults(TRACE_HitActor, trc.Blocklist[ind]);
+			}
+		}
+		else if (trc.BlockList.Size() > 0)
+		{
+			AdjustTraceResults(TRACE_HitActor, trc.Blocklist[0]);
+		}
+		
+		return (trc.Results.HitType != TRACE_HitNone);
+	}
+	
+	private void ClearBlock(bool canuse)
+	{
+		Usable = canuse;
+		if (block) block.Destroy();
+	}
+	private void SetupBlock(bool reset = false)
+	{
+		if (reset && block)		{	block.Destroy(); block = null;	}
+		if (!block)
+		{
+			block = TM_Block_TNT(Spawn('TM_Block_TNT'));
+			block.Target = Owner;
+			block.SetPreview(true);
+		}
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		
+		bINVBAR = (Owner && (Amount > 0 || sv_infiniteinventory));
+		if (!bINVBAR || Owner.bKILLED || !Owner.Player)
+		{	ClearBlock(false);		return;		}
+		
+		if (!Plr)
+		{
+			Plr = PlayerPawn(Owner);
+			if (!plr)
+			{	ClearBlock(false);	return;		}
+		}
+		// Placement mode. Setup the block in preview state. If the block has a
+		// position to go to, put it there as a highlight.
+		
+		// This code will eventually be moved over to the base setup.
+		if (Mode == TNTM_Place)
+		{
+			if (plr.InvSel == self)
+			{
+				SetupBlock();
+				Usable = DoTrace();
+				block.bINVISIBLE = !Usable;
+				if (Usable)	
+					AdjustPhantomBlock();
+			}
+			else ClearBlock(false);
+		}
+		else ClearBlock(true);
+	}
+	
+	
+	override bool Use(bool pickup)
+	{
+		if (pickup || !Owner || !Owner.Player || Owner.bKILLED)	return false;
+		
+		// Placement mode
+		if (Mode == TNTM_Place)
+		{
+			if (Usable && block)
+			{
+				block.SetPreview(false);
+				block.Timer = Second * Sub;
+				block = null;
+			}
+		}
+		else // Toss mode
+		{
+			Vector3 np = Owner.Pos; np.z = Owner.Player.ViewZ;
+			let bomb = TM_Ent_TNT(Spawn('TM_Ent_TNT', np, ALLOW_REPLACE));
+			bomb.Target = Owner;
+			bomb.Angle = TM_Global.SnapDouble(Owner.Angle, 90);
+			bomb.Vel3DFromAngle(16, Owner.Angle, Owner.Pitch);
+			bomb.NoGravTics = 2;
+			bomb.ReactionTime = Second * Sub;
+		}
+		
+		return Usable;
+	}
+	
+	
+	
+	override void OnDestroy()
+	{
+		if (block) block.Destroy();
+		Super.OnDestroy();
+	}
+}
+
+Class TM_Ent_TNT : TM_Entity
+{
+	const GrowTime = 10; // When it starts to grow larger.
+	private int Timer;
+	private Actor Owner;
+	int NoGravTics;
+	bool ByExplosion;
+	Default
+	{	
+		Radius BlockRadius - 1; // So it can fit into small areas.
+		Height BlockHeight;
+		+CANPASS
+		+SOLID
+		+VULNERABLE
+		+NONSHOOTABLE
+		+NOTELEPORT
+		+NOTRIGGER
+		+NOBLOCKMONST
+		+BRIGHT
+		+SLIDESONWALLS
+		+FORCERADIUSDMG
+		+EXTREMEDEATH
+		+MBFBOUNCER
+		+DROPOFF
+		-FLOORCLIP
+		Mass 200;
+		Species "TM_Ent_TNT";
+		+THRUSPECIES
+		+ALLOWBOUNCEONACTORS
+		+BOUNCEONACTORS
+		BounceFactor 0;
+		StencilColor "White";
+		Tag "TNT (Armed)";
+		Obituary "%o was blasted sky high by TNT.";
+		SeeSound "Minecraft/Fuse";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		bNOGRAVITY = (NoGravTics > 0);
+		Owner = Target;
+		sx = Scale.X;
+		ex = sx * 3;
+		
+		if (!ByExplosion && SeeSound)
+			A_StartSound(SeeSound, 100, CHANF_OVERLAP);
+	}
+	
+	override bool OkayToSwitchTarget(Actor other) { return false; }
+	
+	// Just so this can be thrust around by damage.
+	override int DamageMobj(Actor i, Actor s, int damage, name mod, int flags, double angle)
+	{
+		if (!(flags & (DMG_FORCED|DMG_NO_FACTOR)))
+			damage = ApplyDamageFactor(mod, damage);
+		
+		return damage;
+	}
+	
+	override void Die(Actor s, Actor i, int flags, Name mod)
+	{	return;	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (other)
+		{
+			if (other.bACTLIKEBRIDGE)
+				return true;
+				
+			if (other.bSOLID && !other.bSHOOTABLE)
+				return true;
+		}
+		return false;
+	}
+	private bool Blinking;
+	private double sx, ex;
+	private int SmokeDelay;
+	private void Prime()
+	{
+		int SFX = TMV_SFX;
+		if (SFX > 0 && --SmokeDelay < 1)
+		{
+			SmokeDelay = (SFX > 1) ? IRandom(1,2) : IRandom(2,3);
+			if (Timer > 1 && (SFX > 1 || irandom(1, 2) == 1))
+			{
+				double dist = FFRandom(0.0, 2.0);
+				double velo = frandom(2.0, 4.0);
+				Vector2 AP = (frandom(0,359),frandom(-90,0));
+				A_SpawnItemEx("TM_FuseSmoke", 
+					cos(pitch) * dist, 0, height + (-sin(pitch) * dist), 
+					cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
+					AP.X, SXF_NOCHECKPOSITION);
+			}
+		}
+		if (++Timer < ReactionTime)
+		{
+			if (NoGravTics > 0 && --NoGravTics < 1)
+				bNOGRAVITY = false;
+			Angle = TM_Global.SnapDouble(Angle, 90);
+			if (Timer % 8 == 0)
+			{
+				Blinking = !Blinking;
+				if (Blinking)	A_SetRenderStyle(1.0, STYLE_Normal);
+				else			A_SetRenderStyle(1.0, STYLE_Stencil);
+			}
+			int TimeLeft = ReactionTime - Timer;
+			if (TimeLeft < GrowTime)
+			{
+				
+				double cur = (double(GrowTime - TimeLeft) / GrowTime) * 0.5;
+				cur = TM_GlobalMaths.RemapRange(cur, 0, 1, sx, ex);
+				
+				double mx = TM_GlobalMaths.SmootherStep(cur, sx, ex);
+				Scale.X = sx + mx;
+				Scale.Y = sx + mx;
+			}
+		}
+		else 
+		{
+			SetState(ResolveState("Death"));
+			return;
+		}
+		
+	}
+	
+	States
+	{
+	Spawn:
+		ASDF A 1 Prime();
+		Wait;
+	Death:
+		TNT1 A 10
+		{
+			bNOINTERACTION = bDONTTHRUST = true;
+			A_Stop();
+			Target = Owner;
+			Explode(true, 1000, TM_Creeper.ExploRange + 96, TM_Creeper.ExploFall + 96, 6000, -1, -1, XF_HURTSOURCE, RADF_NOFACTORTHRUST|RADF_ALWAYSTHRUST, false, 'TNT');
+			A_ChangeLinkFlags(1, 1);
+		}
+		Stop;
+	}
+}

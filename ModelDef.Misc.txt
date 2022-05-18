@@ -1,0 +1,14 @@
+//$GZDB_Skip
+//==============================================================================
+// Misc.
+//==============================================================================
+
+Model TM_ArrowProjectile
+{
+	USEACTORPITCH
+	USEACTORROLL
+
+	Model 0 "Models/Misc/Arrow.obj"
+	Scale 1.0 1.0 1.2
+	FrameIndex ASDF A 0 0
+}

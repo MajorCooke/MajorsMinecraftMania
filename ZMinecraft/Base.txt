@@ -1,35 +1,160 @@
 // For the sake of identification and inheritance.
 
-Class MinecraftEntity : Actor abstract
+Class TM_Entity : Actor abstract
 {
 	mixin TM_FastRNG;
+	mixin TM_Functions;
+	mixin TM_Event;
+}
 
-	Vector3 Middle()	{	return (0, 0, height * 0.5);	}
-
-	int Explode(bool sfx = true,
-		int damage = -1, int radius = -1, int full = 0,
-		double thrust = -1, double trad = -1, int tfull = -1,
-		int flags = XF_HURTSOURCE, int radflags = 0,
-		bool alert = false, Name DamageType = 'None',
-		Class<Actor> filter = null, int eflags = EXF_PARENT)
+Class TM_Item : Inventory abstract
+{
+	mixin TM_FastRNG;
+	const FadeTimer = 1.0 / 70.0;
+	int Timer, StartTimer;
+	private bool Flying, ShowStacks;
+	private String BaseTag;
+	protected int Mode, Sub;
+	protected Name CMode, CSub;
+	
+	Property ModeSub: Mode, Sub;
+	Property MSCvars: CMode, CSub;
+	Property ShowStacks: ShowStacks;
+	Default
 	{
-		if (radius > 0.0 && sfx)
+		TM_Item.ModeSub 0, 0;
+		TM_Item.ShowStacks true;
+		TM_Item.MSCvars " ", " ";
+		Inventory.PickupSound "Minecraft/Pickup";
+		Inventory.PickupMessage "";
+		Inventory.InterhubAmount 64;
+		Inventory.MaxAmount 64;
+		+Inventory.NEVERRESPAWN
+		+Inventory.NOSCREENFLASH
+		+Inventory.INVBAR
+		+Inventory.UNCLEARABLE
+		+Inventory.KEEPDEPLETED
+		+FLOATBOB
+		+DROPPED
+		+DONTGIB
+		FloatBobStrength 0.3;
+		Scale 0.3;
+		
+	}
+	
+	override void BeginPlay()
+	{
+		if (GetClass().IsAbstract())
 		{
-			let exp = Spawn('MCExplosion', pos + Middle(), ALLOW_REPLACE);
-			if (exp)
+			Destroy();
+			return;
+		}
+		Super.BeginPlay();
+	}
+	
+	override void PostBeginPlay()
+	{
+		BaseTag = GetTag();
+		UpdateTag();
+		Timer = (TMV_ItemTimer > 0) ? Minute * TMV_ItemTimer : -1;
+		Super.PostBeginPlay();
+	}
+	
+	override void PlayPickupSound(Actor toucher)
+	{	toucher.A_StartSound(PickupSound, 123, CHANF_OVERLAP);	}
+	
+	override bool ShouldRespawn()
+	{	return false;	}
+	
+	override void DoEffect()
+	{
+		bINVBAR = (Amount > 0);
+	}
+	
+	private void DoTick()
+	{
+		if (bDESTROYED)	return;
+		if (Owner)
+		{
+			Timer = StartTimer;
+			return;
+		}
+	
+		if (ShowStacks)
+		{
+				 if (Amount > 48)	Frame = Fr_E;
+			else if (Amount > 32)	Frame = Fr_D;
+			else if (Amount > 16)	Frame = Fr_C;
+			else if (Amount > 1)	Frame = Fr_B;
+		}
+		if (Timer > -1)
+		{
+			if (Timer < 1 || (Timer > 0 && --Timer < 1))
+				A_FadeOut(FadeTimer); 
+			else A_FadeIn(1.0, FTF_CLAMP);
+		}
+	}
+	
+	int GetMode() const		{	return Mode;	} 
+	int GetSubMode() const	{	return Sub;		}
+	bool IsFlying() const	{	return Flying;	}
+	String GetBaseTag() const { return BaseTag; }
+	
+//	virtual bool ChangeMode(int newmode)		{	return false;	}
+//	virtual bool ChangeSubMode (int newmode)	{	return false;	}
+	protected virtual bool NextMode(bool prev = false)	{	return false;	}
+	protected virtual bool NextSubMode(bool prev = false)	{	return false;	}
+	
+	bool CycleMode(bool prev = false)
+	{
+		bool ret = NextMode(prev);
+		if (ret)
+		{
+			Click();
+			UpdateTag();
+			if (Owner.Player)
 			{
-				exp.A_SetScale(radius);
+				CVar c = CVar.GetCvar(CMode, Owner.Player);
+				if (c) c.SetInt(Mode);
 			}
 		}
-		Actor source = Target;
-		if (bISMONSTER) source = self;
-		
-		return MC_Functions.Explode(self, source, damage, radius, full, thrust, 
-			trad, tfull, flags, radflags, alert, DamageType, filter, eflags);
+		return ret;
+	}
+	
+	bool CycleSubMode(bool prev = false)
+	{
+		bool ret = NextSubMode(prev);
+		if (ret)
+		{
+			Click();
+			UpdateTag();
+			if (Owner.Player)
+			{
+				CVar c = CVar.GetCvar(CSub, Owner.Player);
+				if (c) c.SetInt(Sub);
+				else if (CSub != '') Console.Printf("%s: CVAR not found", CSub);
+			}
+		}
+		return ret;
+	}
+	
+	void Click()	
+	{	
+		if (Owner)	Owner.A_StartSound("Minecraft/Click", 100, CHANF_OVERLAP);
+		else		A_StartSound("Minecraft/Click", 100, CHANF_OVERLAP);
+	}
+	
+	virtual void UpdateTag()	{	}
+	
+	States
+	{
+	Spawn:
+		ASDF A 1 DoTick();
+		Wait;
 	}
 }
 
-Class MinecraftProjectile : MinecraftEntity abstract
+Class TM_Projectile : TM_Entity abstract
 {
 	Default
 	{
@@ -37,7 +162,7 @@ Class MinecraftProjectile : MinecraftEntity abstract
 	}
 }
 
-Class MCPlayerProtection : PowerProtection
+Class TM_PlayerProtection : PowerProtection
 {
 	const HalfSec = 18;
 	int InvulTimer;
@@ -45,6 +170,7 @@ Class MCPlayerProtection : PowerProtection
 	{
 		DamageFactor "Ghast", 0.20;
 		DamageFactor "Creeper", 0.20;
+		DamageFactor "TNT", 0.20;
 	}
 	
 	override void InitEffect()
@@ -68,7 +194,7 @@ Class MCPlayerProtection : PowerProtection
 		{
 			newdamage = HandleDamage(damage, damageType, inflictor, source, flags);
 			if (newdamage < 1)	return;
-			damage = newdamage;
+			damage = newdamage; // Needed for ignoring skill factor.
 			Super.ModifyDamage(damage, damageType, newdamage, passive, inflictor, source, flags);
 		}
 	}
@@ -90,24 +216,32 @@ Class MCPlayerProtection : PowerProtection
 		if (damage > 0)
 		{
 			processed = true;
-			if (source is "MinecraftEntity" || inflictor is "MinecraftEntity" || 
-				inflictor is "MCStatusEffect")
+			if (source is "TM_Entity" || inflictor is "TM_Entity" || 
+				inflictor is "TM_StatusEffect")
 			{
-				if (InvulTimer > 0 ||
-					(Owner is "PlayerPawn" &&
-						(MCC_Peaceful || !Owner.Player || Owner.Player.mo != Owner ||
-						(Owner.Player.Cheats & CF_TOTALLYFROZEN))))
+				// invul frames
+				if (InvulTimer > 0)
+					return -1;
+				
+				// voodoo doll or totally frozen
+				if (!Owner.Player || Owner.Player.mo != Owner || (Owner.Player.Cheats & CF_TOTALLYFROZEN))
+					return -1;
+				
+				// Peaceful protects from TM damage, unless it's a boss/minion
+				// and the damage type isn't hellfire or void (prevent cheesing)
+				if (TMV_Peaceful && !source.bBOSSSPAWNED && !(source is "TM_Boss") && 
+					damageType != 'Hellfire' && damageType != 'Void')
 					return -1;
 				
 				// Counteract any skill factors aside 1.0. Doesn't work if factor is <= 0.
-				if (MCC_NoSkillFactor)
+				if (TMV_NoSkillFactor)
 				{
 					double sk = G_SkillPropertyFloat(SKILLP_DamageFactor);
 					if (!(sk ~== 1.0) && sk > 0.0)
 						damage = int(double(damage) / sk);
 				}
 				InvulTimer = HalfSec;
-				Owner.A_StartSound("Minecraft/Hit", 9, CHANF_OVERLAP);
+				Owner.A_StartSound("Minecraft/Hit", 100, CHANF_OVERLAP);
 			}
 		//	else InvulTimer = HalfSec;
 		}

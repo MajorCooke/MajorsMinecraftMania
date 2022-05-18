@@ -1,0 +1,429 @@
+// Global functions that anyone can make use of.
+
+Class TM_Global play
+{
+	//==========================================================================
+	// Damage Functions
+	//==========================================================================
+	
+	static bool Flammable(Actor mo, Name DmgType)
+	{
+		if (!mo || !(mo.bSHOOTABLE || mo.bVULNERABLE) || IsImmune(mo, DmgType))
+			return false;
+		
+		return true;
+	}
+	
+	//--------------------------------------------------------------------------
+	// Checks if the actor is immune to a damagetype.
+	static bool IsImmune(Actor mo, Name DmgType)
+	{	return (TM_Global.GetDamageFactor(mo, DmgType, Actor.TELEFRAG_DAMAGE) < 1);	}
+	
+	
+	//--------------------------------------------------------------------------
+	// Applies a damagefactor for all things, including natural and inventory.
+	static int GetDamageFactor(Actor mo, Name type, int damage, bool secdmg = false)
+	{
+		if (!mo)	return -1;
+		if (damage < 1)	return damage;
+		
+		int dmg = damage;
+		dmg = mo.ApplyDamageFactor(type, dmg);
+		
+		if (dmg > 0)
+			dmg = mo.GetModifiedDamage(type, dmg, true);
+		
+		// For damage sectors, DamageSector is a global for reduction no matter
+		// what, on top of the regular damage type.
+		if (dmg > 0 && secdmg)
+		{
+			dmg = mo.ApplyDamageFactor("DamageSector", dmg);
+			if (dmg > 0)
+				dmg = mo.GetModifiedDamage("DamageSector", dmg, true);
+		}
+			
+		return dmg;
+	}
+
+	//--------------------------------------------------------------------------
+	static int GetSideActor(Actor slf, Actor mo)
+	{
+		if (mo.pos.z > slf.pos.z + slf.height)	return Side_Top;
+		if (mo.pos.z + mo.height < slf.pos.z)	return Side_Bottom;
+	
+		double ang = TM_S7_Math.GetAnglesTo(slf.level, slf.pos, mo.pos);
+		ang = TM_Global.SnapDouble(ang, 90);
+		
+		int ret = Side_East;
+		
+		if (abs(ang) >= 180)		ret = Side_West;
+		else if (abs(ang) >= 90)	ret = (ang >= 90) ? Side_North : Side_South;
+		
+		return ret;
+	}
+	
+	static TerrainDef, TerrainDef GetTerrainDef(Sector s)
+	{
+		if (!s)	return null;
+		
+		let terf = s.GetFloorTerrain(Sector.floor);
+		let terc = s.GetFloorTerrain(Sector.ceiling);
+		return terf, terc;
+	}
+	
+	static TerrainDef GetTerrainDamageDef(Sector s, bool xfloor = false)
+	{
+		if (!s)	return null;
+		
+		TerrainDef ter = null;
+		if (xfloor)
+		{	
+			ter = s.GetFloorTerrain(Sector.ceiling);
+			if (!ter || ter.DamageAmount < 1)
+			{
+				ter = s.GetFloorTerrain(Sector.floor);
+				if (!ter || ter.DamageAmount < 1)
+					ter = null;
+			}
+		}
+		else
+		{
+			ter = s.GetFloorTerrain(Sector.floor);
+			if (!ter || ter.DamageAmount < 1)
+				ter = null;
+		}
+		return ter;
+	}
+	
+	static void GetXFloors(out Array<TM_XFloor> XFloor, Sector CurSector)
+	{
+		XFloor.Clear();
+		if (!CurSector) return;
+		
+		int count = CurSector.Get3DFloorCount();
+		for (int i = 0; i < count; i++)
+		{
+			let XF = CurSector.Get3DFloor(i);
+			if (XF && (XF.flags & F3DFloor.FF_EXISTS))
+			{
+				let TM = TM_XFloor.NewXFloorPtr(XF, i);
+				if (TM) XFloor.Push(TM);
+			}
+		}
+	}
+	
+	
+	static int InLiquidSector(out Array<TM_XFloor> XFloor, Vector3 pos, Vector3 RHZ, bool damageonly = false)
+	{
+		Sector s = level.PointInSector(pos.XY);
+		if (!s || s.Get3DFloorCount() < 1)	return 0;
+		
+		
+		if (XFloor.Size() < 1)
+			GetXFloors(XFloor, s);
+			
+		Array<TM_XFloor> temp; temp.Clear();
+		
+		double Top = RHZ.Y + RHZ.Z;
+		// Check 3D floors for damaging terrain if under water.
+		int count = 0;
+		for (int i = 0; i < XFloor.Size(); i++)
+		{
+			if (!XFloor[i])	continue;
+			
+			let XX = XFloor[i];
+			F3DFloor XF = XX.XFloor;
+			if ((XF.flags & F3DFloor.FF_SWIMMABLE))
+			{
+				double	botz = XF.bottom.ZAtPoint(pos.XY), 
+						topz = XF.top.ZAtPoint(pos.XY);
+						
+				if (Top < botz || pos.Z > topz)
+				{
+					XX.Inside = false;
+					continue;
+				}
+				
+				XX.Inside = true;
+				
+			//	TerrainDef ter = XX.XSector.GetFloorTerrain(Sector.ceiling);
+			//	if (!ter)	ter = XX.XSector.GetFloorTerrain(Sector.floor);
+				
+				TerrainDef ter = null;
+				if (damageonly)
+					ter = TM_Global.GetTerrainDamageDef(XX.XSector, true);
+				else
+				{
+					TerrainDef terc = null, terf = null;
+					[terf, terc] = TM_Global.GetTerrainDef(XX.XSector);
+					if (terc && terc.DamageAmount > 0)
+						ter = terc;
+					else if (terf && terf.DamageAmount > 0)
+						ter = terf;
+				}
+				if (ter)
+				{
+					count++;
+					temp.Push(XFloor[i]);
+				}
+			}
+		}
+		XFloor.Move(temp);
+		return count;
+	}
+	
+	// Maps have an offset of 16, 16 in XY coordinates. 
+	static Vector3 AdjustBlockPos(Vector3 pos)
+	{
+		return TM_Global.SnapVector3(pos, (32, 32, 32), (16, 16, 0));
+	}
+	
+	static void ReorderNum(out int lo, out int hi)
+	{
+		if (lo > hi)
+		{
+			double ll = lo;
+			double hh = hi;
+			Swap(ll, hh);
+			lo = int(ll);
+			hi = int(hh);
+		}
+	}
+	
+	static void ReorderDbl(out double lo, out double hi)
+	{
+		if (lo > hi)
+			Swap(lo, hi);
+	}
+	
+	static void Swap(out double lo, out double hi)
+	{
+		let temp = hi;
+		hi = lo;
+		lo = temp;
+	}
+	
+	
+	static double SnapDouble(double v, double gridsize, double offset = 0)
+	{
+		v = (round((v - offset) / gridsize) * gridsize) + offset;
+		return v;
+	}
+	
+	static double SnapDoubleFloor(double v, double gridsize, double offset = 0)
+	{
+		v = (floor((v - offset) / gridsize) * gridsize) + offset;
+		return v;
+	}
+	
+	static Vector2 SnapVector2(Vector2 v, Vector2 gridsize, Vector2 offset = (0,0))
+	{
+		v -= offset;
+		v.x = (round(v.x / gridsize.x) * gridsize.x);
+		v.y = (round(v.y / gridsize.y) * gridsize.y);
+		v += offset;
+		return v;
+	}
+	
+	static Vector2 SnapVector2Uniform(Vector2 v, double gridsize, double offset = 0)
+	{
+		v.x = (round((v.x - offset) / gridsize) * gridsize) + offset;
+		v.y = (round((v.y - offset) / gridsize) * gridsize) + offset;
+		return v;
+	}
+	
+	static Vector3 SnapVector3(Vector3 v, Vector3 gridsize, Vector3 offset = (0,0,0))
+	{
+		v -= offset;
+		v.x = (round(v.x / gridsize.x) * gridsize.x);
+		v.y = (round(v.y / gridsize.y) * gridsize.y);
+		v.z = (round(v.z / gridsize.z) * gridsize.z);
+		v += offset;
+		return v;
+	}
+	
+	static Vector3 SnapVector3Uniform(Vector3 v, double gridsize, double offset = 0)
+	{
+		v.x = (round((v.x - offset) / gridsize) * gridsize) + offset;
+		v.y = (round((v.y - offset) / gridsize) * gridsize) + offset;
+		v.z = (round((v.z - offset) / gridsize) * gridsize) + offset;
+		return v;
+	}
+	
+	static Vector3 SnapVector3UniFloor(Vector3 v, double gridsize, double offset = 0)
+	{
+		v.x = (floor((v.x - offset) / gridsize) * gridsize) + offset;
+		v.y = (floor((v.y - offset) / gridsize) * gridsize) + offset;
+		v.z = (floor((v.z - offset) / gridsize) * gridsize) + offset;
+		return v;
+	}
+	
+	
+
+
+	//--------------------------------------------------------------------------
+	// Code borrowed from PhantomBeta's Se7envidas
+	static void SetPos(Actor mo, Vector3 npos, bool interp = true)
+	{
+		if (!mo)	return;
+		
+		LinkContext ctx;
+		mo.UnlinkFromWorld(ctx);
+		mo.SetXYZ(npos);
+		mo.LinkToWorld(ctx);
+		mo.FindFloorCeiling();
+	}
+	
+	// Based on code from PhantomBeta.
+	static void FaceVector(Actor mo, Vector3 other)
+	{
+		if (!mo)	return;
+        Vector3 diff = level.Vec3Diff(mo.pos, other);
+        mo.angle = VectorAngle(diff.X, diff.Y);
+        mo.pitch = -VectorAngle(diff.XY.Length(), diff.Z);
+    }
+	
+	//--------------------------------------------------------------------------
+	static Vector3 DoBounceTrace(Vector3 start, Sector sec, Vector3 vec, double dist)
+	{
+		let trc = new('TM_BounceTracer');
+		
+		if (!sec)
+		{
+			ThrowAbortException("DoBounceTrace: Sec cannot be null");
+			return (0,0,0);
+		}
+		
+		Vector3 HitPos, HitVec, _start = start;
+		int HitType;
+		
+		do
+		{
+		
+			trc.Trace(start, sec, vec, dist, 0);
+			
+			HitPos = trc.Results.HitPos;
+			HitVec = trc.Results.HitVector;
+			HitType = trc.Results.HitType;
+			
+			
+			double aa;	[aa, sec] = sec.LowestFloorAt(HitPos.XY);
+			dist -= level.vec3diff(start, HitPos).Length();
+			start = HitPos;
+			
+			Switch (HitType)
+			{
+				Case TRACE_HitWall:
+				{
+					let HitLine = trc.Results.HitLine;
+					// From Phantombeta's Se7envidas
+					double ang = VectorAngle (HitLine.delta.X, HitLine.delta.Y);
+                    let norm = (Actor.AngleToVector (ang - 90, 1.), 0).Unit ();
+
+                    if (TM_S7_Math.PointOnLineSidePrecise (HitPos.X, HitPos.Y, HitLine) == 1)
+                        norm = -norm;
+					
+					vec = norm;
+					break;
+				}
+				
+				Case TRACE_HitFloor:
+				Case TRACE_HitCeiling:
+				{
+					let _ffloor = trc.Results.ffloor;
+					Vector3 norm;
+					if (trc.Results.ffloor)
+					{
+						if (HitType == TRACE_HitFloor)	norm = _ffloor.top.normal;
+						else							norm = _ffloor.bottom.normal;
+					}
+					else
+					{
+						let _sec = trc.Results.HitSector;
+						if (HitType == TRACE_HitFloor)	norm = _sec.floorplane.normal;
+						else							norm = _sec.ceilingplane.normal;
+					}
+					vec = TM_S7_Math.ReflectVector(HitVec, norm);
+					break;
+				}
+			}
+			
+		} while (trc.Results.HitType != TRACE_HitNone)
+		
+		_start = level.Vec3Offset(HitPos, vec);
+		
+		return HitPos;
+		
+	}
+}
+
+
+// Bouncing tracer, can be set for lines, floors, ceilings, and actors.
+Class TM_BounceTracer : LineTracer
+{
+	Array<Line> IgnoreL;
+	Array<Actor> IgnoreA;
+	
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitActor:
+			{
+				return TRACE_Skip;
+				/*
+				if (IgnoreA.Size() < 1)
+					return TRACE_Stop;
+			
+				let mo = Results.HitActor;
+				return (IgnoreA.Find(mo) < IgnoreA.Size()) ? TRACE_Skip : TRACE_Stop;
+				*/
+			}
+
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			
+
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKING | Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+					return TRACE_Stop;
+				
+				if ((hf & Line.ML_BLOCKING) && !(hf & Line.ML_TWOSIDED))
+					return TRACE_Stop;
+				
+			}
+		}
+		return TRACE_Skip;
+	}
+}
+
+Class TM_CVector2
+{
+	Vector2 V;
+	static TM_CVector2 Create(Vector2 a)
+	{
+		let vec = new('TM_CVector2');
+		vec.V = a;
+		return vec;
+	}
+}
+
+Class TM_CVector3
+{
+	Vector3 V;
+	static TM_CVector3 Create(Vector3 a)
+	{
+		let vec = new('TM_CVector3');
+		vec.V = a;
+		return vec;
+	}
+}

@@ -4,122 +4,613 @@
 // 
 //==============================================================================
 
-Class MCStatusEffect : Powerup abstract
+enum EStatusEffect
+{	
+	SE_Speed = 1,
+	SE_Slow,			
+	SE_Strength,		// Increased damage output
+	SE_Weakness,		// Reduced damage output 
+	SE_Regen,
+	SE_Poison,			// Damages all but the last hit point.
+	SE_PoisonFatal,		// Will kill.
+	SE_Wither,			// Inflicted by wither (skeletons)
+	SE_Blind,			// Darkens vision
+	SE_Luck,			// Increased item drops
+	SE_WaterBreathe,	// Immune to drowning
+	SE_Resist,			// Damage reduction/immunity
+	SE_FireResist,		// Explicitly for different fires
+	SE_OnFire,			// On fire. For simplicity's sake.
+}
+
+Class TM_StatusEffect : Powerup abstract
 {
-	enum EStatusEffect
-	{	
-		SE_Speed = 1,
-		SE_Slow,
-		SE_Strength,
-		SE_Weakness,
-		SE_Regen,
-		SE_Poison,
-		SE_PoisonFatal,
-		SE_Vision,
-		SE_Blind,
-		SE_Luck,
-		SE_WaterBreathe,
-		SE_Resist,
-		SE_FireResist
-	};
-	
+	mixin TM_FastRNG;
+	mixin TM_Functions;
+	mixin TM_Event;
+	meta bool Ailment, Clearable;
+	Actor source; // The one who gave the effect
+	protected bool Processed;
 	meta int Type, Cap;
-	private int Strength;
+	protected int Potency;
+	bool Particles;
 	
+	Property Ailment: Ailment;
+	Property Clearable: Clearable;
 	Property Type: Type;
 	Property Cap: Cap;
+	Property Particles: Particles;
 	
 	Default
 	{
-		MCStatusEffect.Cap 5;
+		TM_StatusEffect.Particles true;
+		TM_StatusEffect.Cap 5;
+		Inventory.ForbiddenTo "TM_Boss";
+	}
+	
+	int GetPotency() const { return Potency; }
+	
+	private int PDelay;
+	override void DoEffect()
+	{
+		Processed = false;
+		Super.DoEffect();
+		Amount = EffectTics;
+		if (Particles && TMV_SFX > 0 && Owner && !Owner.IsFrozen() && --PDelay < 1)
+		{
+			PDelay = (TMV_SFX > 1) ? irandom(20, 50) : irandom(10, 25);
+			Actor a; bool b;
+			[b, a] = Owner.A_SpawnItemEx("TM_PotionParticle", 
+				ffrandom(radius * 0.5, radius), 0, ffrandom(0, height * 0.5),
+				0,0,0,ffrandom(0,359),SXF_NOCHECKPOSITION);
+				
+			// Can't use SXF_TRANSFERTRANSLATION here since that'll just come
+			// from the owner instead of the item.
+			if (a && b)
+				a.Translation = Translation;	
+		}	
+	}
+	
+	void ModifyProperties(Actor src, int duration, int potent, bool add, bool force)
+	{
+		if (force)
+		{
+			source = src;
+			EffectTics = Amount = Max(0, duration);
+			int o = Potency;
+			Potency = potent;
+		}
+		else
+		{
+			if (!source)	source = src;
+		
+			Potency = Max(Potency, potent);
+			
+			if (duration != 0)
+			{
+				EffectTics = (add) ? Max(0, EffectTics + duration) : duration;
+				Amount = EffectTics;
+			}
+		}
+		
+		Potency = Clamp(Potency, 1, Cap);
+		if (EffectTics > 0)
+			Modified();
+	}
+	
+	virtual void Modified() {}
+	
+}
+
+Class TM_StatusEffectDmg : TM_StatusEffect abstract
+{}
+
+Class TM_StatusEffectInterval : TM_StatusEffect
+{	
+	private int Delay, Timer;
+	
+	virtual void Trigger()	{}
+	
+	int GetTimer() { return Timer; }
+	int GetDelay() { return Delay; }
+	
+	void SetDelay(int time, bool trig = false)
+	{
+		Delay = Max(1, time);
+		if (trig)	Trigger();
+	}
+	
+	void SetTimer(int time, bool trig = false)
+	{
+		Timer = Max(1, Time);
+		if (trig)	Trigger();
+	}
+	
+	void SetTimeDelay(int time, int del, bool trig = false)
+	{
+		Timer = Max(1, time);
+		Delay = Max(1, del);
+		if (trig)	Trigger();
 	}
 	
 	override void DoEffect()
 	{
-		if (bDESTROYED)	return;
-		
 		Super.DoEffect();
-		
-		DoStatus();
-	}
-	
-	void SetStrength(int s)
-	{
-		Strength = Clamp(s, -Cap, Cap);
-	}
-	
-	// Used for checking if the actor can have this effect.
-	static bool CheckCompatible(Actor mo)	
-	{
-		if (mo is 'MCBoss')
-			return false;
-		
-		let mcm = MinecraftMonster(mo);
-		if (mcm)
+		if (--Timer < 1)
 		{
-			
+			Timer = Delay;
+			Trigger();
 		}
-		
-		return true;
 	}
-	
-	protected bool CanEffect()
+}
+
+Class PoisonEffect : TM_StatusEffectInterval
+{
+	Default
 	{
-		return (Strength > 0);
+		Inventory.ForbiddenTo "TM_Boss", "TM_Undead", "TM_Spider", "TM_SpiderCave";
+		TM_StatusEffect.Ailment true;
 	}
+	private int Dmg;
 	
-	// 
-	private void DoStatus()	
+	
+	override void Modified()
 	{
-		
+		if (Potency < 5)
+		{
+			Switch (Potency)
+			{
+				Case 1:	{	Dmg = 10;	SetDelay(50);	break;	}
+				Case 2:	{	Dmg = 10;	SetDelay(35);	break;	}
+				Case 3:	{	Dmg = 10;	SetDelay(27);	break;	}
+				Case 4:	{	Dmg = 10;	SetDelay(18);	break;	}
+			}
+		}
+		else
+		{
+			SetDelay(18);
+			Dmg = min((Potency - 3) * 10, TELEFRAG_DAMAGE - 1);
+		}
+	}
+
+	override void Trigger()
+	{
+		if (Owner && Owner.Health > 1)
+		{
+			bool bud = Owner.bBUDDHA;
+			Owner.bBUDDHA = true;
+			Owner.DamageMobj(self, source, Dmg, 'Poison', DMG_THRUSTLESS);
+			Owner.bBUDDHA = bud;
+		}
+	}
+}
+
+Class WitherEffect : TM_StatusEffectInterval
+{
+	Default
+	{
+		Inventory.ForbiddenTo "TM_Boss", "TM_SkeletonWither";
+		TM_StatusEffect.Ailment true;
+	}
+	private int Dmg;
+	override void Modified()
+	{
+		if (Potency < 5)
+		{
+			Switch (Potency)
+			{
+				Case 1:	{	Dmg = 10;	SetDelay(70);	break;	}
+				Case 2:	{	Dmg = 10;	SetDelay(35);	break;	}
+				Case 3:	{	Dmg = 10;	SetDelay(27);	break;	}
+				Case 4:	{	Dmg = 10;	SetDelay(18);	break;	}
+			}
+		}
+		else
+		{
+			SetDelay(18);
+			Dmg = min((Potency - 3) * 10, TELEFRAG_DAMAGE - 1);
+		}
+	}
 	
-		if (Strength == 0)	return;
+	override void Trigger()
+	{
+		if (Owner && !Owner.bKILLED)
+			Owner.DamageMobj(self, source, Dmg, 'Wither', DMG_THRUSTLESS);
+	}
+}
+
+// -10% damage output per level
+Class WeaknessEffect : TM_StatusEffectDmg
+{
+	Default
+	{
+		TM_StatusEffect.Cap 9;
+		TM_StatusEffect.Ailment true;
+	}
+	override void ModifyDamage(int damage, Name dmgType, out int newdamage, bool passive, Actor i, Actor s, int flags)
+	{
+		if (!passive && damage > 0 && Potency > 0)
+		{
+			newdamage = int(double(damage - (damage * Potency * 0.1)));
+		}
+	}
+}
+
+
+// +15% damage output per level
+Class StrengthEffect : TM_StatusEffectDmg
+{
+	override void ModifyDamage(int damage, Name dmgType, out int newdamage, bool passive, Actor i, Actor s, int flags)
+	{
+		if (!passive && damage > 0 && Potency > 0)
+		{
+			newdamage = int(double(damage + (damage * Potency * 0.15)));
+		}
+	}
+}
+// +1 health per potency
+Class RegenerationEffect : TM_StatusEffectInterval
+{
+	Default
+	{
+		Inventory.ForbiddenTo "TM_Boss", "TM_Undead";
+	}
+
+	private int MaxHP;
+		
+	override void Trigger()
+	{
+		if (Owner && !Owner.bKILLED && !(Owner is 'TM_Undead'))
+		{
+			if (owner is 'PlayerPawn')
+				MaxHP = Max(200, MaxHP, Owner.Health, GetMaxHealth(true));
+			else
+				MaxHP = GetMaxHealth(true);
+				
+			Owner.GiveBody(Potency, MaxHP);
+		}
+	}
+}
+
+Class InstantHealthEffect : TM_StatusEffectInterval
+{
+	override void Trigger()
+	{
+		if (!Owner)	return;
 		
 		
 	}
 }
 
-Class PoisonEffect : MCStatusEffect
-{
-}
-
-
-
-Class WeaknessEffect : MCStatusEffect
-{
-}
-
-Class WitherEffect : MCStatusEffect
-{
-}
-
-Class StrengthEffect : MCStatusEffect
-{
-}
-// AKA lingering instant health.
-Class RegenerationEffect : MCStatusEffect
-{
-}
 // +20% speed per level.
-Class SpeedEffect : MCStatusEffect
+Class SpeedEffect : TM_StatusEffect
 {
+	override void Modified()
+	{
+		Speed = Max(0, 1.0 + Potency * 0.2);
+	}
 }
 // -15% speed per level.
-Class SlownessEffect : MCStatusEffect
+Class SlownessEffect : TM_StatusEffect
 {
+	Default
+	{
+		TM_StatusEffect.Ailment true;
+	}
+	override void Modified()
+	{
+		Speed = Max(0, 1.0 - Potency * 0.15);
+	}
 }
+
+
 // +20% damage resistance per level.
-Class ResistanceEffect : MCStatusEffect
+Class ResistanceEffect : TM_StatusEffectDmg
 {
+	override void DoEffect()
+	{
+		if (Owner is 'PlayerPawn')	Owner.bLAXTELEFRAGDMG = true;
+		Super.DoEffect();
+	}
+	
+	override void EndEffect()
+	{
+		if (Owner is 'PlayerPawn')	Owner.bLAXTELEFRAGDMG = Owner.Default.bLAXTELEFRAGDMG;
+		Super.EndEffect();
+	}
+
+	override void ModifyDamage(int damage, Name mod, out int newdamage, bool passive, Actor i, Actor s, int flags)
+	{
+		if (!passive || 
+			mod == 'Void' ||
+			damage < 1)	
+			return;
+		
+		if (Potency > 4)
+			return;
+		
+		damage = int(double(damage * (1.0 - Potency * 0.2)));
+		newdamage = Max(0, damage);
+	}
 }
 
 // Immunity to fire and slime damage.
-Class FireResistanceEffect : MCStatusEffect
+Class FireResistanceEffect : TM_StatusEffectDmg
 {
-	
-}
-// When the player's on fire. Only inflicted by mobs with fire damagetype NATIVELY.
-Class ONFIREEffect : MCStatusEffect
-{
+	override void ModifyDamage(int damage, Name mod, out int newdamage, bool passive, Actor i, Actor s, int flags)
+	{
+		if (!passive)	return;
+		
+		Switch (mod)
+		{
+			Case 'Fire':
+			Case 'Lava':
+			Case 'Slime':
+			Case 'Hellslime':
+			{	newdamage = -1;
+				return;
+			}
+			Case 'SoulFire':
+			{
+				if (Potency > 1)
+				{
+					newdamage = -1;
+					return;
+				}
+				break;
+			}
+			Case 'HellFire':
+			{
+				if (Potency > 2)
+				{
+					if (damage > 10)
+					{
+						newdamage = 10;
+						return;
+					}	
+				}
+				break;
+			}
+		}
+		newdamage = damage;
+	}
 }
 
+Class TM_OnFireEffect : TM_StatusEffectInterval
+{
+	Default
+	{
+		TM_StatusEffect.Cap 3;
+		TM_StatusEffect.Ailment true;
+		TM_StatusEffect.Clearable false; // Not treated as an actual status effect.
+		TM_StatusEffect.Particles false;
+		DamageType "Fire";
+	}
+	
+	private Actor Flame;
+	private int Dmg, Flags;
+	/*
+	override bool TryPickup(in out Actor toucher)
+	{
+		if (toucher && TM_Global.IsImmune
+	}
+	*/
+	override void InitEffect()
+	{
+		Super.InitEffect();
+		if (Owner)
+		{	
+			Flame = Actor.Spawn('TM_ActorFlame', Owner.Pos, ALLOW_REPLACE);
+			
+			if (Flame)
+			{
+				Flame.Scale = ( // Based on image dimensions.
+					Owner.Radius * 2 / 64,
+					Owner.Height * 1.2 / 64);
+			}
+		}
+	}
+	
+	
+	
+	// Does not include Hellfire. That's practically instant death.
+	private int PrevPot;
+	override void Modified()
+	{
+		Potency = Max(PrevPot, Potency);
+		
+		if (TMV_Debug == 23)
+			Console.Printf("Potency: %d", type);
+		
+		Switch(Potency)
+		{
+			Case FIRE_Normal: 
+			{
+				DamageType = "Fire";
+				Dmg = 10;
+				if (Flame) Flame.SetState(Flame.ResolveState("Normal"));
+				SetDelay(35); break;
+			}
+			Case FIRE_Void:
+			{
+				DamageType = "Ice";
+				Dmg = 2;
+				if (Flame) Flame.SetState(Flame.ResolveState("Void"));
+				SetDelay(18); break;
+			}
+			Case FIRE_Soul: 
+			{
+				DamageType = "SoulFire";
+				Dmg = 10;
+				if (Flame) Flame.SetState(Flame.ResolveState("Soul"));
+				SetDelay(18); break;
+			}
+		}
+		if (GetTimer() > 18)
+			SetTimer(18, true);
+	}
+	
+	
+	
+	override void OnDestroy()
+	{
+		if (Flame)	Flame.Destroy();
+		Super.OnDestroy();
+	}
+	
+	override void DoEffect()
+	{
+		
+		if (bDESTROYED)	return;
+		
+		if (!Owner || Owner.bKILLED || TM_Global.IsImmune(Owner, DamageType))
+		{	Destroy();	return;	}
+		
+		if (Owner.WaterLevel > 0 && (Potency == FIRE_Normal || Potency == FIRE_Soul))
+		{	Destroy();	return;	}
+		
+		Super.DoEffect();
+		
+		PrevPot = Max(Potency, PrevPot);
+		
+		if (Owner && Flame && !Flame.bDESTROYED)
+		{
+			Flame.SetOrigin(Owner.Pos, false);
+			Flame.Prev = Owner.Prev;
+			
+			Flame.bINVISIBLE = (Owner == players[consoleplayer].camera &&
+				!(Owner.Player.Cheats & CF_CHASECAM));
+		}
+	}
+	
+	override void Trigger()
+	{
+		if (Owner)
+		{
+			// TO DO: Make void fire deal double damage in water and slow twice
+			// as fast.
+			Owner.DamageMobj(self, source, Dmg, DamageType, DMG_THRUSTLESS);
+		}
+	}
+}
+
+//==============================================================================
+//==============================================================================
+
+
+extend Class TM_Handler
+{
+	private TM_AArray StatusEffects; // For RenderUnderlay
+
+	bool GiveStatus(Actor target, Actor source, Class<TM_StatusEffect> cls, 
+		int duration, int potency = 1, bool force = false, 
+		int timer = -1, int delay = -1,	bool trigger = false, bool add = false)
+	{
+		if (!Target || Target.bKILLED || !cls || 
+			!(Target.bSHOOTABLE || Target.bVULNERABLE))	return false;
+		
+		let inv = TM_StatusEffect(Target.FindInventory(cls));
+		if (!inv)
+		{
+			force = true;
+			inv = TM_StatusEffect(Actor.Spawn(cls));
+			if (!inv)	return false;
+			
+			inv.bDROPPED = true;
+			inv.ClearCounters();
+			if (!inv.CallTryPickup(target))
+			{
+				inv.Destroy();
+				return false;
+			}
+			if (Target.Player)
+				StatusEffects.Push(inv);
+				
+			inv.Event = self;
+		}
+		
+		inv.ModifyProperties(source, duration, potency, add, force);
+		
+		if (timer > -1 || delay > -1)
+		{
+			let inter = TM_StatusEffectInterval(inv);
+			if (inter)
+			{
+				if (timer > -1)	inter.SetTimer(timer);
+				if (delay > -1)	inter.SetDelay(delay);
+				if (trigger)	inter.Trigger();
+			}
+		}
+		return true;
+	}
+	
+	void ClearEffects(Actor mo, bool ailonly = false, bool force = false)
+	{
+		if (!mo || mo.bKILLED)	return;
+		
+		for (let probe = mo.Inv; probe; probe = probe.Inv)
+		{
+			let ef = TM_StatusEffect(probe);
+			if (ef && (ef.Clearable || force) && (!ailonly || ef.Ailment))
+				ef.EffectTics = 0;
+		}
+	}
+	
+	override void RenderUnderlay(RenderEvent e)
+	{
+		Actor mo = e.Camera;
+		if (!mo || StatusEffects.Size() < 1)	return;
+		
+		// Find any fire effects active and see if they match the camera. This 
+		// should theoretically be cheaper than trying to go through a player's 
+		// inventory.
+		TM_OnFireEffect FireEffect = null;
+		for (int i = 0; i < StatusEffects.Size(); i++)
+		{
+			FireEffect = TM_OnFireEffect(StatusEffects.Actors[i]);
+			if (FireEffect && FireEffect.Owner == mo && !FireEffect.bDESTROYED)
+				break;
+				
+			FireEffect = null;
+		}
+		if (!FireEffect)	return;
+		
+		String tex = "TMFire01";
+		
+		Switch(FireEffect.GetPotency())
+		{
+			Case FIRE_Void:	tex = "TMFirv01";	break;
+			Case FIRE_Soul:	tex = "TMFirs01";	break;
+			Case FIRE_Hell:	tex = "TMFirh01";	break;
+		}
+		
+		
+		
+		let id = TexMan.CheckForTexture(tex);
+		if (!id)	return;
+		Vector2 s = TexMan.GetScaledSize(id); //[s.x, s.y] = TexMan.GetSize(id);
+		double ratio = Screen.GetAspectRatio();
+		double nx = s.x;
+		s.x /= ratio;
+		nx -= s.x;
+	//	s = (64, 64);
+		
+		double w = Screen.GetWidth();
+		double h = Screen.GetHeight();
+		
+		Screen.ClearClipRect();
+	//	Screen.
+		
+		Screen.DrawTexture(id, true, -nx * 0.5, 0,
+		//	DTA_ScaleX, Screen.GetAspectRatio();
+			DTA_VirtualWidthF, s.x,
+			DTA_VirtualHeightF, s.y,
+		//	DTA_SrcX, sh.x,
+			DTA_SrcY, (-s.y * 0.45),
+			DTA_CenterOffset, true,
+			DTA_TopLeft, true
+		
+			);
+		
+	}
+	
+}

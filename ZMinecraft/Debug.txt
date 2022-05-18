@@ -160,7 +160,7 @@ Class DESpawners play
 */
 
 
-Class TestLegR : MCBodyPart
+Class TestLegR : TM_BodyPart
 {
 	
 	private double CurSine, SineGain;
@@ -171,7 +171,7 @@ Class TestLegR : MCBodyPart
 	
 	Default
 	{
-		MCBodyPart.Offsets 10.0, 0.4, 8.4;
+		TM_BodyPart.Offsets 10.0, 0.4, 8.4;
 		TestLegR.SineOffset 0;
 		Scale 6;
 	}
@@ -225,7 +225,7 @@ Class TestLegL : TestLegR
 	Default
 	{
 		TestLegR.SineOffset 180;
-		MCBodyPart.Offsets 10.0, -0.4, 8.4;
+		TM_BodyPart.Offsets 10.0, -0.4, 8.4;
 	}
 }
 
@@ -265,7 +265,7 @@ Class TestLegs : CustomInventory
 		{
 			double sn = abs(cos(90 + Timer));
 
-			Vector2 between = MC_VectorUtil.LerpUnclampedVec2(HoldAng, NextAng, sn);
+			Vector2 between = TM_VectorUtil.LerpUnclampedVec2(HoldAng, NextAng, sn);
 			A_SetAngle(between.x, SPF_INTERPOLATE);
 			A_SetPitch(between.y, SPF_INTERPOLATE);
 		}
@@ -312,9 +312,9 @@ Class TestLegs : CustomInventory
 				
 				if (!level.IsPointInLevel(rnp))	continue;
 				
-				let defs = GetDefaultByType('MCZombie');
+				let defs = GetDefaultByType('TM_Zombie');
 				Vector2 RH = (defs.Radius, defs.Height);
-				let con = MC_Map.GetIntersectingLines(null, RH, true, rnp);
+				let con = TM_Map.GetIntersectingLines(null, RH, true, rnp);
 				
 				// Get all the lines and check for blocking.
 				bool cont = false;
@@ -334,7 +334,7 @@ Class TestLegs : CustomInventory
 				if (cont)	continue;
 				
 				// Search for tall lines/dropoffs that will interfere with spawning.
-				let SC = MC_Map.GetIntersectingSectors(null, RH, con, true, rnp);
+				let SC = TM_Map.GetIntersectingSectors(null, RH, con, true, rnp);
 				
 			}
 			*/

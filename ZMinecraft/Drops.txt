@@ -1,20 +1,23 @@
 //==============================================================================
 // Drop Timer
 //==============================================================================
+//$GZDB_Skip
 
-Class MCDropTimer : Thinker
+
+Class TM_DropTimer : Thinker
 {
+	mixin TM_Event;
 	Inventory Item;
 	int Timer;
 	
-	static MCDropTimer Create(Inventory Item)
+	static TM_DropTimer Create(Inventory Item)
 	{
-		if (!Item || Item.Owner || MCC_ItemTimer < 1)
+		if (!Item || Item.Owner || TMV_ItemTimer < 1)
 			return null;
 			
-		let t = new('MCDropTimer');
+		let t = new('TM_DropTimer');
 		t.Item = Item;
-		t.Timer = Minute * MCC_ItemTimer;
+		t.Timer = Minute * TMV_ItemTimer;
 		return t;
 	}
 	
@@ -22,7 +25,7 @@ Class MCDropTimer : Thinker
 	{
 		Super.PostBeginPlay();
 		
-		if (MCC_ItemTimer <= 0 || !Item || Item.Owner)
+		if (TMV_ItemTimer <= 0 || !Item || Item.Owner)
 			Destroy();
 	}
 	
@@ -38,7 +41,654 @@ Class MCDropTimer : Thinker
 	}
 }
 
-Class MCZombieItems : RandomSpawner
+Class TM_ItemDrops play
 {
+	mixin TM_Event;
+	Array<Class<Inventory> > ID;
+	Array<Int> Amount;
+	private int Index;
 	
+	Class<Inventory> NextID;
+	int NextAmt;
+	
+	void ResetIndex()
+	{	Index = 0;	}
+	
+	static TM_ItemDrops Create()
+	{
+		let drop = new('TM_ItemDrops');
+		drop.Init();
+		return drop;
+	}
+	
+	void Init()
+	{
+		ID.Clear();
+		Amount.Clear();
+		Index = 0;
+	}
+	
+	void Add(Class<Inventory> cls, int amt)
+	{
+		if (!cls || amt < 1)	return;
+		
+		ID.Push(cls);
+		Amount.Push(amt);
+	}
+	
+	void SetAmount(Class<Inventory> cls, int amt, bool add = false)
+	{
+		if (cls)
+		{
+			int pos = ID.Find(cls);
+			if (pos < ID.Size())
+				Amount[pos] = (add) ? Amount[pos] + amt : amt;
+			else Add(cls, amt);
+		}
+	}
+	
+	int Size()	{	return ID.Size();	}
+	
+	bool Next()
+	{
+		if (Index >= ID.Size())	return false;
+		NextID = ID[Index];
+		NextAmt = Amount[Index];
+		Index++;
+		return true;
+	}
+}
+
+//------------------------------------------------------------------------------
+// Triple M's Flying Items
+//
+// These replicate the pickup effect from Minecraft where it zooms towards the 
+// player's midriff and disappears.
+//------------------------------------------------------------------------------
+
+
+Class TM_FlyingItem : Inventory abstract // Abstract never transfers to inherited children.
+{
+	mixin TM_FastRNG;
+	mixin TM_Functions;
+	mixin TM_Event;
+	enum EFlyingItem
+	{
+		WaitTime = 9,
+		PullDist = 192,
+	}
+	const PullDistSq = PullDist ** 2;
+	const FadeTime = 1.0 / 70.0;
+	private int Timer, MaxTime;
+	
+	Default
+	{
+		Inventory.Amount 1;
+		Inventory.MaxAmount 65535;
+		+Inventory.ALWAYSPICKUP
+		+Inventory.IGNORESKILL
+		+BRIGHT
+		+FLOATBOB
+		+DONTGIB
+		+DROPPED
+		+NOBLOCKMAP
+		FloatBobStrength 0.2;
+		Scale 0.3;
+	}
+	
+	override void BeginPlay()
+	{
+		if (GetClass().IsAbstract() || Amount < 1)
+		{
+			Destroy();
+			return;
+		}
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		return other.bACTLIKEBRIDGE;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+	//	LightLevel = irandom(1,255);
+		MaxTime = TMV_ItemTimer * Minute;
+	}
+	
+	// Never try to pick up this item.
+	override bool TryPickup(in out Actor toucher)
+	{	return false;	}
+	
+	override bool CanPickUp(Actor toucher)
+	{	return false;	}
+	
+	private double Progress;
+	private Actor Trg;
+	private bool Flying;
+	private Vector3 Start, End;
+	private Vector2 SScale;
+	private bool DoSearch;
+	protected void DoTick()
+	{	
+		DoSearch = !DoSearch;
+		if (Timer < MaxTime)
+			Timer++;
+		if (Timer >= WaitTime)
+		{
+			
+			if (!Trg && DoSearch)
+			{
+				for (int i = 0; i < MAXPLAYERS; i++)
+				{
+					if (!playeringame[i] || !players[i].mo)	continue;
+					
+					let mo = players[i].mo;
+					
+					if (!mo || !mo.bPICKUP || Distance3DSquared(mo) > PullDistSq || 
+						(!mo.player || mo.player.cheats & (CF_NOCLIP|CF_NOCLIP2)) || 
+						!GiveItems(mo))
+						continue;
+					
+					bNOINTERACTION = true;
+					Start = Pos;
+					Trg = mo;
+					Trg.A_StartSound("Minecraft/Pickup", 100, CHANF_OVERLAP);
+					Progress = 0.0;
+					SScale = Scale;
+					SetState(ResolveState("Seek"));
+					return;
+				}
+			}
+			
+			if (MaxTime > 0 && (Timer >= MaxTime))
+			{
+				A_FadeOut(FadeTime);
+			}
+		}
+	}
+	
+	
+	protected void DoSeek()
+	{
+		if (bDESTROYED)	
+			return;
+		if (!Trg || Progress >= 1.0)
+		{
+			Destroy();
+			return;
+		}
+		bFLOATBOB = false;
+		End = Trg.Pos + (0, 0, Trg.Height * 0.3);
+		Timer = WaitTime + 1;
+		A_FadeTo(1, 1, FTF_CLAMP);
+		
+		Progress += 0.15;
+	//	Scale = (SScale * (1.0 - Progress) * 0.5) + (SScale * 0.5);
+		Vector3 NP = TM_VectorUtil.LerpVec3(Start, End, Progress);
+		SetOrigin(NP, true);
+	}
+	
+	virtual bool GiveItems(Actor mo)
+	{	
+		return false;
+	}
+	
+	States
+	{
+	Spawn:
+		X217 H 0 NoDelay { return ResolveState("Waiting"); }
+	Waiting:
+		---- A 1 DoTick();
+		Wait;
+	Seek:
+		---- A 1 DoSeek();
+		Wait;
+	}
+}
+
+Class TM_PearlHealth : TM_FlyingItem
+{
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (Amount >= 50)		Frame = Fr_G;
+		else if (Amount >= 25)	Frame = Fr_F;
+		else					Frame = Fr_E;
+	}
+
+	override bool GiveItems(Actor mo)
+	{
+		if (!mo.bKILLED && (bALWAYSPICKUP || mo.Health < mo.GetMaxHealth(true)))
+		{
+			// TO DO: Record maximum health the player's ever received and allow that
+			// to be the maximum (such as > 200)
+			return mo.GiveBody(Amount, Max(200, mo.GetMaxHealth(true))) || bALWAYSPICKUP;
+		}
+		return false;
+	}
+}
+
+Class TM_PearlArmor : TM_FlyingItem
+{
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Event = TM_Handler.Fetch();
+		if (Amount >= 50)		Frame = Fr_J;
+		else if (Amount >= 25)	Frame = Fr_I;
+		else					Frame = Fr_H;
+	}
+
+	override bool GiveItems(Actor mo)
+	{
+		if (!mo.bKILLED)
+		{
+			let armor = BasicArmor(mo.FindInventory('BasicArmor', true));
+			
+			if (!armor || armor.Amount < 1)
+			{
+				mo.A_GiveInventory('BlueArmor', 1);
+				let armor = BasicArmor(mo.FindInventory('BasicArmor', true));
+				if (armor)	
+				{
+					armor.Amount = Amount;
+				}
+				return (armor != null);
+			}
+			if (armor)
+			{
+				bool good = bALWAYSPICKUP;
+				
+				armor.MaxAmount = Max(200, armor.MaxAmount);
+				if (armor.Amount < armor.MaxAmount)
+				{
+					armor.Amount = min(armor.Amount + Amount, armor.MaxAmount);
+					good = true;
+				}
+				Switch (armor.ArmorType)
+				{
+					Case 'None':
+					Case 'GreenArmor':
+					Case 'BasicArmorBonus':
+					Case 'ArmorBonus':
+					{
+						int amt = armor.Amount;
+						armor.Amount = 0;
+						mo.A_GiveInventory("BlueArmor",1);
+						armor.Amount = amt;
+					}
+				}
+				return good;
+			}
+		}
+		return bALWAYSPICKUP;
+	}
+}
+
+Class TM_PearlAmmo : TM_FlyingItem
+{
+	Default
+	{
+		+INVENTORY.ALWAYSPICKUP
+	}
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (Amount >= 50)		Frame = Fr_M;
+		else if (Amount >= 25)	Frame = Fr_L;
+		else					Frame = Fr_K;
+	}
+	
+	override bool GiveItems(Actor mo)
+	{
+		if (mo.bKILLED)
+			return false;
+		
+		bool good = bALWAYSPICKUP;
+		if (!Event)	Event = TM_Handler.Fetch();
+		// First, get every ammo type.
+		Array<Ammo> Ammos; Ammos.Clear();
+		for (let probe = mo.Inv; probe; probe = probe.Inv)
+		{
+			let wep = Weapon(probe);
+			if (wep)
+			{
+				Ammo Amm[2];
+				Amm[0] = wep.Ammo1;
+				Amm[1] = wep.Ammo2;
+				
+				for (int i = 0; i < 2; i++)
+				{
+					if (Amm[i] && Ammos.Find(Amm[i]) >= Ammos.Size() &&
+						Amm[i].MaxAmount > 0 && 
+						(sv_unlimited_pickup || Amm[i].Amount < Amm[i].MaxAmount) &&
+						!Event.IsAmmoBanned(Amm[i].GetClassName()))
+					Ammos.Push(Amm[i]);
+					
+					if (Amm[0] == Amm[1])	break;
+				}
+			}
+		}
+		
+		// Now lets use the max amounts as weights for random selection.
+		int weights = 0;
+		{
+			for (int i = 0; i < Ammos.Size(); i++)
+			{
+				int w = Event.GetAmmoWeight(Ammos[i].GetClassName());
+				
+				if (w < 1)	w = Ammos[i].MaxAmount;
+				weights += w;
+			}
+			int ind = 0;
+		
+			if (Ammos.Size() > 0)
+			{
+				
+				// Formula borrowed from RandomSpawner.
+				int n = random[randomspawn](0, weights - 1);
+				while (n > -1)
+				{
+					n -= Ammos[ind].MaxAmount;
+					if (n > -1)		ind = (ind + 1) % Ammos.Size();
+				}
+				
+				int MaxAmt = Ammos[ind].MaxAmount;
+				// Now we convert the amount into percent and transform it into 
+				// the actual amount.				
+				double percent;
+				
+				percent = double(Amount * 0.01);				
+				Amount = max(1, int(round(MaxAmt * percent)));
+				
+				int Amt = Ammos[ind].Amount;
+				 
+				if (sv_unlimited_pickup || 
+					Amt + Amount <= MaxAmt)
+					Amt += Amount;
+				else
+					Amt = MaxAmt;
+					
+				if (Amt < 0)
+					Amt = int.max - 1;
+					
+				Ammos[ind].Amount = Amt;
+					
+				good = true;
+				
+				if (TMV_Debug == 7)
+					Console.Printf("%d: %s", Amount, Ammos[ind].GetClassName());
+			}
+		}
+		return good;
+	}
+}
+
+enum ETACPropIndex
+{
+	TAC_Weight = 1,
+	// The following aren't implemented yet and do nothing.
+	TAC_AmtMin,		
+	TAC_AmtMax,
+	TAC_CapMin,
+	TAC_CapMax,
+	
+	TAC_MaxParams
+}
+
+Class TM_AmmoCondition
+{
+	private Name ID;
+	private int Prop[TAC_MaxParams-1];
+	
+	Name GetID() const	{ return ID; }
+	
+	private bool IndexCheck(int index) const
+	{
+		if (index < 0 || index >= TAC_MaxParams)
+		{
+			Console.Printf("%s: Index %d out of bounds", ID, index);
+			return false;
+		}
+		return true;
+	}
+	
+	
+	int GetProp(int i) const
+	{
+		if (!IndexCheck(i))
+			return 0;
+		
+		int v = Prop[i];
+		
+		
+		Switch(i)
+		{
+			Case TAC_AmtMin:
+			Case TAC_AmtMax:
+			{
+				return Max(1, v);
+			}
+			Case TAC_CapMin:
+			Case TAC_CapMax:
+			{
+				if (v < 1 || v > 100)
+					if (i == TAC_AmtMax)	return 100;
+					else					return 1;
+				break;
+			}
+		}
+		return Prop[i];
+	}
+	
+	void SetName(Name ID)
+	{
+		self.ID = ID;
+	}
+	
+	void SetProp(int i, int value)
+	{
+		if (!IndexCheck(i))	return;
+		Prop[i] = value;
+		
+		String dbg;
+		Switch(i)
+		{
+			Case TAC_AmtMin:	dbg = "AmtMin";	break;
+			Case TAC_AmtMax:	dbg = "AmtMax";	break;
+			Case TAC_CapMin:	dbg = "CapMin";	break;
+			Case TAC_CapMax:	dbg = "CapMax";	break;
+			Case TAC_Weight:	dbg = "Weight";	break;
+		}
+		
+	//	Console.Printf("%s: Set %s to %d", ID, dbg, value);
+	}
+	
+	
+}
+
+
+
+extend class TM_Handler
+{
+	static const String Props[] =
+	{
+		"", // Ignored by the parser
+		"Weight",
+		"AmtMin",
+		"AmtMax",
+		"CapMin",
+		"CapMax"
+	};
+	
+
+	private Array<TM_AmmoCondition> AmmoCon;
+	
+	private void SetupAmmoService()
+	{
+		AmmoCon.Clear();
+		
+		
+		// Find all services and iterate through them.
+		let it = ServiceIterator.Find("TM_AmmoService");
+		Service Ammos;
+		while (Ammos = it.Next())
+		{
+			int i = 0;
+				
+			String ret = ".";
+			do
+			{
+				ret = Ammos.GetString("GetAmmoInfo", "", i++);
+				if (ret.Length() < 1)
+				{
+				//	Console.Printf("End");
+					break;
+				}
+				// Remove spaces and tabs
+				// Sadly StripRight doesn't replace all spaces/tabs. At least we have
+				// Replace function for that.
+				Array<String> st; st.Clear();
+				ret.Replace("	", "");
+				ret.Replace(" ", "");
+				ret.Split(st, "|");
+				
+				if (st.Size() < 1)
+				{
+				//	Console.Printf("-2");
+					continue;
+				}
+				// Check if it's an actual ammo class.
+				Class<Ammo> cls = st[0];
+				if (!cls)
+				{
+				//	Console.Printf("-3: %s", st[0]);
+					continue;
+				}
+				let con = ResolveAmmoCondition(st[0]);
+				
+				// Now split by colon.
+				for (int j = 1; j < st.Size(); j++)
+				{
+					Array<String> ss; ss.Clear();
+					st[j].Split(ss, ":");
+					
+					if (ss.Size() < 2)
+					{
+						String err;
+						if (ss.Size() < 1)
+							err = "Unknown property detected. Check syntax.";
+						else
+							err = String.Format("%s: Missing value. Expected number.", ss[0]);
+						ThrowAbortException(err);
+						return;
+					}
+					
+					// Now get the actual value and convert it into an int.
+					int value = 0;
+					for (int k = 1; k < Props.Size(); k++)
+					{
+						// Matches one of the names in the Props[] array
+						if (ss[0] ~== Props[k])
+						{
+							value = ss[1].ToInt();
+					//		Console.Printf("Setting %s property %s to %d", st[0], ss[0], value);
+							con = SetAmmoProperty(st[0], k, value, con);
+						//	if (!con)	Console.Printf("-4");
+							break;
+						}
+					}	
+				}
+			} while (true)
+		}
+		
+	//	AddAmmoCondition('D4Carrion', 0);
+	}
+	
+	private TM_AmmoCondition SetAmmoProperty(Name ID, int index, 
+		int value, TM_AmmoCondition con = null)
+	{
+		if (!con)	
+		{
+			let cls = ResolveAmmoType(ID);
+			if (!cls)
+			{
+				Console.Printf("%s not a valid ammo class. Skipped.", ID);
+				return null;
+			}
+			con = ResolveAmmoCondition(ID);
+		}
+		if (con)	
+			con.SetProp(index, value);
+		else
+			Console.Printf("%s not found", ID);
+		return con;
+	}
+	
+	int, bool GetAmmoProperty(Name ID, int which)
+	{
+		let con = ResolveAmmoCondition(id, true);
+		if (con)	return con.GetProp(which), true;
+		return 0, false;
+	}
+	
+	private TM_AmmoCondition ResolveAmmoCondition(Name ID, bool findonly = false)
+	{
+		for (int i = 0; i < AmmoCon.Size(); i++)
+		{
+			if (AmmoCon[i].GetID() == ID)
+				return AmmoCon[i];
+		}
+		
+		let con = AddAmmoCondition(ID);
+		return con;
+	}
+	
+	// Internal function for correcting ammo types. Make it easier for modders
+	// so they don't have to deal with it. Code copied from GetParentAmmo.
+	private Class<Ammo> ResolveAmmoType(out Name ClsName)
+	{		
+		class<Object> type = ClsName;
+
+		while (type.GetParentClass() != "Ammo" && type.GetParentClass() != null)
+			type = type.GetParentClass();
+		
+		if (type is "Ammo")	ClsName = type.GetClassName();
+		
+		return (class<Ammo>)(type);
+	}
+	
+	private TM_AmmoCondition AddAmmoCondition(Name ID)
+	{
+		let c = new("TM_AmmoCondition");
+		c.SetName(ID);
+		AmmoCon.Push(c);
+		return c;
+	}
+	
+	bool IsAmmoBanned(Name ID) const
+	{
+		if (ID == '')	return true;
+		for (int i = 0; i < AmmoCon.Size(); i++)
+		{
+			let c = AmmoCon[i];
+			if (c && c.GetID() == ID)
+				return (c.GetProp(TAC_Weight) == 0);
+		}
+		return false;
+	}
+	
+	int, bool GetAmmoWeight(Name ID) const
+	{
+		if (ID != '')
+			for (int i = 0; i < AmmoCon.Size(); i++)
+			{
+				let c = AmmoCon[i];
+				if (c && c.GetID() == ID)
+					return c.GetProp(TAC_Weight), true;
+			}
+		return 0, false;
+	}
 }

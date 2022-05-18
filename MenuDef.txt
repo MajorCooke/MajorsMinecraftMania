@@ -1,29 +1,29 @@
 AddOptionMenu "OptionsMenu"
 {
-	Submenu "Minecraft Options", "MinecraftOptions"
+	Submenu "$TMM_OPTIONS_TITLE", "TripleMOptions"
 }
 
-OptionMenu "MinecraftOptions"
+OptionMenu "TripleMOptions"
 {
-	Class "MinecraftMenu"
-	Title "$MCM_OPTIONS_TITLE"
-	Submenu			"Monster Tweaks", "MinecraftMonsterTweaks"
-	Submenu			"Keybinds",	"MinecraftKeybinds"
+	Class "TripleMMenu"
+	Title "$TMM_OPTIONS_TITLE"
+	Submenu			"Monster Tweaks", "TripleMMonsterTweaks"
+	Submenu			"Keybinds",	"TripleMKeybinds"
 	StaticText ""
 	StaticText "Difficulty Settings", GOLD
-	MinecraftOption "$MCM_PEACEFUL_TEXT", "$MCM_PEACEFUL_SUB",			MCC_Peaceful,			"OnOff"
-	MinecraftOption "$MCM_PEACEACTION_TEXT", "$MCM_PEACEACTION_SUB",	MCC_PeacefulBehavior,	"PeacefulBehaviors"
-	MinecraftOption "$MCM_DIFFICULTY_TEXT", "$MCM_DIFFICULTY_SUB",		MCC_Difficulty, 		"DifficultySelection"
-	MinecraftOption "$MCM_AIDIFFICULTY_TEXT", "$MCM_AIDIFFICULTY_SUB",	MCC_AIDifficulty, 		"DifficultySelection"
-	MinecraftOption "$MCM_NOSKILLFACTOR_TEXT", "$MCM_NOSKILLFACTOR_SUB",MCC_NoSkillFactor, 		"OnOff"
+	TripleMOption "$TMM_PEACEFUL_TEXT", "$TMM_PEACEFUL_SUB",			TMV_Peaceful,			"OnOff"
+	TripleMOption "$TMM_PEACEACTION_TEXT", "$TMM_PEACEACTION_SUB",	TMV_PeacefulBehavior,	"PeacefulBehaviors"
+	TripleMOption "$TMM_DIFFICULTY_TEXT", "$TMM_DIFFICULTY_SUB",		TMV_Difficulty, 		"DifficultySelection"
+	TripleMOption "$TMM_AIDIFFICULTY_TEXT", "$TMM_AIDIFFICULTY_SUB",	TMV_AIDifficulty, 		"DifficultySelection"
+	TripleMOption "$TMM_NOSKILLFACTOR_TEXT", "$TMM_NOSKILLFACTOR_SUB",TMV_NoSkillFactor, 		"OnOff"
 	StaticText ""
-	StaticText "Spawner Tweaks", GOLD
-	MinecraftSlider "$MCM_SDMINUTE_TEXT", "$MCM_SDMINUTE_SUB",			MCC_SpawnDelayMinute,	0, 10, 1
-	MinecraftSlider "$MCM_SDSECOND_TEXT", "$MCM_SDSECOND_SUB",			MCC_SpawnDelaySecond,	0, 59, 1
-	MinecraftSlider "$MCM_SDRANDOM_TEXT", "$MCM_SDRANDOM_SUB",			MCC_SpawnDelayRandom,	0, 60, 1
+	StaticText "Spawner Time", GOLD
+	TripleMSlider "$TMM_SDMINUTE_TEXT", "$TMM_SDMINUTE_SUB",			TMV_SpawnDelayMinute,	0, 10, 1
+	TripleMSlider "$TMM_SDSECOND_TEXT", "$TMM_SDSECOND_SUB",			TMV_SpawnDelaySecond,	0, 59, 1
+	TripleMSlider "$TMM_SDRANDOM_TEXT", "$TMM_SDRANDOM_SUB",			TMV_SpawnDelayRandom,	0, 60, 1
 	StaticText ""
 	StaticText "Special Effects", GOLD
-	MinecraftOption "$MCM_SFX_TEXT", "$MCM_SFX_SUB",	MCC_SFX,	"SFXValue"
+	TripleMOption "$TMM_SFX_TEXT", "$TMM_SFX_SUB",	TMV_SFX,	"SFXValue"
 }
 
 OptionValue "SFXValue"
@@ -52,44 +52,46 @@ OptionValue "PeacefulBehaviors"
 // Keybinds
 //==============================================================================
 
-OptionMenu "MinecraftKeybinds"
+OptionMenu "TripleMKeybinds"
 {
-	Title "Minecraft Keybinds"
+	Title "Triple M Keybinds"
 	
 	Control "Toggle Peaceful", "NetEvent TM_TogglePeaceful"
 	Control "Toggle Spawning", "NetEvent TM_ToggleSpawning"
+	Control "Cycle Item Mode",		"NetEvent TM_NextMode"
+	Control "Cycle Item Submode",	"NetEvent TM_NextSub"
 }
 
 //==============================================================================
 // Monster Menus
 //==============================================================================
 
-OptionMenu "MinecraftMonsterTweaks"
+OptionMenu "TripleMMonsterTweaks"
 {
-	Class "MinecraftMenu"
+	Class "TripleMMenu"
 	Title "Monster Tweaks"
-	Submenu "Specific Monsters", "MinecraftSpecificMonsters"
+	Submenu "Specific Monsters", "TripleMSpecificMonsters"
 	StaticText ""
 	StaticText "Spawning Tweaks", GOLD
-	MinecraftOption "$MCM_SPAWNING_TEXT", "$MCM_SPAWNING_SUB",			MCC_Spawning,			"OnOff"
-	MinecraftOption "$MCM_SPAWNCONDITIONS_TEXT", "$MCM_SPAWNCONDITIONS_SUB",	MCC_SpawnConditions, "OnOff"
-	MinecraftSlider "$MCM_SPAWNS_TEXT", "$MCM_SPAWNS_SUB",				MCC_Spawns,				1, 100, 1
-	MinecraftSlider "$MCM_SPAWNMUL_TEXT", "$MCM_SPAWNMUL_SUB",			MCC_SpawnMul,			0.5, 10.0, 0.1
-	MinecraftSlider "$MCM_HEALTHMUL1_TEXT",	"$MCM_HEALTHMUL1_SUB",		MCC_HealthMul,			0.5, 100.0, 0.1
-	MinecraftSlider "$MCM_HEALTHMUL2_TEXT",	"$MCM_HEALTHMUL2_SUB",		MCC_HealthMul,			1.0, 100.0, 1.0
+	TripleMOption "$TMM_SPAWNING_TEXT", "$TMM_SPAWNING_SUB",			TMV_Spawning,			"OnOff"
+	TripleMOption "$TMM_SPAWNCONDITIONS_TEXT", "$TMM_SPAWNCONDITIONS_SUB",	TMV_SpawnConditions, "OnOff"
+	TripleMSlider "$TMM_SPAWNS_TEXT", "$TMM_SPAWNS_SUB",				TMV_Spawns,				1, 100, 1
+	TripleMSlider "$TMM_SPAWNMUL_TEXT", "$TMM_SPAWNMUL_SUB",			TMV_SpawnMul,			0.5, 10.0, 0.1
+	TripleMSlider "$TMM_HEALTHMUL1_TEXT",	"$TMM_HEALTHMUL1_SUB",		TMV_HealthMul,			0.5, 100.0, 0.1
+	TripleMSlider "$TMM_HEALTHMUL2_TEXT",	"$TMM_HEALTHMUL2_SUB",		TMV_HealthMul,			1.0, 100.0, 1.0
 	StaticText ""
 	StaticText "Damage Intake Options", GOLD
-	MinecraftOption "$MCM_DMGMUL_TEXT",			"$MCM_DMGMUL_SUB",			MCC_DmgMul,				"OnOff"
-	MinecraftOption "$MCM_ENVIRODAMAGE_TEXT",	"$MCM_ENVIRODAMAGE_SUB",	MCC_EnvironmentDamage,	"OnOff"
-	MinecraftOption "$MCM_FALLDAMAGE_TEXT", 	"$MCM_FALLDAMAGE_SUB",		MCC_FallDamage, 		"OnOff", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_SECTORDAMAGE_TEXT",	"$MCM_SECTORDAMAGE_SUB",	MCC_SectorDamage, 		"OnOff", MCC_EnvironmentDamage
-	MinecraftOption "$MCM_DROWNING_TEXT",		"$MCM_DROWNING_SUB",		MCC_Drowning, 			"OnOff", MCC_EnvironmentDamage
+	TripleMOption "$TMM_DMGMUL_TEXT",			"$TMM_DMGMUL_SUB",			TMV_DmgMul,				"OnOff"
+	TripleMOption "$TMM_ENVIRODAMAGE_TEXT",	"$TMM_ENVIRODAMAGE_SUB",	TMV_EnvironmentDamage,	"OnOff"
+	TripleMOption "$TMM_FALLDAMAGE_TEXT", 	"$TMM_FALLDAMAGE_SUB",		TMV_FallDamage, 		"OnOff", TMV_EnvironmentDamage
+	TripleMOption "$TMM_SECTORDAMAGE_TEXT",	"$TMM_SECTORDAMAGE_SUB",	TMV_SectorDamage, 		"OnOff", TMV_EnvironmentDamage
+	TripleMOption "$TMM_DROWNING_TEXT",		"$TMM_DROWNING_SUB",		TMV_Drowning, 			"OnOff", TMV_EnvironmentDamage
 	StaticText ""
 	StaticText "Miscellaneous", GOLD
-	MinecraftOption "$MCM_NOSECGRAV_TEXT",	"$MCM_NOSECGRAV_SUB",		MCC_NoSectorGravity,	"NoSecGrav"
-	MinecraftOption "$MCM_SHORTGIBS_TEXT",	"$MCM_SHORTGIBS_SUB",		MCC_ShortGibLives,		"OnOff"
-	MinecraftOption "$MCM_DROPITEMS_TEXT",	"$MCM_DROPITEMS_SUB",		MCC_DropItems,			"OnOff"
-	MinecraftOption "$MCM_COMBINEITEMS_TEXT", "$MCM_COMBINEITEMS_SUB",	MCC_CombineItems,		"OnOff"
+	TripleMOption "$TMM_NOSECGRAV_TEXT",	"$TMM_NOSECGRAV_SUB",		TMV_NoSectorGravity,	"NoSecGrav"
+	TripleMOption "$TMM_SHORTGIBS_TEXT",	"$TMM_SHORTGIBS_SUB",		TMV_ShortGibLives,		"OnOff"
+	TripleMOption "$TMM_DROPITEMS_TEXT",	"$TMM_DROPITEMS_SUB",		TMV_DropItems,			"OnOff"
+	TripleMOption "$TMM_COMBINEITEMS_TEXT", "$TMM_COMBINEITEMS_SUB",	TMV_CombineItems,		"OnOff"
 }
 
 OptionValue "NoSecGrav"
@@ -100,33 +102,33 @@ OptionValue "NoSecGrav"
 	3, "All"
 }
 
-OptionMenu "MinecraftSpecificMonsters"
+OptionMenu "TripleMSpecificMonsters"
 {
 	Title "Choose Monster"
-	Submenu "Creeper",				"MinecraftCreeperMenu"
-	Submenu "Zombie",				"MinecraftZombieMenu"
+	Submenu "Creeper",				"TripleMCreeperMenu"
+	Submenu "Zombie",				"TripleMZombieMenu"
 }
 
-OptionMenu "MinecraftZombieMenu"
+OptionMenu "TripleMZombieMenu"
 {
-	Class "MinecraftMenu"
-	Title "$MCM_ZOMBIETWEAKS"
-	MinecraftOption "$MCM_ZOMBIEBABY_TEXT",			"$MCM_ZOMBIEBABY_SUB",	MCC_ZombieBaby,		"YesNo"
+	Class "TripleMMenu"
+	Title "$TMM_ZOMBIETWEAKS"
+	TripleMOption "$TMM_ZOMBIEBABY_TEXT",			"$TMM_ZOMBIEBABY_SUB",	TMV_ZombieBaby,		"YesNo"
 }
 
-OptionMenu "MinecraftCreeperMenu"
+OptionMenu "TripleMCreeperMenu"
 {
-	//MCC_CreeperBoomBoom
-	//MCC_CreeperChainBoom
-	Class "MinecraftMenu"
-	Title "$MCM_CREEPERTWEAKS"
-	MinecraftOption "$MCM_CREEPERALWAYSBOOM_TEXT",			"$MCM_CREEPERALWAYSBOOM_SUB",		MCC_CreeperAlwaysBoom,		"YesNo"
-	MinecraftOption "$MCM_CREEPERBOOMBOOM_TEXT",			"$MCM_CREEPERBOOMBOOM_SUB",			MCC_CreeperBoomBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
-	MinecraftOption "$MCM_CREEPERCHAINBOOM_TEXT",			"$MCM_CREEPERCHAINBOOM_SUB",		MCC_CreeperChainBoom,		"CreeperChainBoom",	MCC_CreeperAlwaysBoom, 0, 1
-	MinecraftOption "$MCM_CREEPERENEMYBOOM_TEXT",			"$MCM_CREEPERENEMYBOOM_SUB",		MCC_CreeperEnemyBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
-	MinecraftOption "$MCM_CREEPERFRIENDLYBOOM_TEXT",		"$MCM_CREEPERFRIENDLYBOOM_SUB",		MCC_CreeperFriendlyBoom,	"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
-	MinecraftOption "$MCM_CREEPERENVIRONMENTBOOM_TEXT",		"$MCM_CREEPERENVIRONMENTBOOM_SUB",	MCC_CreeperEnvironmentBoom,	"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
-	MinecraftOption "$MCM_CREEPERPLAYERBOOM_TEXT",			"$MCM_CREEPERPLAYERBOOM_SUB",		MCC_CreeperPlayerBoom,		"YesNo",			MCC_CreeperAlwaysBoom, 0, 1
+	//TMV_CreeperBoomBoom
+	//TMV_CreeperChainBoom
+	Class "TripleMMenu"
+	Title "$TMM_CREEPERTWEAKS"
+	TripleMOption "$TMM_CREEPERALWAYSBOOM_TEXT",		"$TMM_CREEPERALWAYSBOOM_SUB",		TMV_CreeperAlwaysBoom,		"YesNo"
+	TripleMOption "$TMM_CREEPERBOOMBOOM_TEXT",			"$TMM_CREEPERBOOMBOOM_SUB",			TMV_CreeperBoomBoom,		"YesNo",			TMV_CreeperAlwaysBoom, 0, 1
+	TripleMOption "$TMM_CREEPERCHAINBOOM_TEXT",			"$TMM_CREEPERCHAINBOOM_SUB",		TMV_CreeperChainBoom,		"CreeperChainBoom",	TMV_CreeperAlwaysBoom, 0, 1
+	TripleMOption "$TMM_CREEPERENEMYBOOM_TEXT",			"$TMM_CREEPERENEMYBOOM_SUB",		TMV_CreeperEnemyBoom,		"YesNo",			TMV_CreeperAlwaysBoom, 0, 1
+	TripleMOption "$TMM_CREEPERFRIENDLYBOOM_TEXT",		"$TMM_CREEPERFRIENDLYBOOM_SUB",		TMV_CreeperFriendlyBoom,	"YesNo",			TMV_CreeperAlwaysBoom, 0, 1
+	TripleMOption "$TMM_CREEPERENVIRONMENTBOOM_TEXT",	"$TMM_CREEPERENVIRONMENTBOOM_SUB",	TMV_CreeperEnvironmentBoom,	"YesNo",			TMV_CreeperAlwaysBoom, 0, 1
+	TripleMOption "$TMM_CREEPERPLAYERBOOM_TEXT",		"$TMM_CREEPERPLAYERBOOM_SUB",		TMV_CreeperPlayerBoom,		"YesNo",			TMV_CreeperAlwaysBoom, 0, 1
 }
 
 OptionValue "CreeperChainBoom"

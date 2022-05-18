@@ -1,4 +1,17 @@
+//==============================================================================
+//==============================================================================
+// User CVARS
+//==============================================================================
+//==============================================================================
 
+user int TMV_TNT_Mode = 1;
+user int TMV_TNT_Sub = 1;
+
+//==============================================================================
+//==============================================================================
+// Server CVARS
+//==============================================================================
+//==============================================================================
 
 // Difficulty
 // 0 = Easy, 1 = Medium, 2 = Hard.
@@ -6,8 +19,8 @@
 // - Zombie move speed (normal, faster, fastest)
 // - Skeleton attack speed (normal, faster, fastest)
 // - Creeper charging move speed (none, half, full)
-server int MCC_Difficulty = 1;
-server int MCC_AIDifficulty = 1;
+server int TMV_Difficulty = 1;
+server int TMV_AIDifficulty = 1;
 
 //==============================================================================
 // Peaceful Behavior
@@ -15,13 +28,13 @@ server int MCC_AIDifficulty = 1;
 
 // Peaceful mode serves to pacify or remove mobs. Useful if they're too much
 // in the way.
-server bool MCC_Peaceful = false;
+server bool TMV_Peaceful = false;
 
 // 0 = Despawn
 // 1 = Follow Minecraft rules (despawns hostile mobs)
 // 2 = Docile monsters, more do not spawn.
 // 3 = 2 but they still spawn.
-server int MCC_PeacefulBehavior = 0;
+server int TMV_PeacefulBehavior = 0;
 
 
 //==============================================================================
@@ -29,15 +42,15 @@ server int MCC_PeacefulBehavior = 0;
 //==============================================================================
 
 // # monsters the mod will attempt to have spawned at any given time.
-server int MCC_Spawns = 80;
+server int TMV_Spawns = 80;
 // Multiplies how many can be spawned at once.
-server float MCC_SpawnMul = 1.0;
+server float TMV_SpawnMul = 1.0;
 // Toggles monster spawning without being related to peaceful.
-server bool MCC_Spawning = true;
+server bool TMV_Spawning = true;
 // Health multiplier
-server float MCC_HealthMul = 1.0;
+server float TMV_HealthMul = 1.0;
 //
-server bool MCC_SpawnConditions = true;
+server bool TMV_SpawnConditions = true;
 
 //==============================================================================
 // Monster Properties
@@ -45,53 +58,53 @@ server bool MCC_SpawnConditions = true;
 
 
 // Monsters move directly towards their targets if they can.
-server bool MCC_EnhancedChase = true;
+server bool TMV_EnhancedChase = true;
 
 // Idle swaying animation. Disabling this might slightly improve performance.
-server bool MCC_IdleSway = true;
+server bool TMV_IdleSway = true;
 
 // Sight checks for chasing.
-server bool MCC_SightCheck = true;
+server bool TMV_SightCheck = true;
 
 // Monsters can drop ammo/health/armor
-server bool MCC_DropItems = true;
+server bool TMV_DropItems = true;
 
 // Timer in minutes to wait before despawning items spawned by monsters.
-server int MCC_ItemTimer = 2;
+server int TMV_ItemTimer = 2;
 
 // If enabled, attempts to simply multiply how much the item is worth on pickup.
 // This won't work for items that are spawned via randomspawner.
-server bool MCC_CombineItems = false;
+server bool TMV_CombineItems = false;
 
 // Gibs start fading out the moment they stop moving if enabled.
-server bool MCC_ShortGibLives = false;
+server bool TMV_ShortGibLives = false;
 
 // Wait time to spawn additional enemies.
-server int MCC_SpawnDelayMinute = 0;
-server int MCC_SpawnDelaySecond = 10;
-server int MCC_SpawnDelayRandom = 5;
+server int TMV_SpawnDelayMinute = 0;
+server int TMV_SpawnDelaySecond = 10;
+server int TMV_SpawnDelayRandom = 5;
 
 // Monsters take damage from sectors/falling/drowning. Some monsters are immune.
-server bool MCC_EnvironmentDamage = true;
-server bool MCC_FallDamage = true;
-server bool MCC_SectorDamage = true;
-server bool MCC_Drowning = true;
+server bool TMV_EnvironmentDamage = true;
+server bool TMV_FallDamage = true;
+server bool TMV_SectorDamage = true;
+server bool TMV_Drowning = true;
 
 // MC damage to MC enemies scales with health.
-server bool MCC_DmgMul = true;
+server bool TMV_DmgMul = true;
 
 // Which actors ignore sector gravity (use full gravity)?
 // 0 = None
 // 1 = Monsters ignore sector gravity
 // 2 = Gibs & Missiles
 // 4 = All
-server int MCC_NoSectorGravity = 0;
+server int TMV_NoSectorGravity = 0;
 
 // Different skills can have damage multipliers the player can receive. This can
 // greatly hinder the player since some monsters deal extraordinary damage.
 // I.e. creepers deal 200 to the player up close, 200 * 1.5 skill factor = 300.
 // This counteracts that so they only deal regular amounts.
-server bool MCC_NoSkillFactor = true;
+server bool TMV_NoSkillFactor = true;
 //==============================================================================
 // Individual monster properties
 //==============================================================================
@@ -101,35 +114,35 @@ server bool MCC_NoSkillFactor = true;
 //------------------------------------------------------------------------------
 
 // Creepers always explode on death
-server bool MCC_CreeperAlwaysBoom = false;
+server bool TMV_CreeperAlwaysBoom = false;
 
 // Creepers explode when killed while charging.
-server bool MCC_CreeperBoomBoom = false;
+server bool TMV_CreeperBoomBoom = false;
 
 // Creeper explosions cause other creepers to explode around them.
 // 0 = Disabled
 // 1 = Only hissing creepers
 // 2 = All
-server int MCC_CreeperChainBoom = 0;
+server int TMV_CreeperChainBoom = 0;
 
 
-server bool MCC_CreeperEnemyBoom = false;
-server bool MCC_CreeperFriendlyBoom = false;
-server bool MCC_CreeperEnvironmentBoom = false;
-server bool MCC_CreeperPlayerBoom = false;
+server bool TMV_CreeperEnemyBoom = false;
+server bool TMV_CreeperFriendlyBoom = false;
+server bool TMV_CreeperEnvironmentBoom = false;
+server bool TMV_CreeperPlayerBoom = false;
 
 //------------------------------------------------------------------------------
 // Zombie
 //------------------------------------------------------------------------------
-server bool MCC_ZombieBaby = true;
+server bool TMV_ZombieBaby = true;
 
 
 //==============================================================================
 // FX Control
 //==============================================================================
-server int MCC_SFX = 2;
+server int TMV_SFX = 2;
 
 //==============================================================================
 // Debug
 //==============================================================================
-server noarchive int MCC_Debug = 0;
+server noarchive int TMV_Debug = 0;

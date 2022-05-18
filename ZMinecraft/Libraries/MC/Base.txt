@@ -1,0 +1,399 @@
+/*==============================================================================
+================================================================================
+ TM_AArray Class
+ Designed by Major Cooke
+
+ The goal behind this is an adjustable actor array with functions for
+ maintaining and cleaning more easily. Note, this is meant for a more permanent
+ solution that is maintained over time, not so much for brief instantiation
+ within a function or similar unless it's a pointer fetched from another.
+ 
+ To use: 
+ 
+ 1. Declare a variable of type TM_AArray and call the create function. Pass in
+ an optional size and/or class type to restrict the actors its tracking.
+ e.g. AArray arr = AArray.Create(-1, 'Zombieman');
+ 
+ 2. Add maintenance functions in whatever is using it if needed, i.e. a timer.
+ The Delete() function simply schedules a position for deletion by marking
+ the actor's spot as null. Once the timer hits the interval, do any maintenance
+ and call the AArray's Clean() function sometime during it.
+ 
+ Every 10 seconds, MCHandler above first makes sure alive/dead monsters are
+ properly sorted into the proper arrays first, then cleans out any nulls, 
+ reducing memory usage and optimizing future Find() calls. Better performance!
+ 
+ 3. You can then safely use Push() and Delete() as desired. Delete simply sets
+ that position to null instead of calling internal array Delete function.
+================================================================================
+==============================================================================*/
+
+Class TM_AArray
+{
+	Class<Actor> ClassType;	
+	Array<Actor> Actors;
+	
+	//--------------------------------------------------------------------------
+	// Initialization function.
+	//--------------------------------------------------------------------------
+	static TM_AArray Create(int size = -1, Name type = '')
+	{
+		TM_AArray arr = new('TM_AArray');
+		if (type != '')
+		{
+			Class<Actor> test = type;
+			if (!test)
+				Console.Printf("TM_AArray warning: Ignoring invalid filter %s", type);
+		}
+		arr.Init(size, type);
+		return arr;
+	}
+	
+	void Init(int size, Class<Actor> type)
+	{
+		ClassType = type;
+		Actors.Clear();
+		
+		if (size > 0)
+			SetSize(size);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Information.
+	//--------------------------------------------------------------------------
+	
+	int Size(bool real = false) const	
+	{	
+		if (real)
+		{
+			int count = 0;
+			for (int i = 0; i < Actors.Size(); i++)
+				if (Actors[i])	count++;
+			return count;
+		}
+		return Actors.Size();	
+	}
+	
+	// Find an actor's position in the array.
+	// GZDoom cannot convert uint to int on return so it must be assigned first.
+	// Also, If nulls are not desired, return the size of the array.
+	int Find(Actor mo) const
+	{
+		if (!mo)	return Actors.Size();
+		int pos = Actors.Find(mo);
+		return pos;
+	}
+	
+	// Actor version, returns an actor instead of a position.
+	Actor FindActor(Actor mo) const
+	{
+		int size = Actors.Size();
+		if (size < 1)
+			return null;
+			
+		int pos = Actors.Find(mo);
+		Actor ret = null;
+		
+		if (pos < size)	
+			ret = Actors[pos];
+		return ret;
+	}
+	
+	bool CheckActorType(Actor mo, bool strict = false) const
+	{
+		return (mo && (!ClassType || 
+			(mo.GetClass() == ClassType || (!strict && mo is ClassType))));
+	}
+	
+	//--------------------------------------------------------------------------
+	// Manipulation functions.
+	//--------------------------------------------------------------------------
+	
+	// Make sure it exists and isn't restricted from insertion.
+	// If strict, only allow the specified actor class in.
+	// Else, allow inheritance.
+	bool Push(Actor mo, bool strict = false)
+	{
+		bool check = CheckActorType(mo, strict);
+		if (check)	Actors.Push(mo);
+		
+		return check;
+	}
+	
+	bool Inject(Actor mo, bool strict = false, bool dopush = true)
+	{
+		if (!CheckActorType(mo, strict))	
+			return false;
+		
+		if (Actors.Find(mo) < Actors.Size())
+			return true;
+			
+		for (int i = 0; i < Actors.Size(); i++)
+		{
+			if (Actors[i] == null)
+			{
+				Actors[i] = mo;
+				return true;
+			}
+		}
+		return (dopush) ? Push(mo, strict) : false;
+	}
+	
+	// Removes the actor and 'schedules' shrinking via a null.
+	void Delete(Actor mo, bool all = false)
+	{
+		int size = Actors.Size();
+		if (mo && size > 0)
+		{
+			// Eliminate all duplicates.
+			if (all) 
+				for (int i = 0; i < size; i++)
+					if (mo == Actors[i])
+						Actors[i] = null;
+			
+			// Just find one.
+			else	
+			{
+				int pos = Actors.Find(mo);
+				if (pos < size)
+					Actors[pos] = null;
+			}
+		}
+	}
+	
+	// Cleans up an array by copying all non-nulls to a temp array and overriding
+	// the original. This is the most efficient way in ZScript so far, as it
+	// beats calling DynArray's Delete function over and over in performance.
+	int Clean()
+	{
+		int size = Actors.Size();
+		// Array empty.
+		if (size < 1)	return 0;
+			
+		Array<Actor> temp; temp.Clear();
+		for (int i = 0; i < size; i++)
+		{
+			if (Actors[i] != null)
+				temp.Push(Actors[i]);
+		}	
+		Actors.Move(temp);
+		return Actors.Size();
+	}
+	
+	// Removes all actors from the array.
+	void Clear(bool keepsize = false) 
+	{
+		if (keepsize)
+			for (int i = 0; i < Actors.Size(); i++)
+				Actors[i] = null;
+		else
+			Actors.Clear(); 
+	}
+	
+	//--------------------------------------------------------------------------
+	// Internal functions only.
+	//--------------------------------------------------------------------------
+	
+	private int SetSize(int size)
+	{
+		int old = Actors.Size();
+		if (old == size)
+			return 0;
+		
+		if (size < 1)
+		{
+			Actors.Clear();
+			return -old;
+		}
+		
+		Actors.Resize(size);
+		if (old < size)
+			for (int i = old; i < size; i++)
+				Actors[i] = null;
+		
+		return old - size;
+	}
+}
+
+//==============================================================================
+//==============================================================================
+// Like TM_AArray, but for actor classes.
+//==============================================================================
+//==============================================================================
+Class TM_CAArray
+{
+	Class<Actor> ClassType;	
+	Array<Class<Actor> > Classes;
+	
+	//--------------------------------------------------------------------------
+	// Initialization function.
+	//--------------------------------------------------------------------------
+	static TM_CAArray Create(int size = -1, Name type = '')
+	{
+		TM_CAArray arr = new('TM_CAArray');
+		if (type != '' && type != 'None')
+		{
+			Class<Actor> test = type;
+			if (!test)
+				Console.Printf("TM_CAArray warning: Ignoring invalid filter %s", type);
+		}
+		arr.Init(size, type);
+		return arr;
+	}
+	
+	void Init(int size, Class<Actor> type)
+	{
+		ClassType = type;
+		Classes.Clear();
+		
+		if (size > 0)
+			SetSize(size);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Information.
+	//--------------------------------------------------------------------------
+	
+	int Size(bool real = false) const	
+	{	
+		if (real)
+		{
+			int count = 0;
+			for (int i = 0; i < Classes.Size(); i++)
+				if (Classes[i] != null)	count++;
+			return count;
+		}
+		return Classes.Size();	
+	}
+	
+	// Find an actor's position in the array.
+	// GZDoom cannot convert uint to int on return so it must be assigned first.
+	// Also, If nulls are not desired, return the size of the array.
+	int Find(Class<Actor> mo, bool nulls = true) const
+	{
+		if (mo == null)
+		{
+			for (int i = 0; i < Classes.Size(); i++)
+				if (!Classes[i])	return i;		
+			return Classes.Size();
+		}		
+		int pos = Classes.Find(mo);
+		return pos;
+	}
+	
+	bool CheckClassType(Class<Actor> mo, bool strict = false) const
+	{
+		return (mo && (ClassType == null || 
+			(mo == ClassType || (!strict && mo is ClassType))));
+	}
+	
+	//--------------------------------------------------------------------------
+	// Manipulation functions.
+	//--------------------------------------------------------------------------
+	
+	// Make sure it exists and isn't restricted from insertion.
+	// If strict, only allow the specified actor class in.
+	// Else, allow inheritance.
+	bool Push(Class<Actor> mo, bool strict = false)
+	{
+		bool check = CheckClassType(mo, strict);
+		if (check)	Classes.Push(mo);
+		
+		return check;
+	}
+	
+	// Finds a null and injects mo into its spot.
+	bool Inject(Class<Actor> mo, bool strict = false, bool dopush = true)
+	{
+		if (!CheckClassType(mo, strict))
+			return false;
+			
+		if (Classes.Find(mo) < Classes.Size())
+			return true;// Already in, nothing to do here.
+		
+		for (int i = 0; i < Classes.Size(); i++)
+		{
+			if (Classes[i] == null)
+			{
+				Classes[i] = mo;
+				return true; // Found a null.
+			}
+		}
+		return (dopush) ? Push(mo, strict) : false;
+	}
+	
+	// Removes the actor and 'schedules' shrinking via a null.
+	void Delete(Class<Actor> mo, bool all = false)
+	{
+		int size = Classes.Size();
+		if (mo && size > 0)
+		{
+			// Eliminate all duplicates.
+			if (all) 
+				for (int i = 0; i < size; i++)
+					if (mo == Classes[i])
+						Classes[i] = null;
+			
+			// Just find one.
+			else	
+			{
+				int pos = Classes.Find(mo);
+				if (pos < size)
+					Classes[pos] = null;
+			}
+		}
+	}
+	
+	// Cleans up an array by copying all non-nulls to a temp array and overriding
+	// the original. This is the most efficient way in ZScript so far, as it
+	// beats calling DynArray's Delete function over and over in performance.
+	int Clean()
+	{
+		int size = Classes.Size();
+		// Array empty.
+		if (size < 1)	return 0;
+			
+		Array<Class<Actor> > temp; temp.Clear();
+		for (int i = 0; i < size; i++)
+		{
+			if (Classes[i] != null)
+				temp.Push(Classes[i]);
+		}	
+		Classes.Move(temp);
+		return Classes.Size();
+	}
+	
+	// Removes all Classes from the array.
+	void Clear(bool keepsize = false) 
+	{
+		if (keepsize)
+			for (int i = 0; i < Classes.Size(); i++)
+				Classes[i] = null;
+		else
+			Classes.Clear(); 
+	}
+	
+	//--------------------------------------------------------------------------
+	// Sets the size of the array.
+	//--------------------------------------------------------------------------
+	
+	int SetSize(int size)
+	{
+		int old = Classes.Size();
+		if (old == size)
+			return 0;
+		
+		if (size < 1)
+		{
+			Classes.Clear();
+			return -old;
+		}
+		
+		Classes.Resize(size);
+		if (old < size)
+			for (int i = old; i < size; i++)
+				Classes[i] = null;
+		
+		return old - size;
+	}
+}

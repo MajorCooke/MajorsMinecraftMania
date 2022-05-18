@@ -1,0 +1,16 @@
+
+// Code from PhantomBeta's Se7evidas mod
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Constants.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/3DFloorPointer.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Math.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Projectile.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/CollisionHandling.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Linetracer.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Movement.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Trail.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/FastRNG.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Ballistics.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/ColDet.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/GZDoomFuncs.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Physics.txt"
+#include "ZMinecraft/Libraries/PhantomBeta/Se7evidas/Trigonometry.txt"

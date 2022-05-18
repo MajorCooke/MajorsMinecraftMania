@@ -1,0 +1,394 @@
+Model TM_Axe
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Model 0 "Models/Misc/Axe.obj"
+	Scale 1.0 1.0 1.2
+	Skin 0 "Materials/golden_axe.png"
+	FrameIndex ASDF A 0 0
+}
+
+Model TM_AxeGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Model 0 "Models/Misc/Axe.obj"
+	Scale 1.0 1.0 1.2
+	Skin 0 "Materials/golden_axe.png"
+	FrameIndex ASDF A 0 0
+}
+
+Model TM_Sword
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Model 0 "Models/Misc/Sword.obj"
+	Scale 1.0 1.0 1.2
+	Skin 0 "Materials/golden_sword.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/stone_sword.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/iron_sword.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/diamond_sword.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/netherite_sword.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_SwordGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Model 0 "Models/Misc/Sword.obj"
+	Scale 1.0 1.0 1.2
+	Skin 0 "Materials/golden_sword.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/stone_sword.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/iron_sword.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/diamond_sword.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/netherite_sword.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_Bow
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/BowNormal.obj"		FrameIndex ASDF A 0 0
+	Model 0 "Models/Misc/BowN1.obj"			FrameIndex ASDF B 0 0
+	Model 0 "Models/Misc/BowN2.obj"			FrameIndex ASDF C 0 0
+	Model 0 "Models/Misc/BowN3.obj"			FrameIndex ASDF D 0 0
+}
+
+Model TM_BowGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/BowNormal.obj"
+	FrameIndex ASDF A 0 0
+	FrameIndex ASDF B 0 0 // Intentionally not changing beyond the default look.
+	FrameIndex ASDF C 0 0
+	FrameIndex ASDF D 0 0
+}
+
+Model TM_ArmorHead
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorHead.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorHeadGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorHeadGib.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+
+Model TM_ArmorArmL
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorArmL.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorArmLGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorArmLGib.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorArmR
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorArmR.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorArmRGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorArmRGib.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorChest
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorChest.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorChestGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorChest.obj" // Has no offsets so reuse the same model
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorPants
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorPants.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorPantsGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorPantsGib.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorLegL
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorLegL.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorLegLGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorLegLGib.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorLegR
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorLegR.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorLegRGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorLegRGib.obj"
+	Skin 0 "Materials/Armor/gold2.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail2.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron2.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond2.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite2.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorBootL
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorBootL.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorBootLGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorBootL.obj" // No offsets, reuse is good.
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+Model TM_ArmorBootR
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorBootR.obj"
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}
+
+Model TM_ArmorBootRGib
+{
+	USEACTORPITCH
+	USEACTORROLL
+	Scale 1.0 1.0 1.2
+	Model 0 "Models/Misc/ArmorBootR.obj" //No offsets, reuse is good.
+	Skin 0 "Materials/Armor/gold1.png"
+	FrameIndex ASDF A 0 0
+	Skin 0 "Materials/Armor/chainmail1.png"
+	FrameIndex ASDF B 0 0
+	Skin 0 "Materials/Armor/iron1.png"
+	FrameIndex ASDF C 0 0
+	Skin 0 "Materials/Armor/diamond1.png"
+	FrameIndex ASDF D 0 0
+	Skin 0 "Materials/Armor/netherite1.png"
+	FrameIndex ASDF E 0 0
+}

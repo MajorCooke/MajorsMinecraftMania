@@ -1,19 +1,19 @@
+/*==============================================================================
 //==============================================================================
-//==============================================================================
-// Body parts
+//	Body parts
 //==============================================================================
 //==============================================================================
 
-// NOTICE: Each limb that can 'swing' needs a radius and height defined in order 
-// to properly scale the swaying. Use the measurement tool and measure from the
-// bottom of the limb to the pivot point. By 'swing', it's effectively the legs
-// moving forward and backwards while the monster moves.
+--------------------------------------------------------------------------------
+	LimbSway
 
-//------------------------------------------------------------------------------
-// LimbSway
-// 
-// Performs idle swaying, adding onto the current limb's APR (Angle/Pitch/Roll)
-//------------------------------------------------------------------------------
+	Performs idle swaying, adding onto the current limb's APR (Angle/Pitch/Roll)
+--------------------------------------------------------------------------------
+NOTICE: Each limb that can 'swing' needs a radius and height defined in order 
+to properly scale the swaying. Use the measurement tool and measure from the
+bottom of the limb to the pivot point. By 'swing', it's effectively the legs
+moving forward and backwards while the monster moves.
+*/
 
 Struct LimbSway play
 {
@@ -65,9 +65,9 @@ Struct LimbSwing play
 		// distanceit can go based on velocity/position offsets. It's currently 
 		// not moving correctly with the speed of enemy movements.
 		
-	//	VelAng = MC_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
+	//	VelAng = TM_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
 		
-		VelSpring = MC_kSpring.DampedSpringDouble(CurSpring, VelPosLen, VelSpring, 0.25, 0.1);
+		VelSpring = TM_kSpring.DampedSpringDouble(CurSpring, VelPosLen, VelSpring, 0.25, 0.1);
 		CurSpring += VelSpring;
 		
 		if (CurSpring ~== 0.0)	return CurSpring;
@@ -87,11 +87,14 @@ Struct LimbSwing play
 	}
 }
 
-extend class MinecraftMonster
+mixin Class TM_UpdateLimbs
 {
+	int CurStyle;
+	Array<TM_BodyPart> Limb;
+	
 	//--------------------------------------------------------------------------
 	// Initializes Limb array.
-	protected void Init(int limbs)
+	void Init(int limbs)
 	{
 		Limb.Clear();
 		if (limbs < 1)	return;
@@ -101,24 +104,186 @@ extend class MinecraftMonster
 	}
 	
 	
+	// Creates & inserts a limb into a specific index in the Limb array. If the
+	// index is < 0, will find a null spot first before attempting to push to
+	// the array.
+	TM_BodyPart InsertLimb(Class<TM_BodyPart> cls, int i = -1, Vector3 _pos = (0,0,0), bool still = false, bool replace = true)
+	{
+		if (!cls) return null;
+		
+		// Find a null spot first.
+		if (i < 0 || i >= Limb.Size())
+		{
+			bool good = false;
+			for (int j = 0; j < Limb.Size(); j++)
+			{
+				if (!Limb[j])
+				{
+					good = true;
+					i = j;
+					break;
+				}
+			}
+			
+			// No free space, so just perform AddLimb.
+			if (!good)	return AddLimb(cls, _pos, still); 
+		}
+		else if (Limb[i])
+		{
+			if (replace)	Limb[i].Destroy();	// Replace it.
+			else 			return null; 		// Taken slot.
+		}
+		Limb[i] = AddLimb(cls, _pos, still, false);
+		return Limb[i];
+	}
 	
+	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 _pos, bool still = false, bool push = true)
+	{
+		let mo = InitLimb(cls);
+		if (!mo)	return null;
+		
+		mo.IsStill = still;
+		if (_pos ~== (0,0,0))
+			_pos = (mo.OffX, mo.OffY, mo.OffZ);
+		mo.SetPosOffsets(_pos);
+		if (push)	Limb.Push(mo);
+		return mo;
+	}
+	
+	private TM_BodyPart InitLimb(Class<TM_BodyPart> cls)
+	{
+		if (!cls)	return null;
+		
+		let mo = TM_BodyPart(Spawn(cls, pos, ALLOW_REPLACE));
+		if (mo)
+		{
+			let sf = TM_BodyPart(self);
+			if (sf)	mo.Owner = sf.Owner;
+			else	mo.Owner = TM_Monster(self);
+			mo.Master = self;
+		}
+		return mo;
+	}
+	
+	virtual void UpdateLimbs(Vector3 Angs, bool interp = true)
+	{
+		if (bDESTROYED || bKILLED)	return;
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+			{
+				bool invis = bINVISIBLE;
+				Vector3 NA = Angs;
+				if (!(Limb[i] is 'TM_BodyPartHead') && !Limb[i].IsStill)
+				//	NA.Y -= Pitch;
+					NA.Y = 0;
+				
+				Switch (Limb[i].CopyFrames)
+				{
+					Case TM_Frames_FromOwner:
+					{
+						Limb[i].Frame = Frame;	
+						break;
+					}
+					Case TM_Frames_FromMaster:
+					{
+						if (Limb[i].Master)	
+							Limb[i].Frame = Limb[i].Master.Frame; 
+						break;
+					}
+				}
+				
+				bool start = (self is "TM_Monster");
+				Limb[i].UpdatePosition(self, interp, start);
+				Limb[i].UpdateScales(OverScale, Scale);
+				
+				
+				
+				if (Limb[i].IsStill)
+				{
+					Angs = (Angle, Pitch, Roll);
+					Limb[i].SetAngles(Angs.X, Angs.Y, Angs.Z);
+					Limb[i].UpdateAngles(Angs);
+					Limb[i].CopyAngles(self, true);
+				}
+				else
+				{
+				//	Limb[i].CopyAngles(self);
+					Limb[i].SetNextAngles(NA);
+				}
+			//	Limb[i].LightLevel = LightLevel;
+				Limb[i].CurStyle = CurStyle;
+				Limb[i].A_SetRenderStyle(alpha, CurStyle);
+				Limb[i].Translation = Translation;
+				if (Limb[i].CopyInvis)
+				{
+					Limb[i].bINVISIBLE = bINVISIBLE;
+					
+				}
+				Limb[i].bBRIGHT = bBRIGHT;
+				if (!start || (invis && !bINVISIBLE))
+				{
+					bool inter = interp;
+					if (invis && !bINVISIBLE)
+						inter = false;
+					Limb[i].UpdateLimbs(Angs, inter);
+				}
+			}
+		}
+	}
+}
+
+extend class TM_Monster
+{
+	mixin TM_UpdateLimbs;
+	protected TM_ArmorInv ArmorInv;
+	
+	
+	void SetArmor(int slot, int type)
+	{
+		
+		// Set up the inv item.
+		if (!ArmorInv)
+		{
+			GiveInventory("TM_ArmorInv", 1);
+			ArmorInv = TM_ArmorInv(FindInventory('TM_ArmorInv'));	
+		}
+		
+		// Tell the limbs to create the armors.
+		Array<TM_Armor> Armors; Armors.Clear();
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])	
+			{
+				bool a; TM_Armor b;
+				[a, b] = Limb[i].SetArmor(slot, type);
+				if (a && b)
+					Armors.Push(b);
+				
+			}
+		}
+		
+		if (ArmorInv)
+			ArmorInv.UpdateArmor(Armors);
+	}
+		
 	// Returns the head actor, mainly for cosmetic head tilts for actors to
 	// look at others properly. Bear in mind that if more than one head is present,
 	// the one earliest on the list will be the one returned.
 	private int HeadIndex;
-	MCBodyPartHead GetHead() const
+	TM_BodyPartHead GetHead() const
 	{
 		// Quicker lookup. 
 		if (HeadIndex > -1 && HeadIndex < Limb.Size() &&
-			Limb[HeadIndex] is 'MCBodyPartHead')
-			return MCBodyPartHead(Limb[HeadIndex]);
+			Limb[HeadIndex] is 'TM_BodyPartHead')
+			return TM_BodyPartHead(Limb[HeadIndex]);
 			
 		for (int i = 0; i < Limb.Size(); i++)
 		{
-			if (Limb[i] is 'MCBodyPartHead')
+			if (Limb[i] is 'TM_BodyPartHead')
 			{
 				HeadIndex = i;
-				return MCBodyPartHead(Limb[i]);
+				return TM_BodyPartHead(Limb[i]);
 			}
 		}
 		
@@ -155,126 +320,103 @@ extend class MinecraftMonster
 			}
 		}
 	}
-
-	virtual void UpdateLimbs(bool interp = true)
-	{
-		for (int i = 0; i < Limb.Size(); i++)
-		{
-			if (Limb[i])
-			{
-				Vector3 NA = Angs;
-				if (!(Limb[i] is 'MCBodyPartHead'))
-					NA.Y -= Pitch;
-				
-				Switch (Limb[i].CopyFrames)
-				{
-					Case MCFrames_FromOwner:	
-						Limb[i].Frame = Frame;	
-						break;
-					Case MCFrames_FromMaster:
-					{
-						if (Limb[i].Master)	
-							Limb[i].Frame = Limb[i].Master.Frame; 
-						break;
-					}
-					Default:
-						break;
-				}
-				
-				Limb[i].UpdatePosition(Limb[i].Master, (interp ? WARPF_INTERPOLATE : 0));
-				Limb[i].UpdateScales(OverScale, Scale);
-				Limb[i].SetNextAngles(NA);
-				Limb[i].A_SetRenderStyle(alpha, CurStyle);
-				Limb[i].Translation = Translation;
-				Limb[i].bINVISIBLE = bINVISIBLE;
-				Limb[i].bBRIGHT = bBRIGHT;
-			}
-		}
-	}
 }
 
-Class MCBodyPart : MinecraftEntity
+Class TM_BodyPart : TM_Entity
 {
+	mixin TM_UpdateLimbs;
 	const StepWait = 8;
 	private SpriteID SprID;
 	private int SprFrame;
 	private bool DestroyMe;
 	private int StepDelay;
+	bool NoAim;
 	protected bool ForceIdleSway;
 	protected int CurAction;
 	protected double OverScale;
-	protected MCBodyPartAttachment Attachment;
-	protected Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
-		
-		PosOff,		// Position Offsets
-		RelOff,		// Relative position offsets (takes angles into account)
+//	protected TM_BodyPartAttachment Attachment[2];
+	Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
+		AbsOff,		// Absolute Offsets
+		PosOff,		// Position Offsets to Master
+		RelOff,		// Relative position offsets to self
 		AngOff,		// Secondary angle offsets (reset every tic to (0,0,0)
-		SwingAngDir,		// How much to influence the APR as a scalar.
 		CurAng,		// The current angle, pitch and roll.
 		MainAng,	// Primary angle offsets (not reset)
 		NextAng,	// For spring dampening. Target angles to reach.
-		VelAng, 	// Current velocity of transition to NextAng.
-		AttachPos;	// Attachment Position
+		SwingAngDir,// How much to influence the APR as a scalar.
+		VelAng; 	// Current velocity of transition to NextAng.
 		
-		
-	protected MC_QuatTurner Turner;
-	protected Class<MCBodyPartGib> Gib;
+	meta int SideID;
+	meta Class<TM_Armor> ArmorType;
+	protected TM_QuatTurner Turner;
+	protected Class<TM_BodyPartGib> Gib;
 	
-	bool	CopyInvis;
+	bool	CopyInvis,
+			IsStill;
 	int		CopyFrames;
-	double	OffX, OffY, OffZ,
-			ROfX, ROfY, ROfZ,
-			AttX, AttY, AttZ,
-			AOffX, AOffY, AOffZ,
+	double	AbOX, AbOY, AbOZ,		// Absolute position offsets
+			OffX, OffY, OffZ,		// Primary offsets on the body
+			ROfX, ROfY, ROfZ,		// Relative offsets
+			AOffX, AOffY, AOffZ,	// Angle Offsets
+			SOX, SOY, SOZ, 			// Sway Sine Offsets
+			SDX, SDY, SDZ, 			// Sway Sine Distance
+			SSX, SSY, SSZ,			// Sway Sine Speed
+			ADX, ADY, ADZ,			// Swing Angle Direction
 			VelSineOffset,
-			SOX, SOY, SOZ, 
-			SDX, SDY, SDZ, 
-			SSX, SSY, SSZ,
-			ADX, ADY, ADZ,
 			SwingAmp,
 			SwingAngleCap,
+			SwingSpeed,
 			StepVolume;
 	Sound	StepSound;
 	
 	LimbSway Sway;
 	LimbSwing Swing;
-	MinecraftMonster Owner;
+	TM_Monster Owner;
 	
-	Property StepSound: StepSound;
-	Property StepVolume: StepVolume;
+	
+	// Don't do any extra processing if static.
+	Property IsStill: IsStill;
+	
+	// For armor identification, used solely for arms/legs.
+	Property SideID: SideID;
+	
+	Property StepSound: 		StepSound;
+	Property StepVolume: 		StepVolume;
 	
 	// Should this copy the master's sprite frame?
-	Property CopyFrames: CopyFrames;
+	Property CopyFrames: 		CopyFrames;
 	// Force idle swaying motion regardless of cvar?
-	Property ForceIdleSway: ForceIdleSway;
-	Property CurAction : CurAction;			// See Constants.txt
+	Property ForceIdleSway: 	ForceIdleSway;
+	Property CurAction: 		CurAction;			// See Constants.txt
 	// Offset of the limb's sine wave when in motion. I.e. making one leg go back
 	// while the other goes forward.
-	Property CopyInvis: CopyInvis;
-	Property SineOffset: SOX, SOY, SOZ;
-	// 
-	Property SineDistance: SDX, SDY, SDZ;
-	Property SineSpeed: SSX, SSY, SSZ;
+	Property CopyInvis: 		CopyInvis;
+	Property SineOffset: 		SOX, SOY, SOZ;
+	Property SineDistance: 		SDX, SDY, SDZ;
+	Property SineSpeed: 		SSX, SSY, SSZ;
+	Property Offsets: 			OffX, OffY, OffZ;
+	Property RelOffsets: 		ROfX, ROfY, ROfZ;
+	Property AngleOffset: 		AOffX, AOffY, AOffZ;
 	Property VelSineOffset: VelSineOffset;
-	Property Offsets: OffX, OffY, OffZ;
-	Property RelOffsets: ROfX, ROfY, ROfZ;
-	Property AttachOffset: AttX, AttY, AttZ;
-	Property AngleOffset: AOffX, AOffY, AOffZ;
 	// Used for adjusting the angle/pitch/roll of the limb. This is a scalar.
 	// X = Angle, Y = Pitch, Z = Roll.
-	Property SwingAngleDir: ADX, ADY, ADZ;
-	Property SwingAmp: SwingAmp;
-	Property SwingAngleCap: SwingAngleCap;
-	Property Gib: Gib;
+	Property SwingAngleDir: 	ADX, ADY, ADZ;
+	Property SwingAngleCap: 	SwingAngleCap;
+	Property SwingAmp: 			SwingAmp;
+	Property SwingSpeed: 		SwingSpeed;
+	Property Gib: 				Gib;
+	Property NoAim:				NoAim;
 	
 	Default
 	{
-		MCBodyPart.CopyInvis true;
-		MCBodyPart.SwingAngleDir 0, 1, 0;
-		MCBodyPart.ForceIdleSway false;
-		MCBodyPart.SwingAngleCap 80;
-		MCBodyPart.SwingAmp SineWavePerSecond * 0.3;
-		MCBodyPart.StepVolume 1.0;
+		TM_BodyPart.NoAim true;
+		TM_BodyPart.SwingSpeed 1.0;
+		TM_BodyPart.CopyInvis true;
+		TM_BodyPart.SwingAngleDir 0, 1, 0;
+		TM_BodyPart.ForceIdleSway false;
+		TM_BodyPart.SwingAngleCap 80;
+		TM_BodyPart.SwingAmp SineWavePerSecond * 0.3;
+		TM_BodyPart.StepVolume 1.0;
 		Radius 4;
 		Height 8;
 		+NOINTERACTION
@@ -288,22 +430,29 @@ Class MCBodyPart : MinecraftEntity
 	override void Activate(Actor activator)
 	{
 		if (bKILLED || Destroyed() || !Master || !bDORMANT)	return;
-		if (Attachment)	Attachment.Activate(activator);
+		
+		
 		doSpring = false;
-		UpdatePosition(Master);
-		NextAng.X = Master.Angle;
+		UpdatePosition(Activator);
+		NextAng.X = Activator.Angle;
 		UpdateAngles(NextAng + MainAng);
 		ClearInterpolation();
 		bINVISIBLE = false;
 		bDONTINTERPOLATE = false;
 		bDORMANT = false;
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].Activate(self);
 		SetState(ResolveState("Active"));
 	}
 	
 	override void Deactivate(Actor activator)
 	{
 		if (bKILLED || Destroyed() || !Master)	return;
-		if (Attachment)	Attachment.Deactivate(activator);
+	//	for (int i = 0; i < Attachment.Size(); i++)
+	//		if (Attachment[i])	Attachment[i].Deactivate(activator);
+		
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].Deactivate(activator);
 		bINVISIBLE = true;
 		bDONTINTERPOLATE = true;
 		bDORMANT = true;
@@ -312,7 +461,7 @@ Class MCBodyPart : MinecraftEntity
 	
 	override void Tick()
 	{
-		if (!Master || IsFrozen() || bDESTROYED || bDORMANT)	
+		if (!Master || IsFrozen() || bDESTROYED || bDORMANT || bKILLED)	
 		{
 			Super.Tick();
 			return;
@@ -325,10 +474,17 @@ Class MCBodyPart : MinecraftEntity
 			return;
 		}
 		
+		if (IsStill)
+		{
+			Super.Tick();
+			return;
+		}
 		DoPreMotion();
 		Super.Tick();
 		DoMotion();
+		UpdateLimbs((Angle, Pitch, Roll));
 		
+		/*
 		Translation = Owner.Translation;
 		if (!Default.bBRIGHT)	bBRIGHT = Owner.bBRIGHT;
 		
@@ -336,12 +492,16 @@ Class MCBodyPart : MinecraftEntity
 			bINVISIBLE = (Master && Master.bINVISIBLE);
 		if (!bKILLED)
 		{
-			if (Attachment)
+			for (int i = 0; i < Limb.Size(); i++)
 			{
-				Attachment.bBRIGHT = bBRIGHT;
-				Attachment.bINVISIBLE = bINVISIBLE;
+				if (Limb[i])
+				{
+					Limb[i].bBRIGHT = bBRIGHT;
+					Limb[i].bINVISIBLE = bINVISIBLE;
+				}
 			}
 		}
+		*/
 	}
 	
 	override void BeginPlay()
@@ -355,7 +515,7 @@ Class MCBodyPart : MinecraftEntity
 	{
 		Super.PostBeginPlay();
 		
-		Turner = MC_QuatTurner.Create();
+		Turner = TM_QuatTurner.Create();
 		
 		Swing.SwingAmp = SwingAmp;
 		NextAng = (Angle, Pitch, Roll);
@@ -363,13 +523,16 @@ Class MCBodyPart : MinecraftEntity
 		SwingAngDir = (ADX, ADY, ADZ);
 		
 		if (Master)
-			bINVISIBLE = Master.bINVISIBLE;
+			bINVISIBLE = Master.bINVISIBLE;			
 	}
 	
 	override void OnDestroy()
 	{
-		if (Attachment)
-			Attachment.Destroy();
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			if (Limb[i])
+				Limb[i].Destroy();
+		}
 		Super.OnDestroy();
 	}
 	
@@ -377,59 +540,50 @@ Class MCBodyPart : MinecraftEntity
 	// Custom functions
 	//--------------------------------------------------------------------------
 	// TO DO: Rework attachments so multiple can be added and to different limbs.
-	MCBodyPart SetAttachment(Class<MCBodyPartAttachment> cls)
-	{
-		if (!cls)	return null;
-		
-		if (Attachment)
-			Attachment.Destroy();
-			
-		Attachment = MCBodyPartAttachment(Spawn(cls, pos, ALLOW_REPLACE));
-		if (Attachment)
-		{
-			Attachment.Owner = Owner;
-			Attachment.Master = self;
-			Attachment.UpdateScales(OverScale, Scale);
-			Attachment.UpdateAngles(NextAng);
-			Attachment.UpdatePosition(self);
-		}
-		return Attachment;
-	}
-		
-	// Offsets are relative, a la A_SpawnItemEx/A_Warp.
+	
+	// Offsets are relative, a la A_SpawnItemEx/A_Warp. TO DO: Replace with Quaternions
 	void SpawnGib(double VelPosLen, Vector3 Ofs = (0,0,0))
 	{
-		if (bKILLED || Destroyed())	return;
+		if (bKILLED || bDESTROYED)	return;
 		bKILLED = true;
 		
+		bINVISIBLE = true;
+		
+		for (int i = 0; i < Limb.Size(); i++)
+			if (Limb[i])	Limb[i].SpawnGib(VelPosLen, Ofs);
+			
+		// Note: This must wait a tic before destruction because, for 
+		// some reason, GZDoom's "kill monsters" command will break
+		// if immediately destroyed. So it requires one tic to destroy.
+		DestroyMe = true;
+		
+		// Don't spawn a gib if DONTGIB is present. Not being used elsewhere anyway
+		// since all are +NOINTERACTION.
+		if (bDONTGIB)
+			return;
+		
 		// I've named all the gibs after the same with the "gib" affix after
-		// so this will suffice, but the Gib property can still be overridden
-		// for customization sake.
+		// so this will suffice, but the Gib property allows for overriding.
 		
 		if (!Gib)	
 		{
 			String gname = GetClassName().."Gib";
 			Gib = gname;
 			
-			if (!Gib)	
-			{
-				// Note: This must wait a tic before destruction because, for 
-				// some reason, GZDoom's "kill monsters" command will break
-				// if immediately destroyed. So it requires one tic to destroy.
-				DestroyMe = true;
-				return;
-			}
+			if (!Gib)	return;
+			
 		}
 		
-		let g = MCBodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
+		let g = TM_BodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
 		if (g)
 		{
-			SetState(ResolveState("Spawn"));
+			// TO DO: Rework the spawning to be more appropriate. 
 			g.Warp(self, 
 				(Ofs.X + g.OffX) * cos(pitch), 
 				(Ofs.Y + g.OffY), 
 				(Ofs.Z + g.OffZ) * -sin(pitch), 
 				0, WARPF_NOCHECKPOSITION);
+				
 			g.Angle = Angle;
 			g.Pitch = Pitch;
 			g.Roll = Roll;
@@ -437,14 +591,10 @@ Class MCBodyPart : MinecraftEntity
 			g.Sprite = Sprite;
 			g.Frame = Frame;
 			
-			bINVISIBLE = true;
-			
 			// Apply a random velocity in the event there's little speed.
 			g.Vel3DFromAngle(ffrandom(3.0,6.0), irandom(0,359), irandom(-90, 45));
 			if (Owner) g.Vel += Owner.Vel;
 		}
-		
-		if (Attachment)	Attachment.SpawnGib(VelPosLen, Ofs);
 		DestroyMe = true;
 	}
 	bool Destroyed() const { return bDESTROYED || DestroyMe;	} 
@@ -452,20 +602,76 @@ Class MCBodyPart : MinecraftEntity
 	
 	
 	
-	void SetPosOffsets(Vector3 Off, bool interp = true)
+	void SetPosOffsets(Vector3 Off, bool interp = true, bool update = true)
 	{
 		if (Destroyed())	return;
 		PosOff = Off;
 		OffX = Off.X;
 		OffY = Off.Y;
 		OffZ = Off.Z;
-		UpdateScales(OverScale, Scale);
-		UpdatePosition(Master, interp);
+		
+		if (update)
+		{
+			UpdateScales(OverScale, Scale);
+			UpdatePosition(Master, interp, false);
+		}
+	}
+	
+	void SetRelOffsets(Vector3 Off)
+	{
+		RelOff = Off;
+		ROfX = Off.X;
+		ROfY = Off.Y;
+		ROfZ = Off.Z;
+	}
+	
+	void SetAbsOffsets(Vector3 Off)
+	{
+		AbsOff = Off;
+		AbOX = Off.X;
+		AbOY = Off.Y;
+		AbOZ = Off.Z;
+		AbsOff.XY = (AbOX, AbOY) * Scale.X;
+		AbsOff.Z  = AbOZ * Scale.Y;
 	}
 	
 	//--------------------------------------------------------------------------
 	// 
-	virtual void UpdatePosition(Actor who, bool interp = true)
+	
+	/*
+virtual void UpdatePosition(Actor who, bool interp = true)
+{
+	if (!Owner || Destroyed())	return;
+	
+	if (!who)	
+	{
+		who = Master;
+		if (!who)	who = Owner;
+		if (!who)	return;
+	}
+	
+	Vector3 NP = TM_Map.GetWarpPos(level, Master.Pos, PosOff, CurAng.X);
+	NP.Z = Owner.Pos.Z + PosOff.Z;
+	Vector3 px, py, pz, origin;
+	[px, py, pz] = TM_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
+	origin = NP + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+	
+	if (!(origin ~== pos))
+		SetOrigin(origin, interp);
+	
+	if (Attachment)
+	{
+		[px, py, pz] = TM_CoordUtil.GetAxes(
+			CurAng.Y + AngOff.Y, 
+			CurAng.X + AngOff.X, 
+			CurAng.Z + AngOff.Z);
+		origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
+		if (!(origin ~== Attachment.Pos))
+			Attachment.SetOrigin(origin, interp);
+	}
+}
+	*/
+	virtual void UpdatePosition(Actor who, bool interp = true, bool start = true)
 	{
 		if (!Owner || Destroyed())	return;
 		
@@ -476,31 +682,30 @@ Class MCBodyPart : MinecraftEntity
 			if (!who)	return;
 		}
 		
-		Vector3 NP = MC_Map.GetWarpPos(level, Master.Pos, PosOff, CurAng.X);
-		NP.Z = Owner.Pos.Z + PosOff.Z;
-		Vector3 px, py, pz, origin;
-		[px, py, pz] = MC_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-		origin = NP + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+		Vector3 px, py, pz, origin, _Ang, NP;
+		_Ang = (CurAng + AngOff);
 		
-		if (!(origin ~== pos))
-			SetOrigin(origin, interp);
+		double _p = ((start) ? 0 : who.pitch);
+		[px, py, pz] = TM_CoordUtil.GetAxes(_p, who.angle, who.roll);
+		origin = who.pos + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz);
 		
-		if (Attachment)
+		if (!(RelOff ~== (0,0,0)))
 		{
-			[px, py, pz] = MC_CoordUtil.GetAxes(
-				CurAng.Y + AngOff.Y, 
-				CurAng.X + AngOff.X, 
-				CurAng.Z + AngOff.Z);
-			origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
-			if (!(origin ~== Attachment.Pos))
-				Attachment.SetOrigin(origin, interp);
+			[px, py, pz] = TM_CoordUtil.GetAxes(_Ang.Y, _Ang.X, _Ang.Z);
+			origin += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
 		}
 		
+		origin += AbsOff;
+		if (!(origin ~== pos))
+			SetOrigin(origin, interp);
 	}
 	
 	// Updates the scale of all vectors based on scale so their limbs grow
 	// or shrink with their height changes accordingly.
-	virtual void UpdateScales(double OverScale, Vector2 Scale)
+	
+	// TO DO: Fix broken attachments not appearing due to scaling issues on 
+	// differently scaled enemies.
+	virtual void UpdateScales(double OverScale, Vector2 Scale, bool doOffset = true)
 	{
 		if (Destroyed())	return;
 		
@@ -509,25 +714,32 @@ Class MCBodyPart : MinecraftEntity
 		self.OverScale = OverScale;
 		Scale = Scale * OverScale;
 		self.Scale = Scale;
-		PosOff.XY = (OffX, OffY) * Scale.X;
-		PosOff.Z  = OffZ * Scale.Y;
-		RelOff.XY = (ROfX, ROfY) * Scale.X;
-		RelOff.Z  = ROfZ * Scale.Y;
-		AttachPos.XY = (AttX, AttY) * Scale.X;
-		AttachPos.Z  = AttZ * Scale.Y;
-		Swing.Scale = OverScale;
+		if (doOffset)
+		{
+			PosOff.XY = (OffX, OffY) * Scale.X;
+			PosOff.Z  = OffZ * Scale.Y;
+			RelOff.XY = (ROfX, ROfY) * Scale.X;
+			RelOff.Z  = ROfZ * Scale.Y;
+			AbsOff.XY = (AbOX, AbOY) * Scale.X;
+			AbsOff.Z  = AbOZ * Scale.Y;
+			Swing.Scale = OverScale;
+		}
 		
 		if (!NoResize)
 			A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
 		
-		if (Attachment)	Attachment.UpdateScales(OverScale, Scale);
+		
+	//	for (int i = 0; i < Limb.Size(); i++)
+	//		if (Limb[i])	Limb[i].UpdateScales(OverScale, Scale);
+		
+		
 	}
 	
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
 	{
-		if (!Master || Destroyed())	return;
+		if (Destroyed())	return;
 		Next = Next + AngOff;
-		if (StepDelay < 1 && StepSound != "" && self is 'MCBodyPartLeg')
+		if (!IsStill && StepDelay < 1 && StepSound != "" && self is 'TM_BodyPartLeg')
 		{
 			if (pitch < 0.0 && pitch + Next.Y >= 0.0)
 			{
@@ -540,10 +752,8 @@ Class MCBodyPart : MinecraftEntity
 		A_SetPitch(Next.Y, turnflags);
 		A_SetRoll(Next.Z, turnflags);
 		
-		if (Attachment)	
-		{
-			Attachment.UpdateAngles(Next, turnflags);
-		}
+	//	for (int i = 0; i < Limb.Size(); i++)
+	//		if (Limb[i])	Limb[i].UpdateAngles(Next, turnflags);
 	}
 	
 	virtual void SetNextAngles(Vector3 Next)	{	NextAng = Next;	}
@@ -562,14 +772,7 @@ Class MCBodyPart : MinecraftEntity
 	}
 	
 	virtual void SetSwingGain(double amt) 	{	Swing.SwingAmp = amt;	}
-	
-	void SetAttachPos(Vector3 APR, bool snap = true)	
-	{	
-		AttachPos.XY = APR.XY * Scale.X;
-		AttachPos.Z = APR.Z * Scale.Y;
-		PostAngSet(snap);
-	}
-	
+
 	// Sets the primary angles, which the offsets are then based on. 
 	// Snap = no interpolation & no spring effect.
 	void SetYaw(double ang, bool snap = true)			{	MainAng.X = ang;	PostAngSet(snap);	}
@@ -589,6 +792,7 @@ Class MCBodyPart : MinecraftEntity
 		PostAngSet(snap);
 	}
 	
+	// Clears the velocity of the current angle transition.
 	void PostAngSet(bool snap)
 	{
 		VelAng = (0,0,0);
@@ -615,7 +819,7 @@ Class MCBodyPart : MinecraftEntity
 	// Motion handling virtual.
 	virtual void DoPreMotion()	
 	{
-		if (Destroyed())	return;
+		if (IsStill || Destroyed())	return;
 		if (StepDelay > 0)	StepDelay--;
 		// Counteract the MainAng and AngOff. We don't want it part of the
 		// calculations or it won't work correctly.
@@ -626,18 +830,20 @@ Class MCBodyPart : MinecraftEntity
 	protected bool doSpring;
 	virtual void DoMotion()		
 	{
-		if (Destroyed() || !Owner)	return;
+		if (!Owner || IsStill || Destroyed())	return;
+		
 		if (CurAction > 0 && !Owner.bDORMANT)
 		{
-			if ((MCC_IdleSway || ForceIdleSway) && (CurAction & E_Sway))
+			if ((TMV_IdleSway || ForceIdleSway) && (CurAction & E_Sway))
 			{
+				if (!Turner)	Turner = TM_QuatTurner.Create();
 				AngOff = Turner.GetTurn((0,0,0), Sway.NextSway());
 			}
 			if (CurAction & E_Swing)
 			{
 				Swing.AngleCap = SwingAngleCap;
-				double NS = Swing.NextSwing(Owner.VelPosLen, true);
-				double NC = Swing.NextSwing(Owner.VelPosLen, donext: false);
+				double NS = Swing.NextSwing(Owner.VelPosLen * SwingSpeed, true);
+				double NC = Swing.NextSwing(Owner.VelPosLen * SwingSpeed, donext: false);
 				AngOff.X += NS * SwingAngDir.X;
 				AngOff.Y += NC * SwingAngDir.Y;				
 				AngOff.Z += NS * SwingAngDir.Z;
@@ -650,7 +856,7 @@ Class MCBodyPart : MinecraftEntity
 		}
 		else
 		{
-			VelAng = MC_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
+			VelAng = TM_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
 			CurAng += VelAng;
 		}
 		
@@ -669,11 +875,144 @@ Class MCBodyPart : MinecraftEntity
 		return CurAng, VelAng, NextAng;
 	}
 	
-	void CopyAngles(MCBodyPart limb)
+	void CopyAngles(Actor lim, bool actual = false)
 	{
-		if (!limb)	return;
+		if (!lim)	return;
+		
+		let limb = TM_BodyPart(lim);
+		if (!limb)	
+		{
+			angle = lim.angle;
+			pitch = lim.pitch;
+			roll = lim.roll;			
+			return;
+		}
 		
 		[CurAng, VelAng, NextAng] = limb.GetAngles(); 
+		if (actual)
+		{
+			pitch = limb.pitch;
+			angle = limb.angle;
+			roll = limb.roll;
+		}
+	}
+	/*
+	// Creates & inserts a limb into a specific index in the Limb array. If the
+	// index is < 0, will find a null spot first before attempting to push to
+	// the array.
+	TM_BodyPart InsertLimb(Class<TM_BodyPart> cls, int i = -1, Vector3 _pos = (0,0,0), bool still = false, bool replace = true)
+	{
+		if (!cls) return null;
+		
+		// Find a null spot first.
+		if (i < 0 || i >= Limb.Size())
+		{
+			bool good = false;
+			for (int j = 0; j < Limb.Size(); j++)
+			{
+				if (!Limb[j])
+				{
+					good = true;
+					i = j;
+					break;
+				}
+			}
+			
+			// No free space, so just perform AddLimb.
+			if (!good)	return AddLimb(cls, _pos, still); 
+		}
+		else if (Limb[i])
+		{
+			if (replace)	Limb[i].Destroy();	// Replace it.
+			else 			return null; 		// Taken slot.
+		}
+		Limb[i] = AddLimb(cls, _pos, still, false);
+		return Limb[i];
+	}
+	
+	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 _pos, bool still = false, bool push = true)
+	{
+		let mo = InitLimb(cls);
+		if (!mo)	return null;
+		
+		mo.IsStill = still;
+		if (_pos ~== (0,0,0))
+			_pos = (mo.OffX, mo.OffY, mo.OffZ);
+		mo.SetPosOffsets(_pos);
+		if (push)	Limb.Push(mo);
+		return mo;
+	}
+	
+	private TM_BodyPart InitLimb(Class<TM_BodyPart> cls)
+	{
+		if (!cls)	return null;
+		
+		let mo = TM_BodyPart(Spawn(cls, pos, ALLOW_REPLACE));
+		if (mo)
+		{
+			mo.Owner = Owner;
+			mo.Master = self;
+		}
+		return mo;
+	}
+	*/
+	virtual Class<TM_Armor> GetArmorClass(int slot)	{	return null;	}
+	
+	// Wrapper function for adding armor as a limb.
+	virtual bool, TM_Armor SetArmor(int slot, int type)
+	{		
+		TM_Armor ret = null;
+		let cls = GetArmorClass(slot);
+		if (!cls)	return false, null;
+		
+		bool found = false;
+		for (int i = 0; i < Limb.Size(); i++)
+		{	
+			if (Limb[i].GetClass() == cls)
+			{
+				if (type == AT_None)
+				{
+					Limb[i].Destroy();
+					found = true;
+					continue;
+				}
+				Limb[i].Frame = type;
+				found = true;
+			}
+			// If there are addition limbs parented to this one, make sure they
+			// call it too.
+			if (Limb[i])	
+			{
+				Limb[i].SetArmor(slot, type);
+			}
+			
+		}
+		if (!found && type > AT_None && type <= AT_Max)
+		{
+			let arm = InsertLimb(cls, -1, (0,0,0), true);
+			if (arm)
+			{
+				arm.Frame = type;
+				found = true;
+			}
+			ret = TM_Armor(arm);
+		}
+		return found, ret;
+	}
+	
+	
+	
+	void DestroyArmor()
+	{
+		Array<TM_BodyPart> temp; temp.Clear();
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			let mo = TM_Armor(Limb[i]);
+			if (mo)	mo.Destroy();
+			else if (Limb[i])	temp.Push(Limb[i]);
+		}
+		
+		Limb.Move(temp);
 	}
 	
 	States
@@ -693,22 +1032,20 @@ Class MCBodyPart : MinecraftEntity
 //------------------------------------------------------------------------------
 // Head
 //
-// 
+// TO DO: Allow ViewAngle/Pitch/Roll to affect body parts, acting as an offset.
 //------------------------------------------------------------------------------
 
-Class MCBodyPartHead : MCBodyPart 
+Class TM_BodyPartHead : TM_BodyPart 
 {
-	meta bool NoAim;
-	Property NoAim: NoAim;
 	Default
 	{
-		MCBodyPartHead.NoAim false;
+		TM_BodyPart.NoAim false;
 		Radius 1.6;
 		Height 1.6;
 	}
 
-	MinecraftMonster Trg;
-	MCBodyPartHead TargetHead;
+	TM_Monster Trg;
+	TM_BodyPartHead TargetHead;
 	override void DoMotion()
 	{
 		if (!Owner)	return;
@@ -724,43 +1061,45 @@ Class MCBodyPartHead : MCBodyPart
 		
 		// If the enemy is a player, look at the camera.
 		Target = (Owner.Target != Owner.Goal) ? Owner.Target : null;
-		
-		if (Target is 'PlayerPawn')
+		if (Target)
 		{
-			flag = FAF_BOTTOM;
-			if (Target.Player)
-				zof = Target.Player.ViewZ - Target.Pos.Z;
-			
-			else
-				zof = 0.8;
-		}
-		// Look at the other fellow's head.
-		else if (Target is 'MinecraftMonster')
-		{
-			Trg = MinecraftMonster(Target);
-			if (Trg)
+			if (Target is 'PlayerPawn')
 			{
-				TargetHead = Trg.GetHead();
-				if (TargetHead)
+				flag = FAF_BOTTOM;
+				if (Target.Player)
+					zof = Target.Player.ViewZ;
+				else
+					zof = Target.Pos.Z + Target.Height * 0.75;
+				
+			}
+			// Look at the other fellow's head.
+			else if (Target is 'TM_Monster')
+			{
+				Trg = TM_Monster(Target);
+				if (Trg)
 				{
-					Target = TargetHead;
-					flag = FAF_MIDDLE;
+					TargetHead = Trg.GetHead();
+					if (TargetHead)
+					{
+						Target = TargetHead;
+						zof = Target.Pos.Z + Target.Height * 0.5;
+					}
 				}
 			}
-		}
-		else
-			flag = FAF_BOTTOM;
+			else zof = Target.Pos.Z + Target.Height * 0.75;
 		
 		
-		if (Target && ((Target == TargetHead) || (Target.Health > 0)))
-		{
-			Angle = Owner.Angle;
-			Pitch = 0;
+			Angle = Owner.Angle + Owner.ViewAngle + ViewAngle;
+			Pitch = Owner.ViewPitch + ViewPitch;
 			
 			if (bNOFEAR || (!Owner.bFRIGHTENED && !Target.bFRIGHTENING))
 			{
-				A_Face(Target, 90, 45, 0, 0, flag, zof);
-				NextAng = (Angle, Pitch, Roll);
+				
+				A_Face(Target, 90);
+				double _ang = Angle;
+				double _rol = Roll;
+				TM_Global.FaceVector(self, (Target.Pos.X, Target.Pos.Y, zof));
+				NextAng = (_ang, Clamp(Pitch, -55, 55), _rol);
 				Angle = CurAng.X;
 				Pitch = CurAng.Y;
 				Roll =	CurAng.Z;
@@ -768,21 +1107,128 @@ Class MCBodyPartHead : MCBodyPart
 		}
 		Super.DoMotion();
 	}
+	
+	override Class<TM_Armor> GetArmorClass(int slot)
+	{
+		if (slot == AR_Head) 
+			return 'TM_ArmorHead';
+		return null;
+	}
+	
+	
 }
 
-Class MCBodyPartBody : MCBodyPart
+Class TM_BodyPartBody : TM_BodyPart
 {
+	override Class<TM_Armor> GetArmorClass(int slot)
+	{
+		Switch(slot)
+		{
+			Case AR_Body:	return 'TM_ArmorChest';
+			Case AR_Legs:	return 'TM_ArmorPants';
+		}
+		return null;
+	}
 }
 
-Class MCBodyPartArm : MCBodyPart
+Class TM_BodyPartArm : TM_BodyPart
 {	
 	Default
 	{
-		MCBodyPart.CurAction E_Sway;
-		MCBodyPart.SineOffset 0, 0, 0;			// Starting offset
-		MCBodyPart.SineDistance 1, 2, 0;		// Wave Size
-		MCBodyPart.SineSpeed 0.1, 0.2, 0;		// Waves Per Second
-		MCBodyPart.AttachOffset 0, 0, -1.6;
+		TM_BodyPart.CurAction E_Sway;
+		TM_BodyPart.SineOffset 0, 0, 0;			// Starting offset
+		TM_BodyPart.SineDistance 1, 4, 0;		// Wave Size
+		TM_BodyPart.SineSpeed 0.1, 0.3, 0;		// Waves Per Second
+	}
+	
+	TM_Monster Trg;
+	TM_BodyPartHead TargetHead;
+	override void DoMotion()
+	{
+		if (!Owner)	return;
+		
+		if (NoAim)
+		{
+			Super.DoMotion();
+			return;
+		}
+		
+		int flag = FAF_TOP;
+		double zof = 0.75;
+		
+		// If the enemy is a player, look at the camera.
+		Target = (Owner.Target != Owner.Goal) ? Owner.Target : null;
+		if (Target)
+		{
+			if (Target is 'PlayerPawn')
+			{
+				flag = FAF_BOTTOM;
+				if (Target.Player)
+					zof = Target.Player.ViewZ;
+				else
+					zof = Target.Pos.Z + Target.Height * 0.75;
+				
+			}
+			// Look at the other fellow's head.
+			else if (Target is 'TM_Monster')
+			{
+				Trg = TM_Monster(Target);
+				if (Trg)
+				{
+					TargetHead = Trg.GetHead();
+					if (TargetHead)
+					{
+						Target = TargetHead;
+						zof = Target.Pos.Z + Target.Height * 0.5;
+					}
+				}
+			}
+			else zof = Target.Pos.Z + Target.Height * 0.75;
+		
+		
+			Angle = Owner.Angle + Owner.ViewAngle + ViewAngle;
+			Pitch = Owner.ViewPitch + ViewPitch;
+			
+			if (bNOFEAR || (!Owner.bFRIGHTENED && !Target.bFRIGHTENING))
+			{
+				double _ang = Angle;
+				double _rol = Roll;
+				TM_Global.FaceVector(self, (Target.Pos.X, Target.Pos.Y, zof));
+				NextAng = (_ang, Clamp(Pitch, -55, 55), _rol);
+				Angle = CurAng.X;
+				Pitch = CurAng.Y;
+				Roll =	CurAng.Z;
+			}
+		}
+		Super.DoMotion();
+	}
+	
+	override Class<TM_Armor> GetArmorClass(int slot)
+	{
+		Switch(slot)
+		{
+			Case AR_Body:	
+			{
+				if (SideID == TMS_Left)
+					return 'TM_ArmorArmL';
+				if (SideID == TMS_Right)
+					return 'TM_ArmorArmR';
+				break;
+			}
+			Case WR_ArmL:
+			{
+				if (SideID == TMS_Left)
+					return 'TM_Sword';
+				break;
+			}
+			Case WR_ArmR:
+			{
+				if (SideID == TMS_Right)
+					return 'TM_Sword';
+				break;
+			}
+		}
+		return null;
 	}
 	
 	override void SetSineOffset(Vector3 off, bool swinging)	
@@ -802,12 +1248,34 @@ Class MCBodyPartArm : MCBodyPart
 	}
 }
 
-Class MCBodyPartLeg : MCBodyPart
+Class TM_BodyPartLeg : TM_BodyPart
 {
 	Default
 	{
-		MCBodyPart.CurAction E_Swing;
-		MCBodyPart.VelSineOffset 0;
+		TM_BodyPart.CurAction E_Swing;
+		TM_BodyPart.VelSineOffset 0;
+	}
+	
+	override Class<TM_Armor> GetArmorClass(int slot)
+	{
+		Switch(slot)
+		{
+			Case AR_Legs:	
+			{
+				if (SideID == TMS_Left)
+					return 'TM_ArmorLegL';
+				if (SideID == TMS_Right)
+					return 'TM_ArmorLegR';
+			}
+			Case AR_Feet:
+			{
+				if (SideID == TMS_Left)
+					return 'TM_ArmorBootL';
+				if (SideID == TMS_Right)
+					return 'TM_ArmorBootR';
+			}
+		}
+		return null;
 	}
 	
 	override void SetSineOffset(Vector3 off, bool swinging)	
@@ -823,7 +1291,7 @@ Class MCBodyPartLeg : MCBodyPart
 // comedic effect =P).
 //==============================================================================
 
-Class MCBodyPartGib : MinecraftEntity abstract
+Class TM_BodyPartGib : TM_Entity abstract
 {
 	const FadeTime = 1.0 / 35.0;
 	const TimeCap = 90.0;
@@ -839,19 +1307,21 @@ Class MCBodyPartGib : MinecraftEntity abstract
 	protected double EndPitch, EndRoll;
 	private bool DualSideRoll, DualSidePitch;
 	
+	Property Offsets: OffX, OffY, OffZ;
 	Property DualSideRoll: DualSideRoll;
 	Property DualSidePitch: DualSidePitch;
-	Property Offsets: OffX, OffY, OffZ;
 	Property LifeTime: LifeTime;
 	Property EndPitch: EndPitch;
 	Property EndRoll: EndRoll;
 	Default
 	{
-		MCBodyPartGib.Offsets 0, 0, 0;
-		MCBodyPartGib.LifeTime 350;
-		MCBodyPartGib.EndPitch -90;
-		MCBodyPartGib.EndRoll 0;
+		TM_BodyPartGib.Offsets 0, 0, 0;
+		TM_BodyPartGib.LifeTime 350;
+		TM_BodyPartGib.EndPitch -90;
+		TM_BodyPartGib.EndRoll 0;
 		Projectile;
+		Radius 2;
+		Height 4;
 		+THRUACTORS
 		+CANBOUNCEWATER
 		+BOUNCEONWALLS
@@ -860,9 +1330,9 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		+NOTRIGGER
 		-NOGRAVITY
 		+CANNOTPUSH
-		+DONTSPLASH
 		-ACTIVATEPCROSS
 		-ACTIVATEIMPACT
+		Mass 9; // Small splashes for these.
 		BounceType "Doom";
 		BounceFactor 0.4;
 		WallBounceFactor 0.8;
@@ -901,7 +1371,7 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		Timer += Timing;
 		double sn = abs(cos(90 + Timer));
 		
-		Vector2 between = MC_VectorUtil.LerpUnclampedVec2(HoldAng, (EndPitch, EndRoll), sn);
+		Vector2 between = TM_VectorUtil.LerpUnclampedVec2(HoldAng, (EndPitch, EndRoll), sn);
 		A_SetPitch(between.X, SPF_INTERPOLATE);
 		A_SetRoll(between.Y, SPF_INTERPOLATE);
 	}
@@ -912,9 +1382,10 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		
 		if (!bNOINTERACTION)
 		{
+			bDONTSPLASH = (Vel.Z >= -3.0);
 			// Counteract gravity when underwater.
 			if (WaterLevel > 0 || 
-				((MCC_NoSectorGravity & TM_NSG_GIBMISLS) && 
+				((TMV_NoSectorGravity & TM_NSG_GIBMISLS) && 
 				!bNOGRAVITY && Gravity > 0.0))
 			{
 				double t = Gravity;
@@ -922,13 +1393,17 @@ Class MCBodyPartGib : MinecraftEntity abstract
 				if (WaterLevel < 1)
 					Vel.Z -= t;
 				else
-					Vel.Z += (t * 0.5);
+					Vel.Z += (t * 0.3);
 				Super.Tick();
 				Gravity = t;
 			}
-			else	Super.Tick();
+			else	
+			{
+				Super.Tick();
+			}
 		}
 		else Super.Tick();
+		
 		if ((bKILLED && ShortLife) || --LifeTime < 1)
 			A_FadeOut(FadeTime);
 	}
@@ -950,7 +1425,7 @@ Class MCBodyPartGib : MinecraftEntity abstract
 		---- A -1 
 		{ 
 			bKILLED = true;
-			ShortLife = MCC_ShortGibLives;
+			ShortLife = TMV_ShortGibLives;
 		}
 		Stop;
 	}

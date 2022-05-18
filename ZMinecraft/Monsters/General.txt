@@ -15,7 +15,7 @@ Struct LastDamaged
 //==============================================================================
 //==============================================================================
 
-extend class MinecraftMonster
+extend class TM_Monster
 {
 	//--------------------------------------------------------------------------
 	// A virtual for monsters to adjust various aspects for AI difficulty setting.
@@ -30,7 +30,7 @@ extend class MinecraftMonster
 			Inited = true;
 		}
 		
-		Switch (MCC_AIDifficulty)
+		Switch (TMV_AIDifficulty)
 		{
 			Default:
 			Case Dif_Easy:
@@ -46,19 +46,22 @@ extend class MinecraftMonster
 		*/
 	}
 	
+	
+	
 	//--------------------------------------------------------------------------
 	// TraceDistance
 	//
 	// Returns the distance to the edge of another actor.
 	//--------------------------------------------------------------------------
 	
-	transient private GDDTracer Trc;
-	bool CheckTrace(Actor mo, double dist = 0, double zz = -1, bool flor = true, bool wall = true, bool ceil = true)
+	transient private TM_GDDTracer Trc;
+	bool, double CheckTrace(Actor mo, double dist = 0, double zz = -1, bool flor = true, bool wall = true, bool ceil = true)
 	{
-		double ret = TraceDistance(mo, dist, zz);
-		return (ret >= 0 && ret <= dist);
+		double dis = TraceDistance(mo, dist, zz);
+		bool ret = (dis >= 0 && dis <= dist);
+		return ret, dis;
 	}
-	double TraceDistance(Actor mo, double dist = 0, double zz = -1, bool flor = false, bool wall = true, bool ceil = false)
+	double TraceDistance(Actor mo, double dist = 0, double zz = -1, bool flor = false, bool wall = true, bool ceil = false, bool solid = false)
 	{
 		if (dist <= 0 || !Targetable(mo))	return -1;
 		
@@ -74,7 +77,7 @@ extend class MinecraftMonster
 		
 		Vector3 APR = level.Vec3Diff(mpos, tpos);
 		
-		if (!Trc)	Trc = new('GDDTracer');
+		if (!Trc)	Trc = new('TM_GDDTracer');
 		Trc.trg = mo;
 		Trc.SetHittable(flor,wall,ceil);
 		Trc.Trace(mpos, cursector, APR, dist + radius, 0);
@@ -109,14 +112,18 @@ extend class MinecraftMonster
 	}
 	
 	void StoreHealthMul()
-	{	if (bDORMANT)	HealthMul = Max(1.0, MCC_HealthMul);	}
+	{	if (bDORMANT)	HealthMul = Max(1.0, TMV_HealthMul);	}
 	
 	double GetHealthMul()
 	{	return Max(1.0, HealthMul);	}
 	
-	
+	protected void InitDrops(bool force = false)
+	{	if (!Drops || force) Drops = TM_ItemDrops.Create();	}
 
+	private int HPBonus, AmmoBonus;
 	
+	int GetHPArmorBonus()	{	return HPBonus;	}
+	int GetAmmoBonus()		{	return AmmoBonus;	}
 	
 	// The goal of this function is simply to call Super.DropItems and pass in the
 	// source, inflictor and damagetype for the monsters to use. The base class
@@ -124,23 +131,54 @@ extend class MinecraftMonster
 	// as needed, such as the creeper and skeleton special drops.
 	virtual protected bool DropItems(Actor src, Actor inf, Name mod)
 	{
-		for (int i = 0; i < Damagers.Size(); i++)
-			if (Damagers[i] is 'PlayerPawn')	return true;
-		return (src is 'PlayerPawn');
+		if (mod == 'Void')
+			return false;
+	
+		bool good = (src is 'PlayerPawn');
+		if (!good)
+		{
+			for (int i = 0; i < Damagers.Size(); i++)
+			{
+				if (Damagers[i] is 'PlayerPawn')	
+					good = true;	break;	
+			}
+		}
+		
+		if (good)
+		{
+			if (!Drops)	Drops = TM_ItemDrops.Create();
+			if (ArmorInv)
+			{
+				[HPBonus, AmmoBonus] = ArmorInv.GetScore();
+						
+				if (HPBonus > 0)
+				{
+					Class<Inventory> ID;
+					if (irandom(0,1) > 0)	ID = 'TM_PearlHealth';
+					else					ID = 'TM_PearlArmor';
+					
+					Drops.SetAmount(ID, HPBonus, true);
+				}
+				if (AmmoBonus > 0)
+					Drops.SetAmount('TM_PearlAmmo', AmmoBonus, true);
+				
+			}
+			Drops.ResetIndex();
+			while (Drops.Next())
+			{
+				DropItem(Drops.NextID, Drops.NextAmt);
+				if (TMV_Debug == 21 && Drops.NextID)
+					Console.Printf("%s", Drops.NextID.GetClassName());
+			}
+		}
+		return good;
 	}
 	
 	protected void DropItem(Class<Inventory> Cls, int Amount = -1, int Chance = 256)
 	{
-		if (!Event)	Event = MinecraftHandler.Fetch();
+		GetEvent();
 		if (Event)	Event.DropItem(self, Cls, Amount, Chance);
 	}
-	
-	
-	
-	
-	
-	
-	
 	
 	
 	//--------------------------------------------------------------------------
@@ -149,7 +187,7 @@ extend class MinecraftMonster
 	{
 		OverScale = s;
 		A_SetSize(Default.Radius * OverScale, Default.Height * OverScale);
-		UpdateLimbs();
+		UpdateLimbs(Angs);
 	}
 	
 	//--------------------------------------------------------------------------
@@ -186,51 +224,14 @@ extend class MinecraftMonster
 		return false;
 	}
 	
-	virtual bool DoMelee(int damage = -1)
-	{
-		if (AttackDelay > 0 || !Targetable(Target) || !CheckTrace(Target, MeleeRange))
-			return false;
-		
-		if (damage < 1)	
-		{
-			damage = MeleeDamage;
-			if (damage < 1)
-				return false;
-		}
-		
-		let armor = Target.FindInventory('BasicArmor',true);
-		int armbefore = 0, armafter = 0;
-		
-		if (armor)	armbefore = Armor.Amount;
-		
-		int dmg = ((Target.bINVULNERABLE && !bFOILINVUL) || Target.bNODAMAGE) 
-			? 0 : Target.DamageMobj(null, self, damage, "Melee");
-			
-		if (armor)	armafter = Armor.Amount;
-		
-		if (dmg > 0 || armafter != armbefore)
-		{
-			if (Target && !bNODAMAGETHRUST && !Target.bDONTTHRUST && 
-				!(Target is 'MinecraftMonster') && Target.Mass > 0)
-			{
-				double thrust = clamp((damage * 20.0) / Target.Mass, 0., 32);
-				Target.Thrust(thrust, AngleTo(Target));
-				Target.Vel.Z += 700 / Target.Mass;
-			}
-			AttackDelay = AttackDelayMax;
-			SetMeleeAnimation();
-			ValidateTarget();
-		}
-		
-		return true;
-	}
+	
 	
 	virtual void SetMeleeAnimation()	{	}
 	
 	//==========================================================================
 	// Goal Manipulation
 	//==========================================================================
-	
+	// Currently heavily a WIP, needs reworking.
 	enum EGoalStatus
 	{
 		GS_None = 0,
@@ -239,7 +240,7 @@ extend class MinecraftMonster
 	};
 	bool CheckGoal(bool istarget = false)
 	{
-		return ((Goal is "MCGoal") && (!istarget || Target == Goal));
+		return ((Goal is "TM_Goal") && (!istarget || Target == Goal));
 	}
 	
 	int CheckInGoalRange(double dist = 0.0, StateLabel next = 'Idle')
@@ -273,7 +274,7 @@ extend class MinecraftMonster
 		{
 			if (!BackupGoal)
 			{
-				Goal = Spawn('MCGoal', gp);
+				Goal = Spawn('TM_Goal', gp);
 			}
 			else Goal = BackupGoal;
 		}
@@ -285,12 +286,12 @@ extend class MinecraftMonster
 	
 	void RemoveGoal()
 	{
-		if (Goal is 'MCGoal' && !Goal.bDESTROYED)
+		if (Goal is 'TM_Goal' && !Goal.bDESTROYED)
 			Goal.Destroy();
 		if (BackupGoal && !BackupGoal.bDESTROYED)
 			BackupGoal.Destroy();
 			
 		Goal = BackupGoal = null;
 	}
-	
 }
+

@@ -1,4 +1,4 @@
-extend class MinecraftMonster
+extend class TM_Monster
 {
 	//--------------------------------------------------------------------------
 	// Searches for potential actors to target.
@@ -16,6 +16,7 @@ extend class MinecraftMonster
 			pos.x, pos.y, pos.z - RH.X, RH.Y + RH.X * 2, RH.X, false);
 			
 		Actor mo = null;
+		
 		
 		while (it.Next())
 		{
@@ -109,7 +110,7 @@ extend class MinecraftMonster
 					
 				if (Targetable(Tracer) || Targetable(Target))
 				{
-					A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32767);
+					A_LookEx(LOF_NOSEESOUND|LOF_NOJUMP, 0, 32765);
 					VTFlags = VTF_Chase;
 				}
 				else
@@ -124,8 +125,11 @@ extend class MinecraftMonster
 			
 			if (ValidateTarget(true, flags: VTFlags))
 			{
-				if (!bAMBUSH || CheckSight(Target, CSFlags))
-					SetState(ResolveState("See"));
+				if (!bAMBUSH || CheckSight(Target, CSFlags) || CheckTrace(Target, MaxSightRange))
+				{
+					EnterSee();
+					return;
+				}
 			}
 			else
 			{
@@ -137,16 +141,31 @@ extend class MinecraftMonster
 	
 	protected void LookWander()
 	{
+		if (Jumping)	
+		{
+			MoveCount++;
+			WanderTics++;
+		}
 		Vector3 PrePos = Pos;
 		Look(true);
-		A_Wander();
+		TryWander();
+			
 		if (!(PrePos ~== Pos))	
 			DoStepSound();
+			
+		if (--WanderTics < 1)
+		{
+			let s = ResolveState("Idle");
+			if (!s)	Console.Printf("Idle not found! Destroyed.");
+			SetState(s);
+		}
 	}
 	
+	protected void SetWanderTics(int amt) { WanderTics = Max(0,amt); }
 	virtual void SetPassive(bool on)	{	Passive = on;	}
 	virtual void SetNeutral(bool on)	{	Neutral = on;	}
 	private int ChaseTics;
+	protected int WanderTics;
 	
 	//==========================================================================
 	// Handles range and calls Targetable to make sure the target is valid.
@@ -173,23 +192,19 @@ extend class MinecraftMonster
 	
 	
 	protected bool ValidateTarget(bool clear = false, double range = 0, int flags = 0, 
-	bool relate = true)
-//	bool chasing = false, bool relate = true, bool TargetOnly = false)
+		bool relate = true)
 	{
-	
-		if (!Target)
+		if (Tracer && Targetable(Tracer, relate))
 		{
-			if (Tracer)	Target = Tracer;
-			else if (Goal)	Target = Goal;
-			else return false;
+			LastEnemy = Target;
+			Target = Tracer;
+			Tracer = null;
 		}
-		
-		if (Target == self)
+		bool targetable = Targetable(Target, relate);
+		if (!targetable)
 		{
-			ClearTarget();
-			return false;
+			if (Goal)	Target = Goal;
 		}
-		
 		bool chasing = (flags & (VTF_Chase|VTF_Damage));
 		double ChaseRange = range;
 		if (ChaseRange <= 0)
@@ -198,14 +213,21 @@ extend class MinecraftMonster
 			else			ChaseRange = Min(MaxSightRange, MaxChaseRange);
 		}
 		
-		if (Tracer && Target == Tracer)		ChaseRange *= 2;
+		if (Tracer && Target == Tracer)		ChaseRange = Max(ChaseRange * 2, 32767);
 		else if ((Goal && Target == Goal))	return true;
 		
-		bool targetable = (Targetable(Target, relate));
+		targetable = (Targetable(Target, relate));
 		
 		if (!(flags & VTF_TargetOnly) && !targetable)
 		{
-			Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
+			// This array is broken in GZDoom currently.
+		//	Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
+			/*
+			Actor temp[3];
+			temp[0] = LastEnemy;
+			temp[1] = LastHeard;
+			temp[2] = LastLookActor;
+			
 			
 			for (int i = 0; i < temp.Size(); i++)
 			{
@@ -216,6 +238,24 @@ extend class MinecraftMonster
 					break;
 				}
 			}
+			*/
+			
+			Actor mo = null;
+			while (mo = NextActorRelation(Rel_Hate))
+			{
+				if (mo)
+				{
+					if (!Targetable(mo, false))
+						RemoveActorRelation(mo);
+					else
+					{
+						Target = mo;
+						break;
+					}
+				}
+				
+			}
+			targetable = (mo && mo == Target);
 		}
 		// We have a target. If the actor's out of sight/range for more than
 		// the timeout (5 seconds), clear the target.
@@ -239,7 +279,7 @@ extend class MinecraftMonster
 		if (!targetable)
 		{
 			if (clear)	
-				ClearTarget();
+				ClearTarget(Target);
 			
 			OOSTimer = 0;
 		}
@@ -253,6 +293,7 @@ extend class MinecraftMonster
 	override bool OkayToSwitchTarget(Actor other)
 	{
 		// Keep the old target around just in case.
+		if (!other || other.bKILLED)	return false;
 		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
 		if (ret)	OOSTimer = 0;
 		return ret;
@@ -262,12 +303,15 @@ extend class MinecraftMonster
 	virtual bool Targetable(Actor mo, bool relate = true) const
 	{
 		// Doesn't exist, is self or is passive.
-		if (!mo || mo == self || passive)	
+		if (!mo || mo == self)	
 			return false;
 		
 		// The actor's a goal so yes, it is targetable.
 		if (Goal && mo == Goal)
 			return true;
+			
+		if (passive)
+			return false;
 		
 		//  Dead, unshootable or not targetable.
 		if (mo.bKILLED || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY) ||
@@ -275,14 +319,18 @@ extend class MinecraftMonster
 			return false;
 		
 		// Peaceful mode disallows targeting players.
-		if (MCC_Peaceful && mo is 'PlayerPawn')
+		if (TMV_Peaceful && mo is 'PlayerPawn' && !bBOSS && !bBOSSSPAWNED)
 			return false;
 			
-		// Don't target players that are (totally) frozen because this could fuck up
-		// scripts badly and get them to kill a defenseless player.
+		// Don't target players that are (totally) frozen because this could 
+		// screw up scripts badly and kill a defenseless player.
 		if ((mo.Player && (mo.Player.Cheats & (CF_NOTARGET|CF_FROZEN|CF_TOTALLYFROZEN))))
 			return false;
+			
+		if (relate && !CheckRelationTarget(mo))
+			return false;
 		
-		return (!relate || CheckRelationTarget(mo));
+		return true;
 	}
 }
+

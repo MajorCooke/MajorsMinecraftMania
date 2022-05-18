@@ -1,0 +1,530 @@
+// With exception of those indicated below, all code by Major Cooke. Please give
+// credit if used.
+
+
+Class TM_Map play
+{
+	static BlockThingsIterator MakeBTIPos(Vector3 pos, Vector2 RH)
+	{
+		let it = BlockThingsIterator.CreateFromPos(
+			pos.x, pos.y, pos.z - RH.Y, RH.Y + RH.X * 2, RH.X, false);
+		return it;
+	}
+
+	static Vector3 AnglesToVector(double angle, double pitch)
+	{
+		return (cos(angle)*cos(pitch), sin(angle)*cos(pitch), -sin(pitch));
+	}
+	
+	static Vector2 RotateVector(Vector2 v, double angle)
+	{
+		double c = cos(angle),	s = sin(angle);
+		
+		return (v.x * c + v.y * s,
+				v.x * s - v.y * c);
+	}
+	
+	// Non-actor variant of RotateVector that can be called anywhere. Rotates
+	// a vector by first offsetting towards a center point, and restoring it after.
+	static Vector2 RotateVectorOffset(Vector2 v, double angle, Vector2 rPoint = (0,0))
+	{
+		v -= rPoint;
+		return TM_Map.RotateVector(v, angle) + rPoint;
+	}
+	
+	static Vector3 GetWarpPos(LevelLocals lvl, Vector3 pos, Vector3 off, double angle)
+	{
+		off.XY = TM_Map.RotateVector(off.XY, angle);
+		return lvl.Vec3Offset(pos, off);
+	}
+
+	
+	
+	// Code by PhantomBeta.
+	static Vector2, Vector2 SectorBounds (Sector sec) 
+	{
+		Vector2 posMin = ( double.Infinity,  double.Infinity);
+		Vector2 posMax = (-double.Infinity, -double.Infinity);
+
+		for (int i = 0; i < sec.lines.Size (); i++) 
+		{
+			Line l = sec.Lines [i];
+			
+			posMin = (
+				min (posMin.X, l.v1.p.X, l.v2.p.X),
+				min (posMin.Y, l.v1.p.Y, l.v2.p.Y));
+			posMax = (
+				max (posMax.X, l.v1.p.X, l.v2.p.X),
+				max (posMax.Y, l.v1.p.Y, l.v2.p.Y));
+		}
+		return posMin, posMax;
+	}
+	
+//	static TM_MapContainer GetBlockingLines(Actor mo)	{		return null;	}
+	
+}
+
+Class TM_MapContainer
+{
+	Array<int> LLines;
+	Array<int> SSectors;
+	BlockLinesIterator it;
+	
+	static TM_MapContainer Create(Actor mo, double checkradius = -1)
+	{
+		if (!mo)	return null;
+		let con = new('TM_MapContainer');
+		
+		let it = BlockLinesIterator.Create(mo, checkradius);
+		if (it)
+		{
+			con.it = it;
+			con.GetLinesSectors(mo.pos, (mo.radius, mo.height));			
+		}
+		return con;
+	}
+	
+	static TM_MapContainer CreatePos(Vector3 pos, Vector2 RH, Sector sec = null)
+	{
+		if (RH.X ~== 0 || RH.Y ~== 0)	return null;
+		let con = new('TM_MapContainer');
+		
+		
+		let it = BlockLinesIterator.CreateFromPos(pos, RH.Y, RH.X, sec);
+		if (it)
+		{
+			con.it = it;
+			con.GetLinesSectors(pos, RH);
+		}
+		return con;
+	}
+	
+	void GetLinesSectors(Vector3 pos, Vector2 RH)
+	{
+		if (!it)
+		{
+			ThrowAbortException("TM_MapContainer must be created with the static functions!");
+			return;
+		}
+		
+		LLines.Clear();
+		SSectors.Clear();
+		
+		Vector2 POff = pos.XY + RH,
+				NOff = pos.XY - RH;
+		
+		int skipped = 0;
+		int total = 0;
+		while (it.Next())
+		{
+			Line ln = it.curline;
+			total++;
+			Vector2 p1 = ln.v1.p,
+					p2 = ln.v2.p;
+					
+			if ((p1.x > POff.X && p2.x > POff.X) ||
+				(p1.x < NOff.X && p2.x < NOff.X) ||
+				(p1.y > POff.Y && p2.y > POff.Y) ||
+				(p1.y < NOff.Y && p2.y < NOff.Y))
+			{
+				skipped++;
+				continue;
+			}
+			if (TMV_Debug == 17)
+				Console.Printf("Skipped lines: %d / %d", skipped, total);
+			
+			LLines.Push(ln.Index());
+			Sector s = null;
+			s = ln.frontsector;	if (s)	SSectors.Push(s.Index());
+			s = ln.backsector;	if (s)	SSectors.Push(s.Index());
+			
+		}
+	}
+	
+	void PassLines(out Array<int> LineOut)
+	{
+		LineOut.Copy(LLines);
+	}
+	
+	void PassSectors(out Array<int> SecOut)
+	{
+		SecOut.Copy(SSectors);
+	}
+}
+
+
+
+// Temporary class just to house 3D floors
+Class TM_XFloor play
+{
+	Sector XSector, Owner;
+	F3DFloor XFloor;
+	int Index, Timer;
+	bool Inside;
+	bool Swimmable, Solid;
+	int DamageTer, DamageSec;
+	Name MODTer, MODSec;
+	
+	static TM_XFloor NewXFloorFromSector(Sector sec)
+	{
+	//	if (!sec)	
+			return null;
+		
+		// F3DFloors have "model" and "target"
+		// model: where the actual 3D floor sector is
+		// target: where the 3D floor is being projected
+		
+		
+	}
+	
+	static TM_XFloor NewXFloorPtr(F3DFloor XF, int i = -1, bool mustcount = true)
+	{
+		if (!XF || !(XF.flags & F3DFloor.FF_EXISTS))	
+			return null;
+			
+		// Must either be swimmable or solid.
+		if (mustcount)
+		{
+			if (!(XF.Flags & F3DFloor.FF_SWIMMABLE) &&
+				!(XF.Flags & F3DFloor.FF_SOLID))
+					return null;
+		}
+		
+		let xp = New('TM_XFloor');
+		xp.XFloor = XF;
+		xp.XSector = XF.Model;
+		xp.Owner = XF.Target;
+		xp.Timer = 0;
+		xp.Inside = false;
+		xp.Swimmable =	(XF.Flags & F3DFloor.FF_SWIMMABLE);
+		xp.Solid = 		(XF.Flags & F3DFloor.FF_SOLID);
+		
+		let ter = XF.Model.GetFloorTerrain(Sector.Ceiling);
+		if (!ter)	XF.Model.GetFloorTerrain(Sector.Floor);
+		if (ter)
+		{
+			xp.DamageTer = ter.DamageAmount;
+			xp.MODTer = ter.DamageMOD;
+		}
+		
+		xp.DamageSec = XF.Model.DamageAmount;
+		xp.MODSec = XF.Model.DamageType;
+		
+		if (i < 0)
+		{
+			int count = XF.Target.Get3DFloorCount();
+			for (i = 0; i < count; i++)
+			{
+				let NF = xp.Owner.Get3DFloor(i);
+				if (NF == XF)
+				{
+					xp.Index = i;
+					break;
+				}
+			}
+				
+		}
+		
+		return xp;
+	}
+}
+
+
+
+/*
+Class TM_Map play
+{
+	
+	
+	//==========================================================================
+	// A test function to count the number of lines.
+	//==========================================================================
+	static int, int CountIntersectingLines(Actor mo, double radius = -1.0)
+	{
+		if (!mo || (mo.radius <= 0 && radius <= 0.0))	return -1, -1;
+		
+		if (radius <= 0.0)
+			radius = mo.radius;
+	
+		// Find the line that this actor's centerpoint is closest to
+		double radius = mo.radius;
+		Vector3 pos = mo.pos;
+		
+		double	xp = pos.x + radius,
+				xn = pos.x - radius,
+				yp = pos.y + radius,
+				yn = pos.y - radius;
+		
+		
+		int count[2]; count[0] = 0;	count[1] = 0;
+		BlockLinesIterator it = BlockLinesIterator.Create(mo,radius);
+		while (it.Next())
+		{
+			Line current = it.curline;
+			
+			count[0]++;
+			
+			// Discard lines that don't intersect the actor's radius AT ALL.
+			if ((current.v1.p.x > xp && current.v2.p.x > xp) ||
+				(current.v1.p.x < xn && current.v2.p.x < xn) ||
+				(current.v1.p.y > yp && current.v2.p.y > yp) ||
+				(current.v1.p.y < yn && current.v2.p.y < yn))
+				continue; 
+			
+			count[1]++;
+		}
+		return count[0], count[1];
+	}
+	
+	//==========================================================================
+	//==========================================================================
+	
+	static bool LineIntersects(Vector3 pos, double radius, Vector2 v1, Vector2 v2)
+	{
+		Vector2 POff = level.Vec2Offset((radius, radius), (0,0));
+		Vector2 NOff = level.Vec2Offset((-radius, -radius), (0,0));
+		
+		if ((v1.x > POff.X && v2.x > POff.X) ||
+			(v1.x < NOff.X && v2.x < NOff.X) ||
+			(v1.y > POff.Y && v2.y > POff.Y) ||
+			(v1.y < NOff.Y && v2.y < NOff.Y))
+			return false;
+		return true;
+	}
+	
+	static TM_LineContainer GetIntersectingLines(Actor mo, Vector2 RH = (-1, -1), 
+		bool usepos = false, Vector3 pos = (0,0,0), int mask = 0, 
+		TM_LineContainer Container = null)
+	{
+		if (!mo && !usepos)	return null;
+		if (RH.X <= 0.0)	
+		{
+			if (!mo)		return null;
+			RH.X = mo.radius;
+			if (RH.X <= 0.0)	return null;
+		}
+		
+		if (mo && RH.Y <= 0.0)
+			RH.Y = mo.height;
+	
+		// Find the line that this actor's centerpoint is closest to.
+		if (!usepos)
+			pos = mo.pos;
+			
+		Vector2 POff = pos.XY + RH,
+				NOff = pos.XY - RH;
+		
+		if (!Container)	Container = TM_LineContainer.Create(mo, RH, pos);
+		else Container.Clear();
+		
+		BlockLinesIterator it;
+		if (usepos)		it = BlockLinesIterator.CreateFromPos(pos, RH.Y, RH.X);
+		else			it = BlockLinesIterator.Create(mo);
+			
+		while (it.Next())
+		{
+			Line current = it.curline;
+			
+			if (mask != 0 && !(current.flags & mask))
+				continue;
+				
+			Vector2 p1 = current.v1.p,
+					p2 = current.v2.p;
+			
+			// Discard lines that definitely don't intersect the actor's radius
+			if ((p1.x > POff.X && p2.x > POff.X) ||
+				(p1.x < NOff.X && p2.x < NOff.X) ||
+				(p1.y > POff.Y && p2.y > POff.Y) ||
+				(p1.y < NOff.Y && p2.y < NOff.Y))
+				{
+					continue; 
+				}
+			
+			Container.AddLine(current);
+		}
+		
+		return Container;
+	}
+	
+	static TM_SectorContainer GetIntersectingSectors(Actor mo, Vector2 RH = (-1, -1), 
+		TM_LineContainer LC = null, bool usepos = false, Vector3 pos = (0,0,0))
+	{
+		if (!LC)
+		{
+			LC = TM_Map.GetIntersectingLines(mo, RH, true, pos);
+			if (!LC)	return null;
+			
+		}
+		
+		let SC = TM_SectorContainer.Create(mo, RH);
+		if (SC && LC)
+		{
+			for (int i = 0; i < LC.Size(); i++)
+			{
+				Line l = LC.Lines[i].lin;
+				if (!l)	continue;
+				
+				SC.AddSector(l.frontsector);
+				SC.AddSector(l.backsector);
+			}
+		}
+		
+		if (SC.Size() < 1)	
+			SC.AddSector(Level.PointInSector(pos.XY));
+		
+		return SC;
+	}
+}
+
+Class TM_Line play
+{
+	Line lin;
+	
+	static TM_Line Create(Line l)
+	{
+		if (!l)	return null;
+		let ls = new('TM_Line');
+		ls.lin = l;
+		return ls;
+	}
+}
+
+Class TM_LineContainer play
+{
+	Array<TM_Line> Lines;
+	Actor mo;
+	Vector2 RH;
+	Vector3 pos;
+	static TM_LineContainer Create(Actor mo = null, Vector2 RH = (-1,-1), Vector3 pos = (0,0,0))
+	{
+		let ls = new('TM_LineContainer');
+		ls.Init(mo, RH, pos);
+		return ls;
+	}
+	
+	void Init(Actor mo, Vector2 RH, Vector3 pos)
+	{
+		Lines.Clear();
+		self.mo = mo;
+		self.RH = RH;
+		self.pos = pos;
+	}
+	
+	int Size()	{	return Lines.Size();	}
+	
+	void AddLine(Line lin)
+	{
+		if (!lin)	return;
+		
+		let linepart = TM_Line.Create(lin);
+		if (linepart)
+			Lines.Push(linepart);
+	}
+	
+	void Clear()
+	{
+		Lines.Clear();
+	}
+	
+	int Find(Line ld)
+	{
+		if (!ld)	return Lines.Size();
+		int size = Lines.Size();
+		for (int i = 0; i < size; i++)
+		{
+			if (!Lines[i] || Lines[i].lin != ld)	continue;
+			return i;
+		}
+		return Lines.Size();
+	}
+}
+
+Class TM_Sector play
+{
+	Sector sec;
+	
+	static TM_Sector Create(Sector s)
+	{
+		if (!s)	return null;
+		let ls = new('TM_Sector');
+		ls.sec = s;
+		return ls;
+	}
+}
+
+Class TM_SectorContainer play
+{
+	Array<TM_Sector> Sectors;
+	Actor mo;
+	Vector2 RH;
+	int index;
+	static TM_SectorContainer Create(Actor mo = null, Vector2 RH = (-1,-1))
+	{
+		let ls = new('TM_SectorContainer');
+		ls.Sectors.Clear();
+		ls.mo = mo;
+		ls.RH = RH;
+		return ls;
+	}
+	
+	int Size()	{	return Sectors.Size();	}
+	
+	void AddSector(Sector sect)
+	{
+		if (!sect)	return;
+		
+		for (int i = 0; i < Sectors.Size(); i++)
+		{
+			if (Sectors[i] && Sectors[i].sec == sect)
+				return;
+		}
+		
+		let secpart = TM_Sector.Create(sect);
+		if (secpart)
+			Sectors.Push(secpart);
+	}
+}
+
+Class TM_SecPlane play
+{
+	SecPlane sec;
+	
+	static TM_SecPlane Create(SecPlane s)
+	{
+		if (!s)	return null;
+	
+		let ls = new('TM_SecPlane');
+		ls.sec = s;
+		return ls;
+	}
+}
+
+Class TM_SecPlaneContainer play
+{
+	Array<TM_SecPlane> SecPlanes;
+	
+	static TM_SecPlaneContainer Create()
+	{
+		let ls = new('TM_SecPlaneContainer');
+		ls.SecPlanes.Clear();
+		return ls;
+	}
+	
+	int Size()	{	return SecPlanes.Size();	}
+	
+	void AddSecPlane(SecPlane secp)
+	{
+		if (!secp)	return;
+		
+		for (int i = 0; i < Size(); i++)
+		{
+			if (SecPlanes[i] && SecPlanes[i].sec == secp)
+				return;
+		}
+		
+		let secpart = TM_SecPlane.Create(secp);
+		if (secpart)
+			SecPlanes.Push(secpart);
+	}
+}
+*/

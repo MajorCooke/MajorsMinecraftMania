@@ -32,15 +32,15 @@
 // Some redundant duplicates here but whatever; menus are painful to work
 // with in general anyway. >:(
 //
-// Taken with permission and modified by Major Cooke for Minecraft.
+// Taken with permission and modified by Major Cooke for Triple M.
 //
 //===========================================================================
 
-Class OptionMenuItemMinecraftOption : OptionMenuItemOption
+Class OptionMenuItemTripleMOption : OptionMenuItemOption
 {
 	String mTooltip;
 	bool mInvertGrayCheck;
-	OptionMenuItemMinecraftOption Init(String label, String tooltip, Name command, Name values, CVar graycheck = null, int center = 0, int invertgraycheck = 0)
+	OptionMenuItemTripleMOption Init(String label, String tooltip, Name command, Name values, CVar graycheck = null, int center = 0, int invertgraycheck = 0)
 	{
 		mTooltip = tooltip;
 		mInvertGrayCheck = invertgraycheck;
@@ -54,11 +54,11 @@ Class OptionMenuItemMinecraftOption : OptionMenuItemOption
 	}
 }
 
-Class OptionMenuItemMinecraftSlider : OptionMenuItemSlider
+Class OptionMenuItemTripleMSlider : OptionMenuItemSlider
 {
 	String mTooltip;
 
-	OptionMenuItemMinecraftSlider Init(String label, String tooltip, Name command, double min, double max, double step, int showval = 1)
+	OptionMenuItemTripleMSlider Init(String label, String tooltip, Name command, double min, double max, double step, int showval = 1)
 	{
 		mTooltip = tooltip;
 		Super.Init(label, command, min, max, step, showval);
@@ -66,11 +66,11 @@ Class OptionMenuItemMinecraftSlider : OptionMenuItemSlider
 	}
 }
 
-Class OptionMenuItemMinecraftControl : OptionMenuItemControl
+Class OptionMenuItemTripleMControl : OptionMenuItemControl
 {
 	String mTooltip;
 
-	OptionMenuItemMinecraftControl Init(String label, String tooltip, Name command)
+	OptionMenuItemTripleMControl Init(String label, String tooltip, Name command)
 	{
 		mTooltip = tooltip;
 		Super.Init(label, command);
@@ -80,11 +80,11 @@ Class OptionMenuItemMinecraftControl : OptionMenuItemControl
 
 /*
 // [Nash] This doesn't work because mUh eXpLoiTs lmaaaaoooo
-class OptionMenuItemMinecraftSafeCommand : OptionMenuItemSafeCommand
+class OptionMenuItemTripleMSafeCommand : OptionMenuItemSafeCommand
 {
 	String mTooltip;
 
-	OptionMenuItemMinecraftSafeCommand Init(String label, String tooltip, Name command, String prompt = "")
+	OptionMenuItemTripleMSafeCommand Init(String label, String tooltip, Name command, String prompt = "")
 	{
 		mTooltip = tooltip;
 		Super.Init(label, command, prompt);
@@ -99,7 +99,7 @@ class OptionMenuItemMinecraftSafeCommand : OptionMenuItemSafeCommand
 //
 //===========================================================================
 
-Class MinecraftMenu : OptionMenu
+Class TripleMMenu : OptionMenu
 {
 	override void Drawer ()
 	{
@@ -109,26 +109,26 @@ Class MinecraftMenu : OptionMenu
 
 		if (mDesc.mSelectedItem > 0)
 		{
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemMinecraftOption")
+			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemTripleMOption")
 			{
-				tt = StringTable.Localize(OptionMenuItemMinecraftOption(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
+				tt = StringTable.Localize(OptionMenuItemTripleMOption(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
 			}
 
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemMinecraftSlider")
+			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemTripleMSlider")
 			{
-				tt = StringTable.Localize(OptionMenuItemMinecraftSlider(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
+				tt = StringTable.Localize(OptionMenuItemTripleMSlider(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
 			}
 
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemMinecraftControl")
+			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemTripleMControl")
 			{
-				tt = StringTable.Localize(OptionMenuItemMinecraftControl(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
+				tt = StringTable.Localize(OptionMenuItemTripleMControl(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
 			}
 
 			/*
 			// [Nash] This doesn't work because mUh eXpLoiTs lmaaaaoooo
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemMinecraftSafeCommand")
+			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemTripleMSafeCommand")
 			{
-				tt = StringTable.Localize(OptionMenuItemMinecraftSafeCommand(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
+				tt = StringTable.Localize(OptionMenuItemTripleMSafeCommand(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
 			}
 			*/
 		}

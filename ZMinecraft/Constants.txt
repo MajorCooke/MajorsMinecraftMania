@@ -3,8 +3,21 @@ const SineWavePerSecond = 360.0 / 35.0;
 const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
 enum EMinecraftConst
 {
-	MCFrames_FromOwner = 1,
-	MCFrames_FromMaster = 2,
+	BlockRadius = 16,
+	BlockHeight = 32,
+	
+
+	TM_Frames_FromOwner = 1,
+	TM_Frames_FromMaster = 2,
+	
+	FIRE_Normal = 1,	// Normal fire
+	FIRE_Soul,			// Soul fire
+	FIRE_Void,			// Void fire
+	FIRE_Hell,			// Hell fire
+	
+	FIRE_Min = FIRE_Normal,
+	FIRE_Max = FIRE_Hell,
+
 
 	CSFlags = SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY,
 	
@@ -33,6 +46,7 @@ enum EMinecraftConst
 	Rel_Afraid, 	// Flees from
 	Rel_Follower,	// Follows as its master
 	Rel_Leader,		// Makes followers its children
+	Rel_Ally,		// They don't attack each other and come to the aid of those attacked
 	Rel_Max,
 	
 	// Relationship aliases
@@ -44,7 +58,38 @@ enum EMinecraftConst
 	Res_Actors,		// Self explanatory.
 	Res_Classes,
 	
-	MCGroup_Unsorted = 1 << 0,
+	TM_Group_Unsorted = 1 << 0,
+	
+	Side_None = 0,
+	Side_Top,
+	Side_Bottom,
+	Side_East,
+	Side_North,
+	Side_West,
+	Side_South,
+	Side_Max,
+	
+	Op_Top = Side_Bottom,
+	Op_Bottom = Side_Top,
+	Op_East = Side_West,
+	Op_North = Side_South,
+	Op_West = Side_East,
+	Op_South = Side_North,
+	
+	Side_Front = Side_Max,
+	Side_Left,
+	Side_Back,
+	Side_Right,
+	Side_SMax,
+	
+	V_X = 0,
+	V_Y,
+	V_Z,
+	
+	TMO_Environment =	1,
+	TMO_Sector =		1 << 1,
+	TMO_Falling = 		1 << 2,
+	TMO_Drowning =		1 << 3,
 }
 
 enum EMinecraftMountConst
@@ -81,4 +126,49 @@ enum EValidateTargetFlags
 	VTF_TargetOnly =	1,
 	VTF_Chase =			1 << 1,
 	VTF_Damage =		1 << 2,
+}
+/*
+enum TM_Immunities
+{
+	IMF_FIRE = 		1,
+	IMF_SOULFIRE =	1 << 1,
+	IMF_HELLFIRE =	1 << 2,
+	
+	
+	IMF_ALL = 
+}
+*/
+
+enum ETM_ArmorSlots
+{
+	
+	AR_Head = 1,
+	AR_Body,
+	AR_Legs,
+	AR_Feet,
+	AR_Boot = AR_Feet,
+	WR_ArmL,	// For weapons
+	WR_ArmR,
+	
+	AR_Min = AR_Head,
+	AR_Max = AR_Feet,
+	
+	
+	AT_None = -1,
+	AT_Gold = Fr_A,
+	AT_Chainmail,
+	AT_Iron,
+	AT_Diamond,
+	AT_Netherite,
+	AT_Max = AT_Netherite,
+	
+	WP_Gold = 		AT_Gold,
+	WP_Stone = 		AT_Chainmail,
+	WP_Iron =		AT_Iron,
+	WP_Diamond =	AT_Diamond,
+	WP_Netherite =	AT_Netherite,
+	
+	TMS_None = 0,
+	TMS_Left,
+	TMS_Right
 }

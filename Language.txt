@@ -1,115 +1,122 @@
 [enu default]
 
-MCM_RELEASE_VERSION = "Alpha 0.22";
-MCM_RELEASE_DATE = "October 30, 2021";
+TMM_RELEASE_VERSION = "Alpha 0.22";
+TMM_RELEASE_DATE = "October 30, 2021";
 
-MCM_OPTIONS_TITLE = "Minecraft Options";
+TMM_OPTIONS_TITLE = "Triple M Options";
 
-MCM_DIFFICULTY_TEXT = "Spawn Difficulty";
-MCM_DIFFICULTY_SUB = "Adjusts the spawn rate of more difficult monsters (creeper, endermen, ghasts, etc)";
+TMM_DIFFICULTY_TEXT = "Spawn Difficulty";
+TMM_DIFFICULTY_SUB = "Adjusts the spawn rate of more difficult monsters (creeper, endermen, ghasts, etc)";
 
-MCM_AIDIFFICULTY_TEXT = "Behavior Difficulty";
-MCM_AIDIFFICULTY_SUB = "Adjusts the behavior of the monsters, unrelated to Doom's skills.\n See Readme for more info.";
+TMM_AIDIFFICULTY_TEXT = "Behavior Difficulty";
+TMM_AIDIFFICULTY_SUB = "Adjusts the behavior of the monsters, unrelated to Doom's skills.\n See Readme for more info.";
 
-MCM_PEACEFUL_TEXT = "Peaceful Mode";
-MCM_PEACEFUL_SUB = "Pacifies or despawns monsters based on Peaceful Behavior.";
+TMM_PEACEFUL_TEXT = "Peaceful Mode";
+TMM_PEACEFUL_SUB = "Pacifies or despawns monsters based on Peaceful Behavior.";
 
-MCM_PEACEACTION_TEXT = "Peaceful Behavior";
-MCM_PEACEACTION_SUB = "Adjusts peaceful mode monster behaviors.\nMonsters not despawning are docile.";
+TMM_PEACEACTION_TEXT = "Peaceful Behavior";
+TMM_PEACEACTION_SUB = "Adjusts peaceful mode monster behaviors.\nMonsters not despawning are docile.";
 
-MCM_PACKMUL_TEXT = "Pack Multiplier";
-MCM_PACKMUL_SUB = "Multiplies the number of monsters spawned in a pack.";
+TMM_PACKMUL_TEXT = "Pack Multiplier";
+TMM_PACKMUL_SUB = "Multiplies the number of monsters spawned in a pack.";
 
-MCM_DROPITEMS_TEXT = "Monsters Drop Items";
-MCM_DROPITEMS_SUB = "Monsters killed by players can drop resources (health/armor/ammo).";
+TMM_DROPITEMS_TEXT = "Monsters Drop Items";
+TMM_DROPITEMS_SUB = "Monsters killed by players can drop resources (health/armor/ammo).";
 
-MCM_COMBINEITEMS_TEXT = "Combine Item Drops";
-MCM_COMBINEITEMS_SUB = "Disable this option for mods that drop randomized base items.";
+TMM_COMBINEITEMS_TEXT = "Combine Item Drops";
+TMM_COMBINEITEMS_SUB = "Disable this option for mods that drop randomized base items.";
 
-MCM_ITEMTIMER_TEXT = "Item Timer";
-MCM_ITEMTIMER_SUB = "Minutes to wait before items disappear (0 = no limit)";
+TMM_ITEMTIMER_TEXT = "Item Timer";
+TMM_ITEMTIMER_SUB = "Minutes to wait before items disappear (0 = no limit)";
 
-MCM_SHORTGIBS_TEXT = "Short Gib Lives";
-MCM_SHORTGIBS_SUB = "Gibs begin vanishing the moment they stop moving.";
+TMM_SHORTGIBS_TEXT = "Short Gib Lives";
+TMM_SHORTGIBS_SUB = "Gibs begin vanishing the moment they stop moving.";
 
-MCM_ENVIRODAMAGE_TEXT = "Environment Damage";
-MCM_ENVIRODAMAGE_SUB = "Monsters take sector/falling/drowning damage";
+TMM_ENVIRODAMAGE_TEXT = "Environment Damage";
+TMM_ENVIRODAMAGE_SUB = "Monsters take sector/falling/drowning damage";
 
-MCM_FALLDAMAGE_TEXT = "Fall Damage";
-MCM_FALLDAMAGE_SUB = "Monsters take fall damage";
+TMM_FALLDAMAGE_TEXT = "Fall Damage";
+TMM_FALLDAMAGE_SUB = "Monsters take fall damage";
 
-MCM_DROWNING_TEXT = "Drowning";
-MCM_DROWNING_SUB = "Monsters can drown";
+TMM_DROWNING_TEXT = "Drowning";
+TMM_DROWNING_SUB = "Monsters can drown";
 
-MCM_SECTORDAMAGE_TEXT = "Toxic/Lava Damage";
-MCM_SECTORDAMAGE_SUB = "Monsters take damage from slime/lava floors.";
+TMM_SECTORDAMAGE_TEXT = "Toxic/Lava Damage";
+TMM_SECTORDAMAGE_SUB = "Monsters take damage from slime/lava floors.";
 
-MCM_SPAWNING_TEXT = "Monster Spawns";
-MCM_SPAWNING_SUB = "Can monsters spawn? Unrelated to peaceful mode.";
+TMM_SPAWNING_TEXT = "Monster Spawns";
+TMM_SPAWNING_SUB = "Can monsters spawn? Unrelated to peaceful mode.";
 
-MCM_HEALTHMUL1_TEXT = "Health Multiplier (0.x)";
-MCM_HEALTHMUL1_SUB = "Adjusts health multiplier in small increments (0.1)";
+TMM_HEALTHMUL1_TEXT = "Health Multiplier (0.x)";
+TMM_HEALTHMUL1_SUB = "Adjusts health multiplier in small increments (0.1)";
 
-MCM_HEALTHMUL2_TEXT = "Health Multiplier (x.0)";
-MCM_HEALTHMUL2_SUB = "Adjusts health multiplier in large increments (1.0)";
+TMM_HEALTHMUL2_TEXT = "Health Multiplier (x.0)";
+TMM_HEALTHMUL2_SUB = "Adjusts health multiplier in large increments (1.0)";
 
-MCM_SPAWNS_TEXT = "Monster Count";
-MCM_SPAWNS_SUB = "# of monsters that can spawn.";
+TMM_SPAWNS_TEXT = "Monster Count";
+TMM_SPAWNS_SUB = "# of monsters that can spawn.";
 
-MCM_SPAWNMUL_TEXT = "Monster Multiplier";
-MCM_SPAWNMUL_SUB = "Monster Count * this. Increase at your own risk...";
+TMM_SPAWNMUL_TEXT = "Monster Multiplier";
+TMM_SPAWNMUL_SUB = "Monster Count * this. Increase at your own risk...";
 
-MCM_SDMINUTE_TEXT = "Minutes";
-MCM_SDMINUTE_SUB = "Delay between spawning monsters (minutes)";
+TMM_SDMINUTE_TEXT = "Minutes";
+TMM_SDMINUTE_SUB = "Delay between spawning monsters (minutes)";
 
-MCM_SDSECOND_TEXT = "Seconds";
-MCM_SDSECOND_SUB = "Delay between spawning monsters (seconds)";
+TMM_SDSECOND_TEXT = "Seconds";
+TMM_SDSECOND_SUB = "Delay between spawning monsters (seconds)";
 
-MCM_SDRANDOM_TEXT = "Random Seconds";
-MCM_SDRANDOM_SUB = "Adds between 0 to this many seconds randomly to the delay.";
+TMM_SDRANDOM_TEXT = "Random Seconds";
+TMM_SDRANDOM_SUB = "Adds between 0 to this many seconds randomly to the delay.";
 
-MCM_SPAWNCONDITIONS_TEXT = "Conditional Spawning";
-MCM_SPAWNCONDITIONS_SUB = "Monsters won't spawn in lava/slime/etc if environment damage is on.";
+TMM_SPAWNCONDITIONS_TEXT = "Conditional Spawning";
+TMM_SPAWNCONDITIONS_SUB = "Monsters won't spawn in lava/slime/etc if environment damage is on.";
 
-MCM_SFX_TEXT = "Particles";
-MCM_SFX_SUB = "Determines how much special FX spawns.";
+TMM_SFX_TEXT = "Particles";
+TMM_SFX_SUB = "Determines how much special FX spawns.";
 
-MCM_NOSECGRAV_TEXT = "Actors use own gravity";
-MCM_NOSECGRAV_SUB = "Sector gravity is ignored and uses full gravity for the selected actors.";
+TMM_NOSECGRAV_TEXT = "Actors use own gravity";
+TMM_NOSECGRAV_SUB = "Sector gravity is ignored and uses full gravity for the selected actors.";
 
-MCM_NOSKILLFACTOR_TEXT = "Prevent Skill Damage Factoring";
-MCM_NOSKILLFACTOR_SUB = "If enabled, players counteract skill based damage factoring.";
+TMM_NOSKILLFACTOR_TEXT = "Prevent Skill Damage Factoring";
+TMM_NOSKILLFACTOR_SUB = "If enabled, players counteract skill based damage factoring.";
+
 //==============================================================================
-// Monster specific texts
+// Specific Monster texts
 //==============================================================================
 
-MCM_CREEPERTWEAKS = "Creeper Tweaks";
+TMM_CREEPERTWEAKS = "Creeper Tweaks";
 
-MCM_CREEPERALWAYSBOOM_TEXT = "Always Explode";
-MCM_CREEPERALWAYSBOOM_SUB = "Takes priority over other explosion options.";
+TMM_CREEPERALWAYSBOOM_TEXT = "Always Explode";
+TMM_CREEPERALWAYSBOOM_SUB = "Takes priority over other explosion options.";
 
-MCM_CREEPERBOOMBOOM_TEXT = "Explosions";
-MCM_CREEPERBOOMBOOM_SUB = "Non-creeper explosions cause hissing creepers to explode.";
+TMM_CREEPERBOOMBOOM_TEXT = "Explosions";
+TMM_CREEPERBOOMBOOM_SUB = "Non-creeper explosions cause hissing creepers to explode.";
 
-MCM_CREEPERCHAINBOOM_TEXT = "Creepers";
-MCM_CREEPERCHAINBOOM_SUB = "Creepers can cause other creepers to explode on death.";
+TMM_CREEPERCHAINBOOM_TEXT = "Creepers";
+TMM_CREEPERCHAINBOOM_SUB = "Creepers can cause other creepers to explode on death.";
 
-MCM_CREEPERENEMYBOOM_TEXT = "Enemies";
-MCM_CREEPERENEMYBOOM_SUB = "Enemies cause creepers to explode on death.";
+TMM_CREEPERENEMYBOOM_TEXT = "Enemies";
+TMM_CREEPERENEMYBOOM_SUB = "Enemies cause creepers to explode on death.";
 
-MCM_CREEPERFRIENDLYBOOM_TEXT = "Friendlies";
-MCM_CREEPERFRIENDLYBOOM_SUB = "Friends make creepers explode on death.";
+TMM_CREEPERFRIENDLYBOOM_TEXT = "Friendlies";
+TMM_CREEPERFRIENDLYBOOM_SUB = "Friends make creepers explode on death.";
 
-MCM_CREEPERENVIRONMENTBOOM_TEXT = "Environment";
-MCM_CREEPERENVIRONMENTBOOM_SUB = "Creepers explode when killed by the environment.";
+TMM_CREEPERENVIRONMENTBOOM_TEXT = "Environment";
+TMM_CREEPERENVIRONMENTBOOM_SUB = "Creepers explode when killed by the environment.";
 
-MCM_CREEPERPLAYERBOOM_TEXT = "Players";
-MCM_CREEPERPLAYERBOOM_SUB = "Players make creepers explode on death.";
+TMM_CREEPERPLAYERBOOM_TEXT = "Players";
+TMM_CREEPERPLAYERBOOM_SUB = "Players make creepers explode on death.";
 
-MCM_ZOMBIETWEAKS = "Zombie Tweaks";
+TMM_ZOMBIETWEAKS = "Zombie Tweaks";
 
-MCM_ZOMBIEBABY_TEXT = "Baby Zombies";
-MCM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn? Smaller/faster but 2* slime/explosion damage intake.";
+TMM_ZOMBIEBABY_TEXT = "Baby Zombies";
+TMM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn? Smaller/faster but 2* slime/explosion damage intake.";
 
-MCM_DMGMUL_TEXT = "Infight Damage Scaling";
-MCM_DMGMUL_SUB = "Minecraft enemies infighting damage scales with health.";
+TMM_DMGMUL_TEXT = "Infight Damage Scaling";
+TMM_DMGMUL_SUB = "Minecraft enemies infighting damage scales with health.";
+
+//==============================================================================
+// Item specific
+//==============================================================================
+
+TMM_ITEMS_MENU = "Inventory Options";

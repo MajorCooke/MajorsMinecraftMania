@@ -27,111 +27,7 @@ Gib Arms: 	0.0,	+-1.2,	3.6
 Gib Leg:	0.0,	+-0.4,	1.2
 */
 
-extend class MinecraftMonster
-{
-	enum EAMFlags
-	{
-		AM_NOPARENT =		1,
-		AM_FORCE =			1 << 1,
-		AM_FORCEONLYPLR =	1 << 2,
-		
-	//	AM_EXCLUDE =	1 << 1,
-	};
-
-	virtual void AlertMonsters(double dist, Actor targ = null, Class<Actor> filter = null, int limit = 0, int flags = 0)
-	{
-		if (dist <= 0.0)	dist = MaxChaseRange;
-		if (!targ)
-		{
-			if (Target)	targ = Target;
-			else		return;
-		}
-		
-		if (targ is GetClass())	return;
-		
-		if (targ.bKILLED || !targ.bSHOOTABLE ||
-			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
-			return;
-		
-		let it = BlockThingsIterator.Create(self, dist);
-		Actor mo = null;
-		int count = limit;
-		while (it.Next())
-		{
-			mo = it.thing;
-			if (!mo || mo.bKILLED)	continue;
-			
-			if (filter)
-			{
-				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
-					(!(flags & AM_NOPARENT) && !(mo is filter)))
-				{
-					if (MCC_Debug == 1)
-					{
-						Name cls = mo.GetClassName();
-						name fil = filter.GetClassName();
-						Console.Printf("%s doesn't fit filter %s, skipping", cls, fil);
-					}
-					continue;
-				}
-			}
-			
-			bool change = ((flags & AM_FORCE) || !mo.Target || mo.Target is 'PlayerPawn' || 
-							mo.Target.Health < 1);
-			if (!change)	continue;
-			
-			mo.bAMBUSH = true;
-			mo.CopyFriendliness(self, change, false);
-			
-			let mon = MinecraftMonster(mo);
-			if (mon)	
-			{
-				mon.Tracer = mo.Target;
-				mon.SetActorRelation(Tracer, Rel_Hated);
-			}
-			if (count > 0 && --count < 1)
-				return;
-			
-		}
-	}
-}
-
-//==============================================================================
-// Baby Zombie
-// 
-// Smaller, agile and dangerous variants of zombies.
-//
-// The following is in addition to regular zombie strengths/weaknesses.
-// + More vulnerable to explosions, lava & Slime
-// - Much smaller, harder to hit with bullet weaponry
-//==============================================================================
-
-Class MCZombieBaby : MCZombie
-{
-	Default
-	{
-		MinecraftMonster.OverScale 0.5;
-		ActiveSound "Minecraft/ZombieBaby/Idle";
-		PainSound "Minecraft/ZombieBaby/Pain";
-		DeathSound "Minecraft/ZombieBaby/Death";
-		Tag "Baby Zombie";
-		Speed BabySpeed; // 50% faster.
-		
-		// Much less to melt.
-		DamageFactor "Fire", 2.0;
-		DamageFactor "Slime", 2.0;
-	}
-	
-	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
-	{
-		if (flags & DMG_EXPLOSION)
-			damage *= 2;
-			
-		return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
-	}
-}
-
-Class MCZombie : MCUndead
+Class TM_Zombie : TM_Undead
 {
 	enum EAction
 	{
@@ -146,7 +42,7 @@ Class MCZombie : MCUndead
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
 	const _Speed = 4.0;
-	const BabySpeed = _Speed * 1.5;
+	const BabySpeed = _Speed * 1.4;
 	
 	private int CurrentAction;
 	
@@ -154,21 +50,19 @@ Class MCZombie : MCUndead
 
 	Default
 	{
-		
-		MinecraftMonster.PeacefulDespawn false; // Remove once testing is complete.
-		MinecraftMonster.Passive false;
+		TM_Monster.CanArmor true;
+		TM_Monster.Passive false;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
 		Health 100;
 		Speed _Speed;
 		MeleeRange RealRadius + 8;
-		MinecraftMonster.MaxSightRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
+		TM_Monster.MaxSightRange 768; //In Minecraft it's 40 blocks (each block is 16). Here it's shorter.
 		
 		ActiveSound "Minecraft/Zombie/Idle";
 		PainSound "Minecraft/Zombie/Pain";
 		DeathSound "Minecraft/Zombie/Death";
-	//	MinecraftMonster.StepSound "Minecraft/Zombie/Step";
 		
 		DamageFactor "Normal", 0.92;
 		
@@ -180,32 +74,26 @@ Class MCZombie : MCUndead
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
-		if (!Super.DropItems(src, inf, mod))
-			return false;
+		int rng = irandom(5, 15);
 		
-		int ch = 0, end = 10;
-		for (int i = 0; i < end; i++)
-		{
-			if (irandom(1, 3) == 1)
-				ch++;
-		}
-		Event.DropItem(self, 'HealthBonus', ch);
-		Event.DropItem(self, 'ArmorBonus', ch);
-		return true;
+		Drops.Add('TM_PearlHealth', rng);
+		Drops.Add('TM_PearlArmor', rng);
+		
+		return Super.DropItems(src, inf, mod);
 	}
 	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
+		
 		Init(LimbCount);
-		bool baby = (self is 'MCZombieBaby');
-		if (baby)	Limb[Head] = MCBodyPart(Spawn('MCZombieHeadBaby', pos));
-		else		Limb[Head] = MCBodyPart(Spawn('MCZombieHead', pos));
-		Limb[Body] = MCBodyPart(Spawn('MCZombieBody', pos));
-		Limb[ArmR] = MCBodyPart(Spawn('MCZombieArmRight', pos));
-		Limb[ArmL] = MCBodyPart(Spawn('MCZombieArmLeft', pos));
-		Limb[LegR] = MCBodyPart(Spawn('MCZombieLegRight', pos));
-		Limb[LegL] = MCBodyPart(Spawn('MCZombieLegLeft', pos));
+		if (Baby)	Limb[Head] = TM_BodyPart(Spawn('TM_ZombieHeadBaby', pos));
+		else		Limb[Head] = TM_BodyPart(Spawn('TM_ZombieHead', pos));
+		Limb[Body] = TM_BodyPart(Spawn('TM_ZombieBody', pos));
+		Limb[ArmR] = TM_BodyPart(Spawn('TM_ZombieArmRight', pos));
+		Limb[ArmL] = TM_BodyPart(Spawn('TM_ZombieArmLeft', pos));
+		Limb[LegR] = TM_BodyPart(Spawn('TM_ZombieLegRight', pos));
+		Limb[LegL] = TM_BodyPart(Spawn('TM_ZombieLegLeft', pos));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
 			let Lim = Limb[i];
@@ -225,7 +113,7 @@ Class MCZombie : MCUndead
 		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
 		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
 		
-		if (baby)
+		if (Baby)
 		{
 			Limb[LegR].StepVolume = 0.45;
 			Limb[LegL].StepVolume = 0.45;
@@ -233,15 +121,19 @@ Class MCZombie : MCUndead
 		
 		Limb[ArmR].SetPitch(-90);
 		Limb[ArmL].SetPitch(-90);
-		UpdateLimbs();
+		
+		SpawnArmor();
+		SpawnWeapon();
 	}
+	
+	
 	
 	override void AdjustDifficulty()
 	{
 		Super.AdjustDifficulty();
 		
 		double mul = 1.0;
-		Switch(MCC_AIDifficulty)
+		Switch(TMV_AIDifficulty)
 		{
 			Case Dif_Easy:		mul = 1.0;	break;
 			Case Dif_Normal:	mul = 1.15;	break;
@@ -303,27 +195,6 @@ Class MCZombie : MCUndead
 	}
 	States
 	{
-	Spawn:
-		TNT1 AA 35;
-		Goto IdleMove;
-	Idle:
-		TNT1 A 0 
-		{
-			UpdateLimbs();
-			return A_Jump(256, random(1, 4));
-		}
-		TNT1 AAAAAAAAAA 17 Look();
-	IdleMove:
-		TNT1 A 0 
-		{
-			LookTimer = 0;
-			return A_Jump(256, random(1, 35*2));
-		}
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		Goto Idle;
 	See:
 		TNT1 A 1 Chase(_3dmelee: true);
 		Wait;
@@ -331,6 +202,48 @@ Class MCZombie : MCUndead
 		TNT1 A 1 DoMelee(random[rng](15, 25));
 		Goto See;
 	}
+}
+
+//==============================================================================
+// Baby Zombie
+// 
+// Smaller, agile and dangerous variants of zombies.
+//
+// The following is in addition to regular zombie strengths/weaknesses.
+// + More vulnerable to explosions, lava & Slime
+// - Much smaller, harder to hit with bullet weaponry
+//==============================================================================
+
+Class TM_ZombieBaby : TM_Zombie
+{
+	Default
+	{
+		TM_Monster.Baby true;
+		TM_Monster.OverScale 0.5;
+		ActiveSound "Minecraft/ZombieBaby/Idle";
+		PainSound "Minecraft/ZombieBaby/Pain";
+		DeathSound "Minecraft/ZombieBaby/Death";
+		Tag "Baby Zombie";
+		Speed BabySpeed; // 50% faster.
+		
+		// Much less to melt.
+		DamageFactor "Fire", 2.0;
+		DamageFactor "Slime", 2.0;
+	}
+	
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle)
+	{
+		if (flags & DMG_EXPLOSION)
+			damage *= 2;
+			
+		return Super.DamageMobj(inflictor, source, damage, mod, flags, angle);
+	}
+	
+	// Given their quick speed and small size, they don't spawn with armor or
+	// weapons. In addition, the armor offsetting and positions is kinda broken
+	// on them anyway.
+	override void SpawnWeapon() {}
+	override void SpawnArmor() {}
 }
 
 //------------------------------------------------------------------------------
@@ -360,45 +273,50 @@ Class MCZombie : MCUndead
 //==============================================================================
 
 
-Class MCZombieHead : MCBodyPartHead	{}
-Class MCZombieHeadBaby : MCZombieHead	{}
+Class TM_ZombieHead : TM_BodyPartHead	{}
+Class TM_ZombieHeadBaby : TM_ZombieHead	{}
 
-Class MCZombieBody : MCBodyPartBody
+Class TM_ZombieBody : TM_BodyPartBody
 {
 }
 
-Class MCZombieLegRight : MCBodyPartLeg
+Class TM_ZombieLegRight : TM_BodyPartLeg
 {
 	Default
 	{
 		Radius 0.8;
 		Height 2.0;
-		MCBodyPart.StepSound "Minecraft/Zombie/Step";
+		TM_BodyPart.SideID TMS_Right;
+		TM_BodyPart.StepSound "Minecraft/Zombie/Step";
 	}
+	
 }
 
-Class MCZombieLegLeft : MCZombieLegRight
+Class TM_ZombieLegLeft : TM_ZombieLegRight
 {
 	Default
 	{
-		MCBodyPart.VelSineOffset 180;
+		TM_BodyPart.SideID TMS_Left;
+		TM_BodyPart.VelSineOffset 180;
 	}
 }
 
-Class MCZombieArmRight : MCBodyPartArm
+Class TM_ZombieArmRight : TM_BodyPartArm
 {
 	Default
 	{
+		TM_BodyPart.SideID TMS_Right;
 		Radius 0.8;
 		Height 2.0;
 	}
 }
 
-Class MCZombieArmLeft : MCZombieArmRight
+Class TM_ZombieArmLeft : TM_ZombieArmRight
 {
 	Default
 	{
-		MCBodyPart.SineOffset 180, 180, 180;
+		TM_BodyPart.SideID TMS_Left;
+		TM_BodyPart.SineOffset 180, 180, 180;
 	}
 }
 
@@ -406,52 +324,47 @@ Class MCZombieArmLeft : MCZombieArmRight
 // Gibs
 //------------------------------------------------------------------------------
 
-Class MCZombieHeadGib : MCBodyPartGib
+Class TM_ZombieHeadGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, 0.8;	}	}
+
+Class TM_ZombieHeadBabyGib : TM_ZombieHeadGib	{}
+
+Class TM_ZombieArmRightGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -.8;	}	}
+
+Class TM_ZombieArmLeftGib : TM_BodyPartGib	
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -.8;	}	}
+
+Class TM_ZombieLegRightGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -1.2;	}	}
+Class TM_ZombieLegLeftGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -1.2;	}	}
+
+Class TM_ZombieBodyGib : TM_BodyPartGib	{}
+
+/*
+Class TM_ZombieArmRightGib : TM_BodyPartGib
 {
-	Default
-	{
-		MCBodyPartGib.Offsets 0, 0, 5.6;		//Head
-	}
+	Default	{	TM_BodyPartGib.Offsets 0,  1.2, 3.6;	}
 }
 
-Class MCZombieHeadBabyGib : MCZombieHeadGib	{}
-
-Class MCZombieArmRightGib : MCBodyPartGib
+Class TM_ZombieArmLeftGib : TM_BodyPartGib
 {
-	Default
-	{
-		MCBodyPartGib.Offsets 0,  1.2, 3.6;		//Right Arm
-	}
+	Default	{	TM_BodyPartGib.Offsets 0, -1.2, 3.6;	}
 }
 
-Class MCZombieArmLeftGib : MCBodyPartGib
+Class TM_ZombieLegRightGib : TM_BodyPartGib
 {
-	Default
-	{
-		MCBodyPartGib.Offsets 0, -1.2, 3.6;		//Left Arm
-	}
+	Default	{	TM_BodyPartGib.Offsets 0,  0.4, 1.2;	}
+}
+Class TM_ZombieLegLeftGib : TM_BodyPartGib
+{
+	Default	{	TM_BodyPartGib.Offsets 0, -0.4, 1.2;		}
 }
 
-Class MCZombieLegRightGib : MCBodyPartGib
+Class TM_ZombieBodyGib : TM_BodyPartGib
 {
-	Default
-	{
-		MCBodyPartGib.Offsets 0,  0.4, 1.2;		//Right Leg
-	}
+	Default	{	TM_BodyPartGib.Offsets 0, 0, 3.6;	}
 }
-Class MCZombieLegLeftGib : MCBodyPartGib
-{
-	Default
-	{
-		MCBodyPartGib.Offsets 0, -0.4, 1.2;		//Left Leg
-	}
-}
-
-Class MCZombieBodyGib : MCBodyPartGib
-{
-	Default
-	{
-		MCBodyPartGib.Offsets 0, 0, 3.6;
-	}
-}
+*/
 

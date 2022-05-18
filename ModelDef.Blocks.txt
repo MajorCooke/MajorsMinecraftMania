@@ -1,0 +1,198 @@
+
+
+
+
+Model TM_Block_TNT
+{
+	Scale 1.0 1.0 1.2
+	ZOffset 16
+	Model 0 "Models/Blocks/Sided.obj"
+	Skin 0 "Materials/Blocks/TNT.png"
+	FrameIndex ASDF A 0 0
+}
+
+Model TM_Block_Fire
+{
+	DONTCULLBACKFACES
+	
+	// Slightly smaller on XY to stop Z-fighting with walls.
+	Scale 0.99 0.99 1.2
+	Model 0 "Models/Blocks/FireBlock.obj"
+	
+	// Normal Fire
+	Skin 0 "X209A0"	FrameIndex X209 A 0 0
+	Skin 0 "X209B0"	FrameIndex X209 B 0 0
+	Skin 0 "X209C0"	FrameIndex X209 C 0 0
+	Skin 0 "X209D0"	FrameIndex X209 D 0 0
+	Skin 0 "X209E0"	FrameIndex X209 E 0 0
+	Skin 0 "X209F0"	FrameIndex X209 F 0 0
+	Skin 0 "X209G0"	FrameIndex X209 G 0 0
+	Skin 0 "X209H0"	FrameIndex X209 H 0 0
+	Skin 0 "X209I0"	FrameIndex X209 I 0 0
+	Skin 0 "X209J0"	FrameIndex X209 J 0 0
+	Skin 0 "X209K0"	FrameIndex X209 K 0 0
+	Skin 0 "X209L0"	FrameIndex X209 L 0 0
+	Skin 0 "X209M0"	FrameIndex X209 M 0 0
+	Skin 0 "X209N0"	FrameIndex X209 N 0 0
+	Skin 0 "X209O0"	FrameIndex X209 O 0 0
+	Skin 0 "X209P0"	FrameIndex X209 P 0 0
+	Skin 0 "X209Q0"	FrameIndex X209 Q 0 0
+	Skin 0 "X209R0"	FrameIndex X209 R 0 0
+	Skin 0 "X209S0"	FrameIndex X209 S 0 0
+	Skin 0 "X209T0"	FrameIndex X209 T 0 0
+	Skin 0 "X209U0"	FrameIndex X209 U 0 0
+	Skin 0 "X209V0"	FrameIndex X209 V 0 0
+	Skin 0 "X209W0"	FrameIndex X209 W 0 0
+	Skin 0 "X209X0"	FrameIndex X209 X 0 0
+	Skin 0 "X209Y0"	FrameIndex X209 Y 0 0
+	Skin 0 "X209Z0"	FrameIndex X209 Z 0 0
+	Skin 0 "X210A0"	FrameIndex X210 A 0 0
+	Skin 0 "X210B0"	FrameIndex X210 B 0 0
+	Skin 0 "X210C0"	FrameIndex X210 C 0 0
+	Skin 0 "X210D0"	FrameIndex X210 D 0 0
+	Skin 0 "X210E0"	FrameIndex X210 E 0 0
+	Skin 0 "X210F0"	FrameIndex X210 F 0 0
+	
+	// Soul Fire
+	Skin 0 "X211A0"	FrameIndex X211 A 0 0
+	Skin 0 "X211B0"	FrameIndex X211 B 0 0
+	Skin 0 "X211C0"	FrameIndex X211 C 0 0
+	Skin 0 "X211D0"	FrameIndex X211 D 0 0
+	Skin 0 "X211E0"	FrameIndex X211 E 0 0
+	Skin 0 "X211F0"	FrameIndex X211 F 0 0
+	Skin 0 "X211G0"	FrameIndex X211 G 0 0
+	Skin 0 "X211H0"	FrameIndex X211 H 0 0
+	Skin 0 "X211I0"	FrameIndex X211 I 0 0
+	Skin 0 "X211J0"	FrameIndex X211 J 0 0
+	Skin 0 "X211K0"	FrameIndex X211 K 0 0
+	Skin 0 "X211L0"	FrameIndex X211 L 0 0
+	Skin 0 "X211M0"	FrameIndex X211 M 0 0
+	Skin 0 "X211N0"	FrameIndex X211 N 0 0
+	Skin 0 "X211O0"	FrameIndex X211 O 0 0
+	Skin 0 "X211P0"	FrameIndex X211 P 0 0
+	Skin 0 "X211Q0"	FrameIndex X211 Q 0 0
+	Skin 0 "X211R0"	FrameIndex X211 R 0 0
+	Skin 0 "X211S0"	FrameIndex X211 S 0 0
+	Skin 0 "X211T0"	FrameIndex X211 T 0 0
+	Skin 0 "X211U0"	FrameIndex X211 U 0 0
+	Skin 0 "X211V0"	FrameIndex X211 V 0 0
+	Skin 0 "X211W0"	FrameIndex X211 W 0 0
+	Skin 0 "X211X0"	FrameIndex X211 X 0 0
+	Skin 0 "X211Y0"	FrameIndex X211 Y 0 0
+	Skin 0 "X211Z0"	FrameIndex X211 Z 0 0
+	Skin 0 "X212A0"	FrameIndex X212 A 0 0
+	Skin 0 "X212B0"	FrameIndex X212 B 0 0
+	Skin 0 "X212C0"	FrameIndex X212 C 0 0
+	Skin 0 "X212D0"	FrameIndex X212 D 0 0
+	Skin 0 "X212E0"	FrameIndex X212 E 0 0
+	Skin 0 "X212F0"	FrameIndex X212 F 0 0
+	
+	// Void Fire
+	Skin 0 "X213A0"	FrameIndex X213 A 0 0
+	Skin 0 "X213B0"	FrameIndex X213 B 0 0
+	Skin 0 "X213C0"	FrameIndex X213 C 0 0
+	Skin 0 "X213D0"	FrameIndex X213 D 0 0
+	Skin 0 "X213E0"	FrameIndex X213 E 0 0
+	Skin 0 "X213F0"	FrameIndex X213 F 0 0
+	Skin 0 "X213G0"	FrameIndex X213 G 0 0
+	Skin 0 "X213H0"	FrameIndex X213 H 0 0
+	Skin 0 "X213I0"	FrameIndex X213 I 0 0
+	Skin 0 "X213J0"	FrameIndex X213 J 0 0
+	Skin 0 "X213K0"	FrameIndex X213 K 0 0
+	Skin 0 "X213L0"	FrameIndex X213 L 0 0
+	Skin 0 "X213M0"	FrameIndex X213 M 0 0
+	Skin 0 "X213N0"	FrameIndex X213 N 0 0
+	Skin 0 "X213O0"	FrameIndex X213 O 0 0
+	Skin 0 "X213P0"	FrameIndex X213 P 0 0
+	Skin 0 "X213Q0"	FrameIndex X213 Q 0 0
+	Skin 0 "X213R0"	FrameIndex X213 R 0 0
+	Skin 0 "X213S0"	FrameIndex X213 S 0 0
+	Skin 0 "X213T0"	FrameIndex X213 T 0 0
+	Skin 0 "X213U0"	FrameIndex X213 U 0 0
+	Skin 0 "X213V0"	FrameIndex X213 V 0 0
+	Skin 0 "X213W0"	FrameIndex X213 W 0 0
+	Skin 0 "X213X0"	FrameIndex X213 X 0 0
+	Skin 0 "X213Y0"	FrameIndex X213 Y 0 0
+	Skin 0 "X213Z0"	FrameIndex X213 Z 0 0
+	Skin 0 "X214A0"	FrameIndex X214 A 0 0
+	Skin 0 "X214B0"	FrameIndex X214 B 0 0
+	Skin 0 "X214C0"	FrameIndex X214 C 0 0
+	Skin 0 "X214D0"	FrameIndex X214 D 0 0
+	Skin 0 "X214E0"	FrameIndex X214 E 0 0
+	Skin 0 "X214F0"	FrameIndex X214 F 0 0
+	
+	// Hellfire
+	Skin 0 "X215A0"	FrameIndex X215 A 0 0
+	Skin 0 "X215B0"	FrameIndex X215 B 0 0
+	Skin 0 "X215C0"	FrameIndex X215 C 0 0
+	Skin 0 "X215D0"	FrameIndex X215 D 0 0
+	Skin 0 "X215E0"	FrameIndex X215 E 0 0
+	Skin 0 "X215F0"	FrameIndex X215 F 0 0
+	Skin 0 "X215G0"	FrameIndex X215 G 0 0
+	Skin 0 "X215H0"	FrameIndex X215 H 0 0
+	Skin 0 "X215I0"	FrameIndex X215 I 0 0
+	Skin 0 "X215J0"	FrameIndex X215 J 0 0
+	Skin 0 "X215K0"	FrameIndex X215 K 0 0
+	Skin 0 "X215L0"	FrameIndex X215 L 0 0
+	Skin 0 "X215M0"	FrameIndex X215 M 0 0
+	Skin 0 "X215N0"	FrameIndex X215 N 0 0
+	Skin 0 "X215O0"	FrameIndex X215 O 0 0
+	Skin 0 "X215P0"	FrameIndex X215 P 0 0
+	Skin 0 "X215Q0"	FrameIndex X215 Q 0 0
+	Skin 0 "X215R0"	FrameIndex X215 R 0 0
+	Skin 0 "X215S0"	FrameIndex X215 S 0 0
+	Skin 0 "X215T0"	FrameIndex X215 T 0 0
+	Skin 0 "X215U0"	FrameIndex X215 U 0 0
+	Skin 0 "X215V0"	FrameIndex X215 V 0 0
+	Skin 0 "X215W0"	FrameIndex X215 W 0 0
+	Skin 0 "X215X0"	FrameIndex X215 X 0 0
+	Skin 0 "X215Y0"	FrameIndex X215 Y 0 0
+	Skin 0 "X215Z0"	FrameIndex X215 Z 0 0
+	Skin 0 "X216A0"	FrameIndex X216 A 0 0
+	Skin 0 "X216B0"	FrameIndex X216 B 0 0
+	Skin 0 "X216C0"	FrameIndex X216 C 0 0
+	Skin 0 "X216D0"	FrameIndex X216 D 0 0
+	Skin 0 "X216E0"	FrameIndex X216 E 0 0
+	Skin 0 "X216F0"	FrameIndex X216 F 0 0
+}
+
+
+
+//==============================================================================
+// Entities
+//==============================================================================
+
+Model TM_Ent_TNT
+{
+	Scale 1.0 1.0 1.2
+	ZOffset 20
+	Model 0 "Models/Blocks/Sided.obj"
+	Skin 0 "Materials/Blocks/TNT.png"
+	FrameIndex ASDF A 0 0
+}
+
+//==============================================================================
+// Items
+//==============================================================================
+
+Model TM_Item_TNT
+{
+	ROTATING
+	
+	Scale 1.0 1.0 1.2
+	Rotation-Speed 1.2857
+	ZOffset 16
+	
+	Model 0 "Models/Blocks/Sided.obj"
+//	Skin 0 "Materials/Blocks/TNT.png"
+	FrameIndex ASDF A 0 0
+	Model 0 "Models/Misc/StackS2.obj"
+	FrameIndex ASDF B 0 0
+	Model 0 "Models/Misc/StackS3.obj"
+	FrameIndex ASDF C 0 0
+	Model 0 "Models/Misc/StackS4.obj"
+	FrameIndex ASDF D 0 0
+	Model 0 "Models/Misc/StackS5.obj"
+	FrameIndex ASDF E 0 0
+}
+

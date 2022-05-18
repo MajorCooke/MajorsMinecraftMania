@@ -1,0 +1,166 @@
+// Various LineTracer classes scattered throughout the MC folder, centralized here
+// for organization purposes.
+
+// Tracer for lines
+// Old name: MC_LineLineTracer
+Class TM_LineTracer : LineTracer
+{
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			case TRACE_HitActor:
+				return TRACE_Skip;
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKING | Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+					return TRACE_Stop;
+				
+				if (Results.Tier == TIER_Middle && (hf & Line.ML_BLOCKING) && (hf & Line.ML_TWOSIDED))
+					return TRACE_Skip;
+				
+			}
+		}
+		return TRACE_Skip;
+	}
+}
+
+// Tracer for GetDamageDistance. INTENTIONALLY skips over all terrain and actors
+// except for 'trg' so it can get the closest point to the hitbox and use that
+// for calculating distance. Massive actors otherwise will not be properly hurt.
+Class TM_GDDTracer : LineTracer
+{
+	Actor trg;
+	bool HitFloor, HitWall, HitCeiling;
+	
+	void SetHittable(int flor = -1, int wall = -1, int ceil = -1)
+	{
+		if (flor > -1 && flor < 2)	HitFloor = flor;
+		if (wall > -1 && wall < 2)	HitWall = wall;
+		if (ceil > -1 && ceil < 2)	HitCeiling = ceil;
+	}
+	
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitActor:
+			{
+				let mo = Results.HitActor;
+				return (!mo || mo != trg) ? TRACE_Skip : TRACE_Stop;
+			}
+
+			case TRACE_HitFloor:
+				return (HitFloor) ? TRACE_Stop : TRACE_Skip;
+			case TRACE_HitCeiling:
+				return (HitCeiling) ? TRACE_Stop : TRACE_Skip;
+			case TRACE_HitWall:
+				if (HitWall)
+				{
+					if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+						return TRACE_Stop;
+
+					int hf = Results.HitLine.flags;
+					
+					if (hf & (Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+						return TRACE_Stop;
+					
+					if ((hf & Line.ML_BLOCKING) && (hf & Line.ML_TWOSIDED))
+						return TRACE_Stop;
+					
+				}
+				return TRACE_Skip;
+			case TRACE_HitNone:
+				return TRACE_Stop;
+		}
+		return TRACE_Skip;
+	}
+}
+
+Class TM_LevelTracer : LineTracer
+{
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitActor:
+				return TRACE_Skip;
+
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+				return TRACE_Stop;
+			case TRACE_HitWall:
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				int hf = Results.HitLine.flags;
+				
+				if (hf & (Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+					return TRACE_Stop;
+				
+				if ((hf & Line.ML_BLOCKING) && (hf & Line.ML_TWOSIDED))
+					return TRACE_Stop;
+					
+				if ((hf & Line.ML_3DMidTex) && !(hf & Line.ML_3DMidTex_Impass))
+					return TRACE_Stop;
+					
+				return TRACE_Skip;
+			case TRACE_HitNone:
+				return TRACE_Stop;
+		}
+		return TRACE_Skip;
+	}
+}
+
+// Used for flowing sine beams to make sure it hits something.
+Class TM_BeamFlowTracer : LineTracer
+{
+	Actor trg;
+	
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitActor:
+			{
+				let mo = Results.HitActor;
+				
+				return (!mo || mo != trg) ? TRACE_Skip : TRACE_Stop;
+			}
+
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			
+
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKING | Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKHITSCAN))
+					return TRACE_Stop;
+				
+				if (Results.Tier == TIER_Middle && (hf & Line.ML_BLOCKING) && (hf & Line.ML_TWOSIDED))
+					return TRACE_Skip;
+				
+			}
+		}
+		return TRACE_Skip;
+	}
+}
+

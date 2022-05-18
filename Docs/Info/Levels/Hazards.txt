@@ -1,0 +1,53 @@
+Exclusive to the Minecraft levels are some dangerous hazards one should be aware
+of before galavanting about with reckless abandon.
+
+* Fire
+Nasty piece of work that thankfully doesn't move, but you can wind up stumbling
+into it. Can possibly ignite other blocks around it, depending on circumstances.
+
+The different types are as follows:
+
+- Normal (Orange)
+	Deals regular Fire damagetype. Entities are dealt 10 damage/second. Many
+	nether mobs are immune to this. Can spread with lava embers.
+	
+- Soul (Cyan)
+	Deals SoulFire damagetype. Fewer monsters are immune to this, dealing much
+	more damage and burning twice as fast, often making it near fatal to touch.
+	Only generates on Soul blocks and doesn't spread. Likewise, Soul Lava is
+	even more dangerous, capable of spawning soul flame on its surface briefly.
+	Soul Embers spawn flames more often.
+	
+	Fire Resistance 2 is needed to stop any damage.
+	
+- Void (Magenta)
+	Deals Ice damage. This is the least damaging of the flames, but the longer
+	the player is "on fire", the slower they become until they're at a sluggish
+	20% speed, making them an easy target for some mobs. If subjected too long,
+	players can be outright frozen until the flames expire. Extinguishing these
+	flames will cause a burst of flaming ice to explode in the air around it,
+	igniting and freezing nearby entities and trickle damaging them. The closer,
+	the entity is, the longer it lasts.
+	
+	Interestingly, fire resistance works to prevent damage and the effect. Any
+	potency level will do.
+	
+- Hellfire (Black & Purple)
+	Some say the abyssal flames dubbed 'Hellfire' are a source of pure darkness.
+	Antimatter. Others speculate that it's a flame whose intensity of heat, while
+	surprisingly contained, is hotter than the sun itself, equating to vaporizing
+	plasma. Either thesis would perfectly explain why it's fatal to touching even
+	a single flamelet, vaporizing the victim in a nanosecond to dust particles.
+	
+	Furthermore, one cannot extinguish these flames manually without self 
+	destructing. Only by shooting it with a powerful enough of an explosion can
+	it be extinguished, but the fire itself can explode and destroy anything else
+	within a block's radius.
+	
+	Only Fire Resistance 3 is capable of reducing its damage, but even then,
+	damage is only reduced dramatically - yet it's still enough to kill them.
+	
+	The legendary and exceedingly rare potency of 4 is the only one capable of
+	completely resisting it.
+	
+	Only the Final Boss is immune to this flame.

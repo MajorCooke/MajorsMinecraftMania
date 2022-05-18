@@ -1,26 +1,53 @@
+//$GZDB_SKIP
 //==============================================================================
 // General/Random
 //==============================================================================
 //Minecraft/	"Sounds/Minecraft
-Minecraft/Bow		"Sounds/Minecraft/bow.ogg"
-Minecraft/BowHit	"Sounds/Minecraft/bowhit1.ogg"
-Minecraft/FallBig	"Sounds/Minecraft/fallbig.ogg"
-Minecraft/FallSmall	"Sounds/Minecraft/fallsmall.ogg"
-Minecraft/Hit1		"Sounds/Minecraft/hit1.ogg"
-Minecraft/Hit2		"Sounds/Minecraft/hit2.ogg"
-Minecraft/Hit3		"Sounds/Minecraft/hit3.ogg"
+
+Minecraft/Pickup	"Sounds/Minecraft/random/pop.ogg"
+Minecraft/XP		"Sounds/Minecraft/random/orb.ogg"
+Minecraft/Click		"Sounds/Minecraft/random/click.ogg"
+
+$limit Minecraft/Pickup 0
+$limit Minecraft/XP 0
+$limit Minecraft/Click 0
+
+$pitchset Minecraft/Pickup 1.0 2.5
+$pitchset Minecraft/XP 0.65 1.1
+$pitchset Minecraft/Click 1.0
+
+Minecraft/Bow		"Sounds/Minecraft/random/bow.ogg"
+Minecraft/FallBig	"Sounds/Minecraft/random/fallbig.ogg"
+Minecraft/FallSmall	"Sounds/Minecraft/random/fallsmall.ogg"
+
+Minecraft/Hit1		"Sounds/Minecraft/random/hit1.ogg"
+Minecraft/Hit2		"Sounds/Minecraft/random/hit2.ogg"
+Minecraft/Hit3		"Sounds/Minecraft/random/hit3.ogg"
+
+Minecraft/BowHit1	"Sounds/Minecraft/random/bowhit1.ogg"
+Minecraft/BowHit2	"Sounds/Minecraft/random/bowhit2.ogg"
+Minecraft/BowHit3	"Sounds/Minecraft/random/bowhit3.ogg"
+Minecraft/BowHit4	"Sounds/Minecraft/random/bowhit4.ogg"
 
 Minecraft/Explode1	"Sounds/Minecraft/random/explode1.ogg"
 Minecraft/Explode2	"Sounds/Minecraft/random/explode2.ogg"
 Minecraft/Explode3	"Sounds/Minecraft/random/explode3.ogg"
 Minecraft/Explode4	"Sounds/Minecraft/random/explode4.ogg"
 
-
 Minecraft/Fuse		"Sounds/Minecraft/random/fuse.ogg"
 Minecraft/Fizz		"Sounds/Minecraft/random/fizz.ogg"
+Minecraft/Fire		"Sounds/Minecraft/random/fire.ogg"
 
-$PitchSet Minecraft/Explode 0.5 0.65
+Minecraft/Glass1	"Sounds/Minecraft/random/glass1.ogg"
+Minecraft/Glass2	"Sounds/Minecraft/random/glass2.ogg"
+Minecraft/Glass3	"Sounds/Minecraft/random/glass3.ogg"
 
+$random Minecraft/Glass
+{
+	Minecraft/Glass1
+	Minecraft/Glass2
+	Minecraft/Glass3
+}
 
 $random Minecraft/Explode
 {
@@ -39,9 +66,27 @@ $random Minecraft/Hit
 	Minecraft/Hit3
 }
 
-$PitchSet Minecraft/Hit 0.9 1.1
+$random Minecraft/BowHit
+{
+	Minecraft/BowHit1
+	Minecraft/BowHit2
+	Minecraft/BowHit3
+	Minecraft/BowHit4
+}
+
+$limit Minecraft/Glass 0
+$limit Minecraft/BowHit 0
+$limit Minecraft/Bow 0
 $limit Minecraft/Hit 0
 $limit Minecraft/Explode 0
+$limit Minecraft/Fire 0
+
+$pitchset Minecraft/Glass 0.9 1.1
+$pitchset Minecraft/Bow 0.9 1.1
+$pitchset Minecraft/BowHit 0.9 1.1
+$pitchset Minecraft/Hit 0.9 1.1
+$pitchset Minecraft/Explode 0.5 0.65
+$pitchset Minecraft/Fire 0.7 1.0
 
 //==============================================================================
 // Zombie
@@ -136,7 +181,7 @@ $random Minecraft/Creeper/Pain
 }
 $limit Minecraft/Creeper/Pain 0
 $limit Minecraft/Creeper/Death 0
-$limit Minecraft/Creeper/Hiss 0;
+$limit Minecraft/Creeper/Hiss 0
 
 
 //==============================================================================
@@ -237,7 +282,7 @@ $limit Minecraft/Stray/Hurt 0
 $limit Minecraft/Stray/Idle 0
 $limit Minecraft/Stray/Step 0
 
-// Wither
+// Wither Skeleton
 Minecraft/WitherSkeleton/Death1	"Sounds/Minecraft/mob/WitherSkeleton/death1.ogg"
 Minecraft/WitherSkeleton/Death2	"Sounds/Minecraft/mob/WitherSkeleton/death2.ogg"
 Minecraft/WitherSkeleton/Hurt1	"Sounds/Minecraft/mob/WitherSkeleton/hurt1.ogg"
@@ -444,3 +489,92 @@ $PitchSet Minecraft/Ghast/Death 0.9 1.1
 $PitchSet Minecraft/Ghast/Fireball 0.9 1.1
 $PitchSet Minecraft/Ghast/Moan 0.9 1.1
 $PitchSet Minecraft/Ghast/Scream 0.9 1.1
+
+
+
+//==============================================================================
+//	Ziglin
+//==============================================================================
+Minecraft/Ziglin/Idle1		"Sounds/Minecraft/mob/ziglin/zpig1.ogg"
+Minecraft/Ziglin/Idle2		"Sounds/Minecraft/mob/ziglin/zpig2.ogg"
+Minecraft/Ziglin/Idle3		"Sounds/Minecraft/mob/ziglin/zpig3.ogg"
+Minecraft/Ziglin/Idle4		"Sounds/Minecraft/mob/ziglin/zpig4.ogg"
+$random Minecraft/Ziglin/Idle
+{
+	Minecraft/Ziglin/Idle1
+	Minecraft/Ziglin/Idle2
+	Minecraft/Ziglin/Idle3
+	Minecraft/Ziglin/Idle4
+}
+
+
+$limit Minecraft/Ziglin/Idle 0
+$PitchSet Minecraft/Ziglin/Idle 0.7 1.3
+
+Minecraft/Ziglin/Angry1		"Sounds/Minecraft/mob/ziglin/zpigangry1.ogg"
+Minecraft/Ziglin/Angry2		"Sounds/Minecraft/mob/ziglin/zpigangry2.ogg"
+Minecraft/Ziglin/Angry3		"Sounds/Minecraft/mob/ziglin/zpigangry3.ogg"
+Minecraft/Ziglin/Angry4		"Sounds/Minecraft/mob/ziglin/zpigangry4.ogg"
+$random Minecraft/Ziglin/Angry
+{
+	Minecraft/Ziglin/Angry1
+	Minecraft/Ziglin/Angry2
+	Minecraft/Ziglin/Angry3
+	Minecraft/Ziglin/Angry4
+}
+
+$limit Minecraft/Ziglin/Angry 0
+$PitchSet Minecraft/Ziglin/Angry 0.7 1.3
+$Rolloff Minecraft/Ziglin/Angry 400 2400
+
+Minecraft/Ziglin/Pain1		"Sounds/Minecraft/mob/ziglin/zpighurt1.ogg"
+Minecraft/Ziglin/Pain2		"Sounds/Minecraft/mob/ziglin/zpighurt2.ogg"
+$random Minecraft/Ziglin/Pain
+{
+	Minecraft/Ziglin/Pain1
+	Minecraft/Ziglin/Pain2
+}
+
+$limit Minecraft/Ziglin/Pain 0
+$PitchSet Minecraft/Ziglin/Pain 0.7 1.3
+
+Minecraft/Ziglin/Death		"Sounds/Minecraft/mob/ziglin/zpigdeath.ogg"
+$limit Minecraft/Ziglin/Death 0
+$PitchSet Minecraft/Ziglin/Death 0.7 1.3
+
+
+//==============================================================================
+// Blaze
+//==============================================================================
+
+Minecraft/Blaze/Breath1	"Sounds/Minecraft/mob/blaze/breath1.ogg"
+Minecraft/Blaze/Breath2	"Sounds/Minecraft/mob/blaze/breath2.ogg"
+Minecraft/Blaze/Breath3	"Sounds/Minecraft/mob/blaze/breath3.ogg"
+Minecraft/Blaze/Breath4	"Sounds/Minecraft/mob/blaze/breath4.ogg"
+Minecraft/Blaze/Death	"Sounds/Minecraft/mob/blaze/death.ogg"
+Minecraft/Blaze/Hit1	"Sounds/Minecraft/mob/blaze/hit1.ogg"
+Minecraft/Blaze/Hit2	"Sounds/Minecraft/mob/blaze/hit2.ogg"
+Minecraft/Blaze/Hit3	"Sounds/Minecraft/mob/blaze/hit3.ogg"
+Minecraft/Blaze/Hit4	"Sounds/Minecraft/mob/blaze/hit4.ogg"
+
+$random Minecraft/Blaze/Idle
+{
+	Minecraft/Blaze/Breath1
+	Minecraft/Blaze/Breath2
+	Minecraft/Blaze/Breath3
+	Minecraft/Blaze/Breath4
+}
+
+$random Minecraft/Blaze/Pain
+{
+	Minecraft/Blaze/Hit1
+	Minecraft/Blaze/Hit2
+	Minecraft/Blaze/Hit3
+	Minecraft/Blaze/Hit4
+}
+
+$limit Minecraft/Blaze/Pain 0
+$limit Minecraft/Blaze/Idle 0
+$limit Minecraft/Blaze/Death 0
+
+

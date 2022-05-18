@@ -1,7 +1,0 @@
-Class MCWither : MCBoss
-{
-	Default
-	{
-		MinecraftMonster.MobType M_Undead;
-	}
-}

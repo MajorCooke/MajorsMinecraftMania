@@ -1,0 +1,131 @@
+//$GZDB_Skip
+
+Other/EvilBass1 "Sounds/Evil/EvilBas1.flac"
+Other/EvilBass2 "Sounds/Evil/EvilBas2.flac"
+Other/EvilBass3 "Sounds/Evil/EvilBas3.flac"
+Other/EvilBass4 "Sounds/Evil/EvilBas4.flac"
+Other/EvilBass5 "Sounds/Evil/EvilBas5.flac"
+
+$limit Other/EvilBass1 0
+$limit Other/EvilBass2 0
+$limit Other/EvilBass3 0
+$limit Other/EvilBass4 0
+$limit Other/EvilBass5 0
+
+$pitchset Other/EvilBass1 1
+$pitchset Other/EvilBass2 1
+$pitchset Other/EvilBass3 1
+$pitchset Other/EvilBass4 1
+$pitchset Other/EvilBass5 1
+
+$ambient 101 Other/EvilBass1 point continuous
+$ambient 102 Other/EvilBass2 point continuous
+$ambient 103 Other/EvilBass3 point continuous
+$ambient 104 Other/EvilBass4 point continuous
+$ambient 105 Other/EvilBass5 point continuous
+
+//------------------------------------------------------------------------------
+Minecraft/Nether/Ambience		"Sounds/Minecraft/ambience.ogg"
+Minecraft/Nether/Wastes/Add1	"Sounds/Minecraft/ambient/nether/wastes/addition1.ogg"
+Minecraft/Nether/Wastes/Add2	"Sounds/Minecraft/ambient/nether/wastes/addition2.ogg"
+Minecraft/Nether/Wastes/Add3	"Sounds/Minecraft/ambient/nether/wastes/addition3.ogg"
+Minecraft/Nether/Wastes/Add4	"Sounds/Minecraft/ambient/nether/wastes/addition4.ogg"
+Minecraft/Nether/Wastes/Add5	"Sounds/Minecraft/ambient/nether/wastes/addition5.ogg"
+Minecraft/Nether/Wastes/Add6	"Sounds/Minecraft/ambient/nether/wastes/addition6.ogg"
+Minecraft/Nether/Wastes/Add7	"Sounds/Minecraft/ambient/nether/wastes/addition7.ogg"
+Minecraft/Nether/Wastes/Add8	"Sounds/Minecraft/ambient/nether/wastes/addition8.ogg"
+Minecraft/Nether/Wastes/Add9	"Sounds/Minecraft/ambient/nether/wastes/ground1.ogg"
+Minecraft/Nether/Wastes/Add10	"Sounds/Minecraft/ambient/nether/wastes/ground2.ogg"
+Minecraft/Nether/Wastes/Add11	"Sounds/Minecraft/ambient/nether/wastes/ground3.ogg"
+Minecraft/Nether/Wastes/Add12	"Sounds/Minecraft/ambient/nether/wastes/ground4.ogg"
+Minecraft/Nether/Wastes/Add13	"Sounds/Minecraft/ambient/nether/wastes/mood1.ogg"
+Minecraft/Nether/Wastes/Add14	"Sounds/Minecraft/ambient/nether/wastes/mood2.ogg"
+Minecraft/Nether/Wastes/Add15	"Sounds/Minecraft/ambient/nether/wastes/mood3.ogg"
+Minecraft/Nether/Wastes/Add16	"Sounds/Minecraft/ambient/nether/wastes/mood4.ogg"
+Minecraft/Nether/Wastes/Add17	"Sounds/Minecraft/ambient/nether/wastes/mood5.ogg"
+
+$random Minecraft/Nether/Wastes/Add
+{
+	Minecraft/Nether/Wastes/Add1
+	Minecraft/Nether/Wastes/Add2
+	Minecraft/Nether/Wastes/Add3
+	Minecraft/Nether/Wastes/Add4
+	Minecraft/Nether/Wastes/Add5
+	Minecraft/Nether/Wastes/Add6
+	Minecraft/Nether/Wastes/Add7
+	Minecraft/Nether/Wastes/Add8
+	Minecraft/Nether/Wastes/Add9
+	Minecraft/Nether/Wastes/Add10
+	Minecraft/Nether/Wastes/Add11
+	Minecraft/Nether/Wastes/Add12
+	Minecraft/Nether/Wastes/Add13
+	Minecraft/Nether/Wastes/Add14
+	Minecraft/Nether/Wastes/Add15
+	Minecraft/Nether/Wastes/Add16
+	Minecraft/Nether/Wastes/Add17
+}
+
+$limit Minecraft/Nether/Wastes/Add 0
+$pitchshift Minecraft/Nether/Wastes/Add 0.7 1.3
+
+Minecraft/Nether/Valley/Mood1	"Sounds/Minecraft/ambient/nether/valley/mood1.ogg"
+Minecraft/Nether/Valley/Mood2	"Sounds/Minecraft/ambient/nether/valley/mood2.ogg"
+Minecraft/Nether/Valley/Mood3	"Sounds/Minecraft/ambient/nether/valley/mood3.ogg"
+Minecraft/Nether/Valley/Mood4	"Sounds/Minecraft/ambient/nether/valley/mood4.ogg"
+Minecraft/Nether/Valley/Sand1	"Sounds/Minecraft/ambient/nether/valley/sand1.ogg"
+Minecraft/Nether/Valley/Sand2	"Sounds/Minecraft/ambient/nether/valley/sand2.ogg"
+Minecraft/Nether/Valley/Sand3	"Sounds/Minecraft/ambient/nether/valley/sand3.ogg"
+Minecraft/Nether/Valley/Voices1	"Sounds/Minecraft/ambient/nether/valley/voices1.ogg"
+Minecraft/Nether/Valley/Voices2	"Sounds/Minecraft/ambient/nether/valley/voices2.ogg"
+Minecraft/Nether/Valley/Voices3	"Sounds/Minecraft/ambient/nether/valley/voices3.ogg"
+Minecraft/Nether/Valley/Voices4	"Sounds/Minecraft/ambient/nether/valley/voices4.ogg"
+Minecraft/Nether/Valley/Voices5	"Sounds/Minecraft/ambient/nether/valley/voices5.ogg"
+Minecraft/Nether/Valley/Wind1	"Sounds/Minecraft/ambient/nether/valley/wind1.ogg"
+Minecraft/Nether/Valley/Wind2	"Sounds/Minecraft/ambient/nether/valley/wind2.ogg"
+Minecraft/Nether/Valley/Wind3	"Sounds/Minecraft/ambient/nether/valley/wind3.ogg"
+Minecraft/Nether/Valley/Wind4	"Sounds/Minecraft/ambient/nether/valley/wind4.ogg"
+
+$random Minecraft/Nether/Valley/Mood
+{
+	Minecraft/Nether/Valley/Mood1
+	Minecraft/Nether/Valley/Mood2
+	Minecraft/Nether/Valley/Mood3
+	Minecraft/Nether/Valley/Mood4
+}
+
+$random Minecraft/Nether/Valley/Sand
+{
+	Minecraft/Nether/Valley/Sand1
+	Minecraft/Nether/Valley/Sand2
+	Minecraft/Nether/Valley/Sand3
+}
+
+$random Minecraft/Nether/Valley/Voices
+{
+	Minecraft/Nether/Valley/Voices1
+	Minecraft/Nether/Valley/Voices2
+	Minecraft/Nether/Valley/Voices3
+	Minecraft/Nether/Valley/Voices4
+	Minecraft/Nether/Valley/Voices5
+}
+
+$random Minecraft/Nether/Valley/Wind
+{
+	Minecraft/Nether/Valley/Wind1
+	Minecraft/Nether/Valley/Wind2
+	Minecraft/Nether/Valley/Wind3
+	Minecraft/Nether/Valley/Wind4
+}
+
+$limit Minecraft/Nether/Valley/Mood 0
+$limit Minecraft/Nether/Valley/Sand 0
+$limit Minecraft/Nether/Valley/Voices 0
+$limit Minecraft/Nether/Valley/Wind 0
+
+$pitchset Minecraft/Nether/Valley/Mood 0.75 1.25
+$pitchset Minecraft/Nether/Valley/Sand 0.75 1.25
+$pitchset Minecraft/Nether/Valley/Voices 0.75 1.25
+$pitchset Minecraft/Nether/Valley/Wind 0.75 1.25
+
+$ambient 106 Minecraft/NetherPortal/Idle point random 2.0 8.0
+$ambient 107 Minecraft/Nether/Wastes/Add point random 15.0 30.0

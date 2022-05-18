@@ -5,6 +5,450 @@
 // 
 //==============================================================================
 
-Class MCBlaze : MinecraftMonster
+Class TM_Blaze : TM_Monster
 {
+	enum ELimbs
+	{
+		Head = 0,
+		Rod01,
+		Rod02,
+		Rod03,
+		Rod04,
+		Rod05,
+		Rod06,
+		Rod07,
+		Rod08,
+		Rod09,
+		Rod10,
+		Rod11,
+		Rod12,
+		LimbCount
+	}
+	
+	const _Radius = 1.6;
+	const _Height = 6.4;
+	const RealScale = 7.0;
+	const RealRadius = RealScale * _Radius;
+	const RealHeight = RealScale * _Height;
+	const _Speed = 4.0;
+	
+	Default
+	{
+		TM_Monster.Passive false;
+		TM_Monster.CanArmor false;
+		TM_Monster.MaxSightRange 2048;
+		TM_Monster.MislRange 2048;
+		TM_Monster.SightTimeOut 0;
+		
+		
+		Scale RealScale;
+		Radius RealRadius;
+		Height RealHeight;
+		Health 150;
+		Speed _Speed;
+		Mass 200;
+		MeleeRange RealRadius + 8;
+		FloatSpeed 1.0;
+	
+		Obituary "%o was made extra crispy by a Blaze.";
+		HitObituary "%o was pimp smacked a few too many times by a Blaze's rods.";
+		
+		DamageFactor "Falling", 0.0;
+		DamageFactor "Fire", 0.0;
+		DamageFactor "Slime", 0.0;
+		DamageFactor "Snowball", 1.0;
+		TM_Monster.DrownTimer 1; // Instantly start taking damage from water sectors.
+		
+		ActiveSound "Minecraft/Blaze/Idle";
+		PainSound "Minecraft/Blaze/Pain";
+		DeathSound "Minecraft/Blaze/Death";
+		
+		+NOGRAVITY
+		+FLOAT
+		+DROPOFF
+		+NOBLOOD
+		+BRIGHT
+		MaxStepHeight 0;
+		Tag "Blaze";
+	}
+	
+	override bool CanWaterDamage() { return true; }
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		double 	Layer1Z = 4,
+				Layer2Z = 3.2,
+				Layer3Z = 1.6;
+		
+		InsertLimb('TM_BlazeHead', Head, (0, 0, 4.7));		
+		InsertLimb('TM_BlazeRod', Rod01, (0, 0, Layer1Z), true);
+		InsertLimb('TM_BlazeRod', Rod02, (0, 0, Layer1Z), true);
+		InsertLimb('TM_BlazeRod', Rod03, (0, 0, Layer1Z), true);
+		InsertLimb('TM_BlazeRod', Rod04, (0, 0, Layer1Z), true);
+		InsertLimb('TM_BlazeRod', Rod05, (0, 0, Layer2Z), true);
+		InsertLimb('TM_BlazeRod', Rod06, (0, 0, Layer2Z), true);
+		InsertLimb('TM_BlazeRod', Rod07, (0, 0, Layer2Z), true);
+		InsertLimb('TM_BlazeRod', Rod08, (0, 0, Layer2Z), true);
+		InsertLimb('TM_BlazeRod', Rod09, (0, 0, Layer3Z), true);
+		InsertLimb('TM_BlazeRod', Rod10, (0, 0, Layer3Z), true);
+		InsertLimb('TM_BlazeRod', Rod11, (0, 0, Layer3Z), true);
+		InsertLimb('TM_BlazeRod', Rod12, (0, 0, Layer3Z), true);
+		
+	}
+	
+	override void Die(Actor s, Actor i, int f, Name mod)
+	{
+		if (Flame)	Flame.Destroy();
+		Super.Die(s, i, f, mod);
+	}
+	
+	override void DestroyLimbs()
+	{
+		if (Flame)	Flame.Destroy();
+		Super.DestroyLimbs();
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		Drops.Add('TM_PearlAmmo', irandom(10,20));
+		int rng = irandom(1,2);
+		
+		Switch(rng)
+		{
+			
+			Case 1: Drops.Add('TM_PearlHealth', irandom(10,20));	break;
+			Case 2: Drops.Add('TM_PearlArmor', irandom(10,20));	break;
+		}
+		return Super.DropItems(src, inf, mod);
+		
+	}
+	
+	
+	private double RodAng[3];
+	private void TurnRods()
+	{
+		RodAng[0] = ((RodAng[0] + 10) % 360);
+		RodAng[1] = -((abs(RodAng[1]) + 5) % 360);		
+		RodAng[2] = ((RodAng[2] + 2.5) % 360);
+		
+		double ang = RodAng[0];
+		for (int i = Rod01; i <= Rod12; i++)
+		{
+			if (!Limb[i])	continue;
+			int j = int(floor(Max(0, i-1) / 4));
+			int k = i % 4;
+			ang = RodAng[j] + (90 * k);
+			double 				dis = 2.0;
+				 if (i > Rod08)	dis = 0.5;
+			else if (i > Rod04)	dis = 1.0;
+			Vector3 newpos = level.Vec3Diff(pos, Vec3Angle(dis, ang));
+			Limb[i].SetAbsOffsets(newpos);
+			Limb[i].Angle = Angle;
+			Limb[i].Pitch = 0;
+			ang += 90;
+		}
+		
+		if (Flame)	Flame.SetOrigin(pos, !bDONTINTERPOLATE);
+	}
+	
+	override void Deactivate(Actor activator)
+	{
+		if (Flame)	Flame.bINVISIBLE = true;
+		Super.Deactivate(activator);
+	}
+	
+	const TotalCap = Second * 8;
+	const ChargeCap = Second * 3;
+	const ChargeCD = -Second * 5;
+	const ShotCD = 11;
+	
+	private int AttackCharge, Shots;
+	private bool DoCharge;
+	private Actor Flame;
+	
+	private bool ChargeReady() const	
+	{
+		return (AttackCharge >= ChargeCap);	
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		
+		if (bKILLED || bDORMANT || IsFrozen())
+		{	Super.Tick();	return;		}
+		
+		TurnRods();
+		
+		Super.Tick();
+		
+		if ((DoCharge || AttackCharge < 0) && AttackCharge < ChargeCap)
+		{
+			AttackCharge++;
+		}
+		
+		
+		
+		if (!(Vel ~== (0,0,0)))
+		{
+			vel *= 0.90625 * friction;
+			if (vel.Length() <= 0.0625)
+				vel = (0,0,0);
+		}
+		
+		if (!Target)
+		{
+			if (pos.Z > floorz + 16)
+				SetZ(pos.Z - 1);
+		}
+	}
+	
+	private void SetFlame(bool on)
+	{
+		if (on)
+		{
+			if (!Flame || Flame.bDESTROYED)
+			{
+				Flame = Spawn('TM_ActorFlame', pos, ALLOW_REPLACE);
+				
+				if (Scale.X != 0.0 && Scale.Y != 0.0)
+				{
+					Flame.Scale = ( // Based on image dimensions.
+						//TM_GlobalMaths.RemapRange(Scale.X, 0, 64, 0, Radius),
+						//TM_GlobalMaths.RemapRange(Scale.Y, 0, 64, 0, Height));
+						Radius * 2 / 64,
+						Height * 2 / 64);
+				}
+				else Flame.bINVISIBLE = true;
+			}
+		}
+		else if (Flame)
+			Flame.Destroy();
+		
+	}
+	
+	
+	
+	private void SetCharging(bool on)
+	{
+		if (DoCharge != on)
+		{
+			Shots = AttackCharge = 0;
+			DoCharge = on;
+			
+			Speed = (on) ? 0.1 : Default.Speed;
+			SetFlame(on);
+		}
+		
+	}
+	
+	private bool FireCharge()
+	{
+		if (!Targetable(Target))
+			return false;
+		
+		
+		Vector3 poz = (0,0,0);
+		let h = GetHead();
+		if (h)	poz = h.pos;
+		
+		let fc = Spawn('TM_FireCharge', poz, ALLOW_REPLACE);
+		if (fc)
+		{
+			fc.Target = self;
+			A_FaceTarget(0, 0, 0, 0, FAF_BOTTOM, Target.Height * 0.75);
+			Vector3 APR = (Angle, Pitch, Roll);
+			let Turner = new('TM_QuatTurner');
+			Vector3 RNG = (FFRandom(-2.5, 2.5), ffrandom(-2.5, 2.5), 0);
+			APR = Turner.GetTurn2(APR, RNG);
+			fc.Vel3DFromAngle(fc.Speed, APR.X, APR.Y);
+		}
+		
+	//	A_SpawnProjectile('TM_FireCharge', 32, 0, 0, CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH, pitch);
+		return true;
+	}
+	
+	
+	
+	private void BlazeChase()
+	{
+		if (!ValidateTarget(true, MislRange, VTF_Chase))
+		{
+			EnterIdle();
+			return;
+		}
+		
+		A_FaceTarget(0, 0, z_ofs: Target.pos.z + Target.height * 0.75);
+		
+		double _z = pos.z;
+		double _s = speed;
+		
+		double dist = Distance3D(Target);
+		bool sight = CheckSight(Target, CSFlags); 
+	//	[sight, dist] = CheckTrace(Target, MislRange * 2);
+		
+		
+		if (sight)
+		{
+			if (dist <= MeleeRange && AttackCharge < 0)
+			{
+				DoMelee(20);
+			}
+		}
+		if (dist > MislRange * 0.5)
+		{
+			if (DoTryMove(speed, angle))
+				SetZ(pos.z + (-sin(pitch) * speed));
+			else if (!sight)
+			{
+				AlignMoveDir();
+				A_Chase(null, null);
+			}
+		}
+		if (Pos.Z < Target.Pos.Z)
+			SetZ(Pos.Z + FloatSpeed);
+		else if (Pos.Z > Target.Pos.Z + Target.Height + 32)
+			SetZ(Pos.Z - FloatSpeed);
+		
+		if (sight && ChargeReady() && FireCharge())
+		{
+			if (++Shots < 3)
+				AttackCharge -= ShotCD;
+			else
+			{
+				AttackCharge = ChargeCD;
+				Shots = 0;
+			}
+			
+		}
+		
+		if (Flame)
+			Flame.bINVISIBLE = (AttackCharge < 0);
+		
+	}
+	
+	override void EnterSee() 
+	{ 
+		SetCharging(true);
+		Super.EnterSee();
+	}
+	override void EnterIdle() 
+	{
+		SetCharging(false);
+		Super.Enteridle();
+	}
+	
+	States
+	{
+	See:
+		---- A 1 
+		{
+			SetCharging(true);
+			BlazeChase();
+		}
+		Wait;
+	}
 }
+
+
+
+Class TM_FireCharge : TM_Projectile
+{
+	const HOffset = 0.45;
+	const RealDamage = 10;
+	Actor Owner, Flame, Hitbox;
+	int Timer;
+	
+	Property Timer: Timer;
+	Default
+	{
+		TM_FireCharge.Timer Minute;
+		Projectile;
+		Speed 20;
+		Damage 0;
+		Radius 5;
+		Height 10;
+		Scale 0.25;
+		+FORCEXYBILLBOARD
+		+FORCERADIUSDMG
+		+SKYEXPLODE
+		+EXPLODEONWATER
+		+HITTRACER
+		+BRIGHT
+		DamageType "Fire";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+			
+		Flame = Spawn('TM_GhastFire', pos + (0,0,Height * HOffset));
+		if (Flame)	
+		{
+			Flame.Master = self;
+			Flame.Scale.X *= Scale.X;
+			Flame.Scale.Y *= Scale.Y;
+		}
+		
+		GetEvent();
+	}
+	
+	void DestroyOthers()
+	{
+		if (Flame)	Flame.Destroy();
+	}
+	
+	override void OnDestroy()
+	{
+		DestroyOthers();
+		Super.OnDestroy();
+	}
+	void MoveParts()
+	{
+		if (bKILLED)	return;
+			
+		if (Flame)	Flame.Warp(self, -1, 0, Height * 0.5 * Scale.X, flags: WARPF_NOCHECKPOSITION|WARPF_INTERPOLATE);
+		
+		if (Timer > 0 && --Timer < 1)
+			SetState(ResolveState("Death"));
+	}
+	
+	
+	States
+	{
+	Spawn:
+		X216 G 1 NoDelay A_StartSound("Minecraft/Ghast/Fireball", CHAN_BODY, CHANF_OVERLAP);
+		---- A 1 MoveParts();
+		Wait;
+	Death:
+		TNT1 A 35
+		{
+			bNOINTERACTION = bINVISIBLE = true;
+			DestroyOthers();
+			GetEvent();
+			if (Tracer)
+			{
+				if (Tracer is 'TM_Block')
+					Tracer.DamageMobj(self, Target, 10, DamageType);
+				else if (Event) Event.GiveStatus(Tracer, Target, 'TM_OnFireEffect', 35 * 3);
+			}
+			else
+			{
+				if (pos.Z <= FloorZ)
+					SetZ(FloorZ + 1);
+				if (Event)	Event.SpawnFireBlock(Target, Self, pos);
+			}
+		}
+		Stop;
+	}
+}
+
+
+
+Class TM_BlazeHead : TM_BodyPartHead {}
+Class TM_BlazeRod : TM_BodyPart {}
+
+Class TM_BlazeHeadGib : TM_BodyPartGib {}
+Class TM_BlazeRodGib : TM_BodyPartGib {}

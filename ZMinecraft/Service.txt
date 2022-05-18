@@ -1,0 +1,252 @@
+/*==============================================================================
+
+Ammo Service Class
+
+Used to adjust weighted chance of certain ammo types. A weight of 0 blacklists
+that ammo type from being given upon pickup.
+
+See Docs/Compat/AmmoPearls.txt for more information, including setup and 
+important notes.
+
+==============================================================================*/
+
+Class TM_AmmoService : Service
+{
+	static const Name lines[] =
+	{	
+		// Blacklists D4D's Carrion ammo. No extra parameters needed.
+		// Remember, a comma is required after each line except the last.
+		"D4Carrion	| Weight:0"
+	};
+	
+	// Remember not to modify anything else below. Internally, the game repeats
+	// sending "GetAmmoInfo" until the string returns empty. 
+	override String GetString(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	override String GetStringUI(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	private String ProcessCmdStr(String req, String str, int i, double d, Object o) const
+	{
+		if (req ~== "GetAmmoInfo")
+		{
+			if (i >= 0 && i < lines.Size())
+				return lines[i];
+		}
+		return "";
+	}
+}
+
+/*==============================================================================
+
+Fluid Service Class
+
+Defines what textures are what kind of Fluid, and what effects, if any, should
+be performed.
+
+For now, only used to extinguish fires and damage the water vulnerable. Will be
+expanded upon later to allow using the TM_FluidInfo class for specifying who
+it can damage, how often, and what effects to apply (such as igniting, poison,
+etc.)
+
+The idea is to be able to create a 'terrain' without risking it being overridden.
+
+==============================================================================*/
+/*
+Class TM_FluidService : Service
+{
+	// The following syntax can be used:
+	
+	// TMTEX_Add:<ID>
+	//	Simply adds the textures to the matching collection's ID, indicating 
+	//	it'll be counted as water. A name is needed to identify the type.
+	
+	// TMTEX_Replace:[ID1|ID2]
+	//	Indicates what definitions to replace after adding them and will swap out
+	//	their names. I.e. "FWATER1|FBLOOD1" will switch out FWATER1 to FBLOOD1.
+	//	Adding an ID
+	
+	// TMTEX_Remove:[ID]
+	//	Removes the subsequent textures. If ID is included, tries to
+	//	remove it from that specific ID.
+	
+	// TMTEX_Done:
+	//	Indicates the texture name manipulation is complete. In general, shouldn't
+	//	be needed.
+	
+	
+	static const Name lines[] =
+	{
+		"TMTEX_Add:Water", 
+		"FWATER1",
+		"FWATER2",
+		"FWATER3",
+		"FWATER4"
+	};
+	
+	// Remember not to modify anything else below.
+	override String GetString(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	override String GetStringUI(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdStr(req, str, i, d, o);	}
+	
+	private String ProcessCmdStr(String req, String str, int i, double d, Object o) const
+	{
+		if (req ~== "GetFluidInfo")
+		{
+			if (i >= 0 && i < lines.Size())
+				return lines[i];
+		}
+		return "";
+	}
+}
+
+enum TM_ECmds
+{
+	TMTEX_Add = 1,
+	TMTEX_Remove
+};
+
+extend Class TM_Handler
+{
+	private Array<TM_FluidInfo> Fluidef;
+	
+	private void SetupFluids()
+	{
+		for (int i = 0; i < Fluidef.Size(); i++)
+		{
+			if (Fluidef[i]) Fluidef[i].Destroy();
+		}
+		Fluidef.Clear();
+		
+		int Command = 0;
+		
+		// Find all services and iterate through them.
+		let it = ServiceIterator.Find("TM_FluidService");
+		Service LServ;
+		while (LServ = it.Next())
+		{
+			String ret = ".";
+			
+			do
+			{
+				ret = LServ.GetString("GetFluidInfo", "", i++);
+				if (ret.Length() < 1)
+				{
+				//	Console.Printf("End");
+					break;
+				}
+				
+				// Remove spaces and tabs
+				// Sadly StripRight doesn't replace all spaces/tabs. At least we have
+				// Replace function for that.
+				ret.Replace("	", "");
+				ret.Replace(" ", "");
+				// lowercase all characters
+				ret.MakeLower();
+				
+				if (ret.Length() < 1)
+					break;
+					
+				Name Target = '';
+				TM_FluidInfo TInfo = null;
+				
+				if (ret.IndexOf("tmtex_add") == 0)
+				{
+					Array<String> sub; sub.Clear();
+					ret.Split(sub, ":");
+					
+					if (sub.Size() < 2 || sub[1].Length() < 1)
+					{
+						Console.Printf("ERROR: %s must have a name after a semicolon (i.e. TMTEX_Add:<FluidName>). Skipping.", ret);
+						Command = -1;
+						continue;
+					}
+					
+					Target = sub[1];
+					Command = TMTEX_Add;
+				}
+				else if (ret.IndexOf("tmtex_remove") == 0)
+				{
+					Array<String> sub; sub.Clear();
+					ret.Split(sub, ":");
+					
+					Target = '';
+					if (sub.Size() > 1)
+						Target = sub[1];
+					
+					Command = TMTEX_Remove;
+				}
+				else if (Command > 0)
+				{
+					// Switch the current targeted FluidInfo pointer, if needed.
+					if (Target != '' && (!TInfo || TInfo.FluidName != Target))
+					{
+						TInfo = null;
+						for (int i = 0; i < Fluidef.Size(); i++)
+						{
+							let def = Fluidef[i];
+							if (!def || def.FluidName != Target)
+								continue;
+								
+							TInfo = def;
+							break;
+						}
+						
+						if (!TInfo)
+						{
+							TInfo = new('TM_FluidInfo');
+							TInfo.FluidName = Target;
+							Fluidef.Push(TInfo);
+						}
+					}
+					
+					// We should now have the fluidinfo for manipulating.
+				
+					Switch(Command)
+					{
+						Case TMTEX_Add:
+						{
+							
+							break;
+						}
+						Case TMTEX_Remove:
+						{
+							
+							break;
+						}
+					}
+				}
+				
+				
+			} while (ret.Length() > 0)
+		}
+	}
+}
+
+enum TM_EFluidFlags
+{
+	TEX_WATER =		1,		// Puts out fires
+	TEX_DAMAGE =	1 << 1, // Damages entities
+}
+
+Class TM_FluidInfo
+{
+	Array<Name> Tex;
+	Name FluidName;
+	int Flags;
+	int DamageAmount,
+		DamageInterval;
+	Name DamageType;
+	Array<Class<Actor> > Filter;
+	
+	static TM_FluidInfo Create(Name LName, String TexNames, int flags = 0, 
+		int damage = 0, int timer = 1, name dmgtype = "None")
+	{
+		let lin = new("TM_FluidInfo");
+		return lin;
+	}
+}
+*/

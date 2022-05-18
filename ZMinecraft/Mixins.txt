@@ -19,14 +19,15 @@ mixin Class NormalLimbCount
 mixin Class TM_FastRNG
 {
 	private int FRNGTime;
-	private MC_S7_FastRNG FRNG;
+	private TM_S7_FastRNG FRNG;
 	
 	// Helper function to recreate the generator if called over the age of 10 seconds.
 	private void UpdateFRNG()
 	{
 		if (!FRNG || Level.MapTime - FRNGTime >= Second * 10)	
 		{
-			FRNG = MC_S7_FastRNG.Create();
+			if (FRNG)	FRNG.Destroy();
+			FRNG = TM_S7_FastRNG.Create();
 			FRNGTime = Level.MapTime;
 		}
 	}
@@ -42,5 +43,45 @@ mixin Class TM_FastRNG
 	{
 		UpdateFRNG();
 		return FRNG.GetInt(min, max);
+	}
+}
+
+mixin Class TM_Event
+{
+	TM_Handler Event;
+	
+	void GetEvent()
+	{
+		if (!Event) 	Event = TM_Handler.Fetch();
+	}
+}
+
+mixin Class TM_Functions
+{
+	double Middle()	{	return pos.z + height * 0.5;	}
+	double Top()	{	return pos.Z + height;			}
+	Vector3 MidPos() { return pos + (0, 0, Middle() - pos.z);	}
+	Vector3 TopPos() { return pos + (0, 0, Top() - pos.z);		}
+
+	int Explode(bool sfx = true,
+		int damage = -1, int radius = -1, int full = 0,
+		double thrust = -1, double trad = -1, int tfull = -1,
+		int flags = XF_HURTSOURCE, int radflags = 0,
+		bool alert = false, Name DamageType = 'None',
+		Class<Actor> filter = null, int eflags = EXF_PARENT)
+	{
+		if (radius > 0.0 && sfx)
+		{
+			let exp = Spawn('TM_Explosion', MidPos(), ALLOW_REPLACE);
+			if (exp)
+			{
+				exp.A_SetScale(radius);
+			}
+		}
+		Actor source = Target;
+		if (bISMONSTER) source = self;
+		
+		return TM_Global.Explode(self, source, damage, radius, full, thrust, 
+			trad, tfull, flags, radflags, alert, DamageType, filter, eflags);
 	}
 }

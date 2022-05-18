@@ -7,9 +7,25 @@
 //==============================================================================
 //==============================================================================
 
-
-Class MCBodyPartAttachment : MCBodyPart 
+/*
+Class TM_BodyPartAttachment : TM_BodyPart abstract
 {
+	private double AttX, AttY, AttZ;
+	Vector3 AttachPos;	// Attachment Position
+	
+	
+	Property Offset: AttX, AttY, AttZ;
+	Default
+	{
+		TM_BodyPart.Offset 0, 0, -1.6;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		AttachPos = (AttX, AttY, AttZ);
+	}
+
 	// Since this is being handled by a limb, we do not want to process anything
 	// else. The limb will handle the positioning of both itself and this.
 	override void Tick()
@@ -19,40 +35,219 @@ Class MCBodyPartAttachment : MCBodyPart
 	
 	override void DoPreMotion() {}
 	override void DoMotion() {}
-}
-
-
-Class MCSword : MCBodyPartAttachment 
-{
+	override void UpdateScales(double OverScale, Vector2 Scale)
+	{
+		Super.UpdateScales(OverScale, Scale);
+		AttachPos.XY = (AttX, AttY) * Scale.X;
+		AttachPos.Z  = AttZ * Scale.Y;
+	}
+	override void SetAttachPos(Vector3 APR, bool snap, int i)
+	{
+		Super.SetAttachPos(APR, snap, i);
+		AttachPos.XY = APR.XY * Scale.X;
+		AttachPos.Z = APR.Z * Scale.Y;
+	}
 	
+	States
+	{
+	Spawn:
+		ASDF A -1;
+		Stop;
+	}
 }
-Class MCBow : MCBodyPartAttachment	
+*/
+
+extend class TM_Monster
+{
+	virtual void SpawnWeapon()
+	{
+		int chances[WR_ArmR + 1];
+		for (int i = WR_ArmL; i <= WR_ArmR; i++)
+		{
+			chances[i] = irandom(0,200);
+			
+			if (chances[i] <= 100)
+			{
+				int frm = AT_Chainmail;
+					 if (chances[i] < 10)	frm = AT_Netherite;
+				else if (chances[i] < 25)	frm = AT_Diamond;
+				else if (chances[i] < 40)	frm = AT_Gold;
+				else if (Chances[i] < 60)	frm = AT_Iron;
+				
+				SetArmor(i, frm);
+			}			
+		}
+	}
+	
+	virtual void SpawnArmor()
+	{
+		int chances[AR_Max + 1];
+		for (int i = AR_Min; i <= AR_Max; i++)
+		{
+			chances[i] = irandom(0,200);
+			
+			if (chances[i] <= 100)
+			{
+				int frm = AT_Chainmail;
+					 if (chances[i] < 10)	frm = AT_Netherite;
+				else if (chances[i] < 25)	frm = AT_Diamond;
+				else if (chances[i] < 40)	frm = AT_Gold;
+				else if (Chances[i] < 60)	frm = AT_Iron;
+				
+				SetArmor(i, frm);
+			}			
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
+Class TM_Armor : TM_BodyPart abstract
+{
+	meta bool CountArmorInv;
+	double Factor;
+	
+	// How much % damage to absorb/enhance. Negative reduces, positive increases.
+	Property Factor: Factor;
+	// Recorded as part of ArmorInv. Keeps things clean with less to process.
+	Property CountArmorInv: CountArmorInv;
+	Default
+	{
+		TM_Armor.CountArmorInv true;
+		TM_Armor.Factor 0.0;
+		TM_BodyPart.IsStill true;
+	}
+	override bool, TM_Armor SetArmor(int slot, int type)
+	{
+		return false, null;
+	}
+	
+	virtual double AdjustFactor(double fac, bool score = false)
+	{
+	//	if (score && fac <= 0.0 && Factor > 0.0 && CountArmorInv)	fac = 1.0;
+		
+		fac += factor + (factor * min(4, double(frame)));
+		return fac;
+	}
+	
+	override int DoSpecialDamage(Actor target, int damage, Name damagetype)
+	{
+		return damage;
+	}
+}
+
+//==============================================================================
+// Tools/Weapons
+//==============================================================================
+Class TM_Tool : TM_Armor abstract 
+{
+	meta bool Ranged;
+	Property Ranged: Ranged;
+}
+Class TM_ToolRanged : TM_Tool abstract
+{
+	Default
+	{
+		TM_Tool.Ranged true;
+	}
+}
+
+Class TM_Sword : TM_Tool 
+{	
+	Default 
+	{	
+		TM_BodyPart.Offsets 1.4, 0, -2.1;
+		TM_Armor.Factor 0.30;	
+	}	
+}
+Class TM_Axe : TM_Tool 
+{	
+	Default
+	{
+		TM_BodyPart.Offsets 0.6, 0, -2.1;
+	}
+	override double AdjustFactor(double fac) {	return fac * 3;	}	
+}
+
+Class TM_Bow : TM_ToolRanged
 {
 	enum EType
 	{
 		Fr_Normal = 0,
 		Fr_Fancy
 	};
-
+	
 	Default
 	{
-		
+		TM_Tool.Ranged true;
 	}
+	
+	
+	
+//	override Class<Actor> GetMissileClass()	{	return 'TM_ArrowProjectile';	}
+	
 	States
 	{
 	Spawn:
-		ASDF A -1;
-	Fancy:
-		ASDF B -1;
+		ASDF ABCD -1;
 		Stop;
 	}
 }
 
-Class MCBowGib : MCBodyPartGib
+Class TM_Crossbow : TM_ToolRanged
+{}
+
+//==============================================================================
+// Armors
+//==============================================================================
+
+Class TM_ArmorHead : TM_Armor {	Default {	TM_Armor.Factor -0.03;	}	}
+Class TM_ArmorArmL : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
+Class TM_ArmorArmR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
+Class TM_ArmorChest : TM_Armor {	Default {	TM_Armor.Factor -0.1;	}	}
+Class TM_ArmorPants : TM_Armor {	Default {	TM_Armor.Factor -0.04;	}	}
+Class TM_ArmorLegL : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
+Class TM_ArmorLegR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
+Class TM_ArmorBootL : TM_Armor {	Default {	TM_Armor.Factor -0.02;			/*TM_BodyPart.Offsets 0, 0, -1.9;*/ 	}}
+Class TM_ArmorBootR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	/*TM_BodyPart.Offsets 0, 0, -1.9;*/	}}
+
+
+
+Class TM_AttachGib : TM_BodyPartGib abstract
 {
 	Default
 	{
-		MCBodyPartGib.EndPitch 0;
-		MCBodyPartGib.EndRoll 90;
+		TM_BodyPartGib.EndPitch 0;
+		TM_BodyPartGib.EndRoll 90;
 	}
 }
+
+Class TM_SwordGib : TM_AttachGib	{	}
+Class TM_AxeGib : TM_AttachGib 		{	}
+Class TM_BowGib : TM_AttachGib 		{	}
+
+Class TM_ArmorGib : TM_AttachGib
+{
+	Default
+	{
+		TM_BodyPartGib.EndRoll 90;
+		TM_BodyPartGib.EndPitch -90;	
+	}
+}
+
+// Head Z: 		-.81
+// Arm			0.93
+// Torso Z: 	0
+// Leg L:		0,		-.045,	-.77
+// Leg R:		0,		0.045,	-.77
+// Pants:		0,		0,		-.85
+// Boot:		0,		0,		0
+
+Class TM_ArmorHeadGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, -0.81;	}	}
+Class TM_ArmorArmLGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, 0.93;	}	}
+Class TM_ArmorArmRGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, 0.93;	}	}
+Class TM_ArmorChestGib : TM_ArmorGib {	}
+Class TM_ArmorPantsGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, 0.85;	}	}
+Class TM_ArmorLegLGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, -.045, 0.77;	}	}
+Class TM_ArmorLegRGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.045, 0.77;	}	}
+Class TM_ArmorBootLGib : TM_ArmorGib {	}
+Class TM_ArmorBootRGib : TM_ArmorGib {	}

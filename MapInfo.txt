@@ -1,4 +1,4 @@
 GameInfo
 {
-	AddEventHandlers = "MinecraftHandler"
+	AddEventHandlers = "TM_Handler"
 }

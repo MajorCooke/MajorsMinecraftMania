@@ -1,0 +1,57 @@
+================================================================================
+	Passive Items
+================================================================================
+These items have no functionality outside of simply being collected and cannot
+be selected or used.
+
+	* Resource Pearls *
+Special pearls drop from different monsters. The pearls are:
+
+- Health Pearls -
+Blue cross pearls that restore health, acting like item bonuses.
+
+- Armor Pearls -
+Green shield pearls that give armor, also as item bonuses. 
+
+These give BLUE armor types, allowing players to fair better against hordes of 
+enemies, and will automatically convert armors to the strongest variant in the
+game.
+
+- Ammo Pearls -
+Yellow pearls that give ammo of a random type. Randomness is determined by the
+max amount that can be carried. The greater the amount, the higher chance to
+add to it.
+
+Ammo types are excluded if they are:
+- Maxed out (Full)
+- Without a weapon which consumes them
+
+This will ensure the player is always getting ammo evenly distributed throughout
+their current arsenal for fairness.
+
+================================================================================
+	Active Items
+================================================================================
+
+These items can be activated via the inventory.
+
+	* TNT *
+
+Behaving similarly to Minecraft, these blocks will explode after a short activation
+delay, or an even shorter fuse when shot or detonated with explosive damage.
+
+Any damage from the player will trigger a quick detonation. Only certain damage
+types from monsters can set off the TNT as well (primarily explosions).
+
+BLOCK mode allows players to place them almost anywhere they wish. Can even jump
+on them or build bridges out of them. Just pray a cyberdemon isn't around to
+troll.
+
+Deals maximum 200 damage to players, 1000 to everything else.
+
+TOSS mode immediately throws ignited TNT blocks that will explode shortly after.
+
+Sub Mode is the timer, cycling between 1 and 4 seconds. Each cycle adds a second.
+When at 4, goes back to 1. Use the keybinds in the Minecraft menu to switch (sub)
+modes.
+

@@ -1,0 +1,207 @@
+// This is only done to stop console spam with 'developer 2' mode.
+Sprite ASDFA0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFB0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFC0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFD0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFE0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFF0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFG0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFH0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFI0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFJ0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFK0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFL0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFM0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFN0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFO0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFP0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFQ0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFR0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFS0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFT0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFU0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFV0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFW0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFX0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFY0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+Sprite ASDFZ0, 1, 1 { Patch TNT1A0, 0, 0 {}}
+
+// TNT Icon
+Graphic "TMTNTIcon", 128, 128 
+{ 
+	Patch "Materials/Blocks/TNT.png", 0, 0 {} 
+	XScale 5.0 
+	YScale 5.0 
+}
+
+/*
+NoTrim X208A0
+NoTrim X208B0
+NoTrim X208C0
+NoTrim X208D0
+NoTrim X208E0
+NoTrim X208F0
+NoTrim X208G0
+NoTrim X208H0
+NoTrim X208I0
+NoTrim X208J0
+NoTrim X208K0
+NoTrim X208L0
+NoTrim X208M0
+NoTrim X208N0
+NoTrim X208O0
+NoTrim X208P0
+*/
+Graphic "MCEnderPearlIcon", 52, 52
+{
+	Patch X217A0, 0, 0 {}
+}
+
+Graphic "MCEyeOfEnderIcon", 52, 52
+{ 
+	Patch X217B0, 0, 0 {}
+}
+
+Graphic "MCNetherStarIcon", 52, 52
+{ 
+	Patch X217C0, 0, 0 {}
+}
+
+// Used for drawing flames on the player when on fire. These are automatically
+// animated, couldn't be assed to do it any other way.
+
+// Normal Fire
+Graphic "TMFire01", 64, 64 { Patch X209A0, 0, 0 {} }
+Graphic "TMFire02", 64, 64 { Patch X209B0, 0, 0 {} }
+Graphic "TMFire03", 64, 64 { Patch X209C0, 0, 0 {} }
+Graphic "TMFire04", 64, 64 { Patch X209D0, 0, 0 {} }
+Graphic "TMFire05", 64, 64 { Patch X209E0, 0, 0 {} }
+Graphic "TMFire06", 64, 64 { Patch X209F0, 0, 0 {} }
+Graphic "TMFire07", 64, 64 { Patch X209G0, 0, 0 {} }
+Graphic "TMFire08", 64, 64 { Patch X209H0, 0, 0 {} }
+Graphic "TMFire09", 64, 64 { Patch X209I0, 0, 0 {} }
+Graphic "TMFire10", 64, 64 { Patch X209J0, 0, 0 {} }
+Graphic "TMFire11", 64, 64 { Patch X209K0, 0, 0 {} }
+Graphic "TMFire12", 64, 64 { Patch X209L0, 0, 0 {} }
+Graphic "TMFire13", 64, 64 { Patch X209M0, 0, 0 {} }
+Graphic "TMFire14", 64, 64 { Patch X209N0, 0, 0 {} }
+Graphic "TMFire15", 64, 64 { Patch X209O0, 0, 0 {} }
+Graphic "TMFire16", 64, 64 { Patch X209P0, 0, 0 {} }
+Graphic "TMFire17", 64, 64 { Patch X209Q0, 0, 0 {} }
+Graphic "TMFire18", 64, 64 { Patch X209R0, 0, 0 {} }
+Graphic "TMFire19", 64, 64 { Patch X209S0, 0, 0 {} }
+Graphic "TMFire20", 64, 64 { Patch X209T0, 0, 0 {} }
+Graphic "TMFire21", 64, 64 { Patch X209U0, 0, 0 {} }
+Graphic "TMFire22", 64, 64 { Patch X209V0, 0, 0 {} }
+Graphic "TMFire23", 64, 64 { Patch X209W0, 0, 0 {} }
+Graphic "TMFire24", 64, 64 { Patch X209X0, 0, 0 {} }
+Graphic "TMFire25", 64, 64 { Patch X209Y0, 0, 0 {} }
+Graphic "TMFire26", 64, 64 { Patch X209Z0, 0, 0 {} }
+Graphic "TMFire27", 64, 64 { Patch X210A0, 0, 0 {} }
+Graphic "TMFire28", 64, 64 { Patch X210B0, 0, 0 {} }
+Graphic "TMFire29", 64, 64 { Patch X210C0, 0, 0 {} }
+Graphic "TMFire30", 64, 64 { Patch X210D0, 0, 0 {} }
+Graphic "TMFire31", 64, 64 { Patch X210E0, 0, 0 {} }
+Graphic "TMFire32", 64, 64 { Patch X210F0, 0, 0 {} }
+
+// Soul Fire
+Graphic "TMFirs01", 64, 64 { Patch X211A0, 0, 0 {} }
+Graphic "TMFirs02", 64, 64 { Patch X211B0, 0, 0 {} }
+Graphic "TMFirs03", 64, 64 { Patch X211C0, 0, 0 {} }
+Graphic "TMFirs04", 64, 64 { Patch X211D0, 0, 0 {} }
+Graphic "TMFirs05", 64, 64 { Patch X211E0, 0, 0 {} }
+Graphic "TMFirs06", 64, 64 { Patch X211F0, 0, 0 {} }
+Graphic "TMFirs07", 64, 64 { Patch X211G0, 0, 0 {} }
+Graphic "TMFirs08", 64, 64 { Patch X211H0, 0, 0 {} }
+Graphic "TMFirs09", 64, 64 { Patch X211I0, 0, 0 {} }
+Graphic "TMFirs10", 64, 64 { Patch X211J0, 0, 0 {} }
+Graphic "TMFirs11", 64, 64 { Patch X211K0, 0, 0 {} }
+Graphic "TMFirs12", 64, 64 { Patch X211L0, 0, 0 {} }
+Graphic "TMFirs13", 64, 64 { Patch X211M0, 0, 0 {} }
+Graphic "TMFirs14", 64, 64 { Patch X211N0, 0, 0 {} }
+Graphic "TMFirs15", 64, 64 { Patch X211O0, 0, 0 {} }
+Graphic "TMFirs16", 64, 64 { Patch X211P0, 0, 0 {} }
+Graphic "TMFirs17", 64, 64 { Patch X211Q0, 0, 0 {} }
+Graphic "TMFirs18", 64, 64 { Patch X211R0, 0, 0 {} }
+Graphic "TMFirs19", 64, 64 { Patch X211S0, 0, 0 {} }
+Graphic "TMFirs20", 64, 64 { Patch X211T0, 0, 0 {} }
+Graphic "TMFirs21", 64, 64 { Patch X211U0, 0, 0 {} }
+Graphic "TMFirs22", 64, 64 { Patch X211V0, 0, 0 {} }
+Graphic "TMFirs23", 64, 64 { Patch X211W0, 0, 0 {} }
+Graphic "TMFirs24", 64, 64 { Patch X211X0, 0, 0 {} }
+Graphic "TMFirs25", 64, 64 { Patch X211Y0, 0, 0 {} }
+Graphic "TMFirs26", 64, 64 { Patch X211Z0, 0, 0 {} }
+Graphic "TMFirs27", 64, 64 { Patch X212A0, 0, 0 {} }
+Graphic "TMFirs28", 64, 64 { Patch X212B0, 0, 0 {} }
+Graphic "TMFirs29", 64, 64 { Patch X212C0, 0, 0 {} }
+Graphic "TMFirs30", 64, 64 { Patch X212D0, 0, 0 {} }
+Graphic "TMFirs31", 64, 64 { Patch X212E0, 0, 0 {} }
+Graphic "TMFirs32", 64, 64 { Patch X212F0, 0, 0 {} }
+
+// Void Fire
+Graphic "TMFirv01", 64, 64 { Patch X213A0, 0, 0 {} }
+Graphic "TMFirv02", 64, 64 { Patch X213B0, 0, 0 {} }
+Graphic "TMFirv03", 64, 64 { Patch X213C0, 0, 0 {} }
+Graphic "TMFirv04", 64, 64 { Patch X213D0, 0, 0 {} }
+Graphic "TMFirv05", 64, 64 { Patch X213E0, 0, 0 {} }
+Graphic "TMFirv06", 64, 64 { Patch X213F0, 0, 0 {} }
+Graphic "TMFirv07", 64, 64 { Patch X213G0, 0, 0 {} }
+Graphic "TMFirv08", 64, 64 { Patch X213H0, 0, 0 {} }
+Graphic "TMFirv09", 64, 64 { Patch X213I0, 0, 0 {} }
+Graphic "TMFirv10", 64, 64 { Patch X213J0, 0, 0 {} }
+Graphic "TMFirv11", 64, 64 { Patch X213K0, 0, 0 {} }
+Graphic "TMFirv12", 64, 64 { Patch X213L0, 0, 0 {} }
+Graphic "TMFirv13", 64, 64 { Patch X213M0, 0, 0 {} }
+Graphic "TMFirv14", 64, 64 { Patch X213N0, 0, 0 {} }
+Graphic "TMFirv15", 64, 64 { Patch X213O0, 0, 0 {} }
+Graphic "TMFirv16", 64, 64 { Patch X213P0, 0, 0 {} }
+Graphic "TMFirv17", 64, 64 { Patch X213Q0, 0, 0 {} }
+Graphic "TMFirv18", 64, 64 { Patch X213R0, 0, 0 {} }
+Graphic "TMFirv19", 64, 64 { Patch X213S0, 0, 0 {} }
+Graphic "TMFirv20", 64, 64 { Patch X213T0, 0, 0 {} }
+Graphic "TMFirv21", 64, 64 { Patch X213U0, 0, 0 {} }
+Graphic "TMFirv22", 64, 64 { Patch X213V0, 0, 0 {} }
+Graphic "TMFirv23", 64, 64 { Patch X213W0, 0, 0 {} }
+Graphic "TMFirv24", 64, 64 { Patch X213X0, 0, 0 {} }
+Graphic "TMFirv25", 64, 64 { Patch X213Y0, 0, 0 {} }
+Graphic "TMFirv26", 64, 64 { Patch X213Z0, 0, 0 {} }
+Graphic "TMFirv27", 64, 64 { Patch X214A0, 0, 0 {} }
+Graphic "TMFirv28", 64, 64 { Patch X214B0, 0, 0 {} }
+Graphic "TMFirv29", 64, 64 { Patch X214C0, 0, 0 {} }
+Graphic "TMFirv30", 64, 64 { Patch X214D0, 0, 0 {} }
+Graphic "TMFirv31", 64, 64 { Patch X214E0, 0, 0 {} }
+Graphic "TMFirv32", 64, 64 { Patch X214F0, 0, 0 {} }
+
+// Hell Fire
+Graphic "TMFirh01", 64, 64 { Patch X215A0, 0, 0 {} }
+Graphic "TMFirh02", 64, 64 { Patch X215B0, 0, 0 {} }
+Graphic "TMFirh03", 64, 64 { Patch X215C0, 0, 0 {} }
+Graphic "TMFirh04", 64, 64 { Patch X215D0, 0, 0 {} }
+Graphic "TMFirh05", 64, 64 { Patch X215E0, 0, 0 {} }
+Graphic "TMFirh06", 64, 64 { Patch X215F0, 0, 0 {} }
+Graphic "TMFirh07", 64, 64 { Patch X215G0, 0, 0 {} }
+Graphic "TMFirh08", 64, 64 { Patch X215H0, 0, 0 {} }
+Graphic "TMFirh09", 64, 64 { Patch X215I0, 0, 0 {} }
+Graphic "TMFirh10", 64, 64 { Patch X215J0, 0, 0 {} }
+Graphic "TMFirh11", 64, 64 { Patch X215K0, 0, 0 {} }
+Graphic "TMFirh12", 64, 64 { Patch X215L0, 0, 0 {} }
+Graphic "TMFirh13", 64, 64 { Patch X215M0, 0, 0 {} }
+Graphic "TMFirh14", 64, 64 { Patch X215N0, 0, 0 {} }
+Graphic "TMFirh15", 64, 64 { Patch X215O0, 0, 0 {} }
+Graphic "TMFirh16", 64, 64 { Patch X215P0, 0, 0 {} }
+Graphic "TMFirh17", 64, 64 { Patch X215Q0, 0, 0 {} }
+Graphic "TMFirh18", 64, 64 { Patch X215R0, 0, 0 {} }
+Graphic "TMFirh19", 64, 64 { Patch X215S0, 0, 0 {} }
+Graphic "TMFirh20", 64, 64 { Patch X215T0, 0, 0 {} }
+Graphic "TMFirh21", 64, 64 { Patch X215U0, 0, 0 {} }
+Graphic "TMFirh22", 64, 64 { Patch X215V0, 0, 0 {} }
+Graphic "TMFirh23", 64, 64 { Patch X215W0, 0, 0 {} }
+Graphic "TMFirh24", 64, 64 { Patch X215X0, 0, 0 {} }
+Graphic "TMFirh25", 64, 64 { Patch X215Y0, 0, 0 {} }
+Graphic "TMFirh26", 64, 64 { Patch X215Z0, 0, 0 {} }
+Graphic "TMFirh27", 64, 64 { Patch X216A0, 0, 0 {} }
+Graphic "TMFirh28", 64, 64 { Patch X216B0, 0, 0 {} }
+Graphic "TMFirh29", 64, 64 { Patch X216C0, 0, 0 {} }
+Graphic "TMFirh30", 64, 64 { Patch X216D0, 0, 0 {} }
+Graphic "TMFirh31", 64, 64 { Patch X216E0, 0, 0 {} }
+Graphic "TMFirh32", 64, 64 { Patch X216F0, 0, 0 {} }

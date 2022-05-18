@@ -54,7 +54,7 @@ $limit Minecraft/WitherSkeleton/Step 0
 */
 
 
-Class MCSkeleton : MCUndead
+Class TM_Skeleton : TM_Undead
 {
 	const _Radius = 1.6;
 	const _Height = 6.4;
@@ -77,8 +77,8 @@ Class MCSkeleton : MCUndead
 	
 	Default
 	{
-		
-		MCSkeleton.Type S_Normal;
+		TM_Monster.CanArmor true;
+		TM_Skeleton.Type S_Normal;
 		Scale RealScale;
 		Radius RealRadius;
 		Height RealHeight;
@@ -99,37 +99,28 @@ Class MCSkeleton : MCUndead
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
-		if (!Super.DropItems(src, inf, mod))
-			return false;
+		for (int i = 0; i < 4; i++)
+			if (irandom(0,2) == 0)
+				Drops.Add('TM_PearlAmmo', irandom(1,5));
 		
-		int c[4];
-		int end = 2;
-		for (int i = 0; i < end; i++)
-		{
-			if (irandom(1, 4) == 1)	c[0]++;
-			if (irandom(1, 4) == 1)	c[1]++;
-			if (irandom(1, 4) == 1)	c[2]++;
-			if (irandom(1, 4) == 1)	c[3]++;
-		}
-		
-		Event.DropItem(self, 'Shell', c[0]);
-		Event.DropItem(self, 'Clip', c[1]);
-		Event.DropItem(self, 'RocketAmmo', c[2]);
-		Event.DropItem(self, 'Cell', c[3]);
-		
-		return true;
+		return Super.DropItems(src, inf, mod);
 	}
+	
+	
 	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
 		Init(LimbCount);
-		Limb[Head] = MCBodyPart(Spawn('MCSkeletonHead', pos));
-		Limb[Body] = MCBodyPart(Spawn('MCSkeletonBody', pos));
-		Limb[ArmR] = MCBodyPart(Spawn('MCSkeletonArmRight', pos));
-		Limb[ArmL] = MCBodyPart(Spawn('MCSkeletonArmLeft', pos));
-		Limb[LegR] = MCBodyPart(Spawn('MCSkeletonLegRight', pos));
-		Limb[LegL] = MCBodyPart(Spawn('MCSkeletonLegLeft', pos));
+		// Spawn the parts.
+		Limb[Head] = TM_BodyPart(Spawn('TM_SkeletonHead', pos));
+		Limb[Body] = TM_BodyPart(Spawn('TM_SkeletonBody', pos));
+		Limb[ArmR] = TM_BodyPart(Spawn('TM_SkeletonArmRight', pos));
+		Limb[ArmL] = TM_BodyPart(Spawn('TM_SkeletonArmLeft', pos));
+		Limb[LegR] = TM_BodyPart(Spawn('TM_SkeletonLegRight', pos));
+		Limb[LegL] = TM_BodyPart(Spawn('TM_SkeletonLegLeft', pos));
+		
+		// Setup whatever is needed.
 		for (int i = 0; i < Limb.Size(); i++)
 		{
 			let Lim = Limb[i];
@@ -143,6 +134,7 @@ Class MCSkeleton : MCUndead
 			}
 		}
 		
+		// Now set the offsets.
 		Limb[Head].SetPosOffsets((0.0,	0.0, 4.8));
 		Limb[Body].SetPosOffsets((0.0,  0.0, 3.6));
 		Limb[ArmR].SetPosOffsets((0.0,  1.0, 4.4)); //Y is 1.2 for strays.
@@ -150,13 +142,15 @@ Class MCSkeleton : MCUndead
 		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
 		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
 		
-		int pick = randompick(ArmR, ArmL);
-		Limb[pick].SetAttachment('MCBow');
-		
-		UpdateLimbs();
+		SpawnWeapon();
+		SpawnArmor();
 	}
-	
-	
+	private TM_Bow Bow;
+	override void SpawnWeapon()
+	{
+		int pick = randompick(ArmR, ArmL);
+		Bow = TM_Bow(Limb[pick].AddLimb('TM_Bow', (0, 0, -1.6), true));
+	}
 	
 	void SetArmAnimation(StateLabel Next)
 	{
@@ -180,7 +174,7 @@ Class MCSkeleton : MCUndead
 	{
 		Super.AdjustDifficulty();
 		
-		Switch(MCC_AIDifficulty)
+		Switch(TMV_AIDifficulty)
 		{
 			Case Dif_Easy:		ACDif = 0.0;	break;
 			Case Dif_Normal:	ACDif = 0.25;	break;
@@ -189,99 +183,103 @@ Class MCSkeleton : MCUndead
 	}
 	
 	private double AttackCharge, ACDif;
+	const ChargeCap = 80.0; // When it reaches this, release an arrow and reset.
+	const ChargeMin = 30.0; // Min amount of charge needed to show.
+	const ChargeMid = ChargeCap - ChargeMin;
+	const ChargeFrac = ChargeMid * 0.33;
 	void NotchBow()
 	{
+		
 		double dist = 0;
 		if (Targetable(Target))
 			Dist = Distance3DSquared(Target);
 		else AttackCharge = 0;
 		
-		if (Dist > 0.0 && Dist <= ((MeleeRange + 10) ** 2) && CheckSight(Target, SF_IGNOREVISIBILITY|SF_IGNOREWATERBOUNDARY))
+		if (Dist > 0.0 && Dist <= ((MeleeRange + 10) ** 2) && CheckSight(Target, CSFlags))
 		{
 			A_Face(Target, 25, 0, 0, 0, FAF_TOP);
 			
 			double Frac = (1.0 - (Dist / (MeleeRange ** 2)));
 			AttackCharge += Max(1.0, 1.0 + Frac) + ACDif;
 			
-			if (AttackCharge < 30)
+			if (AttackCharge < ChargeMin)
+			{
+				SetBowAnimation(0);
 				SetArmAnimation('Alert');
+			}
 			else
+			{
+				int st = 1;
+				if (AttackCharge > ChargeMin + ChargeFrac * 2)
+					st = 3;
+				else if (AttackCharge > ChargeMin + ChargeFrac)
+					st = 2;
+				SetBowAnimation(st);
 				SetArmAnimation('Charging');
-				
-			if (AttackCharge >= 80)
+			}
+			if (AttackCharge >= ChargeCap)
 			{
 				AttackCharge = 0;
 				FireBow();
+				SetArmAnimation('Alert');
+				SetBowAnimation(0);
 			}
 			
-			// Try to back away from enemies that get too close.
-			if (Dist <= (MeleeRange * 0.5) ** 2)
-			{
-				double _speed = speed;
-				bool nofear = bNOFEAR;
-				bool afraid = bFRIGHTENED;
-				bFRIGHTENED = true;
-				bNOFEAR = false;
-				speed *= 0.5;
-				
-				A_Chase(null, null, CHF_NODIRECTIONTURN|CHF_NOPLAYACTIVE);
-				
-				speed = _speed;
-				bNOFEAR = nofear;
-				bFRIGHTENED = afraid;
-				
-			}
+			BackAway(Target, (MeleeRange * 0.5));
 		}
 		else
 		{
-			SetState(ResolveState('Chasing'));
+			SetState(ResolveState('See'));
 		}
 	}
 	
-	void FireBow(double accuracy = 0.5)
+	// TO DO: Make available for all classes and dependent on weapon.
+	
+	void FireBow()
 	{
 		if (!Targetable(Target)) return;
+		
+	//	let cls = GetMissileClass();
+	//	if (!cls)	return;
 		
 		Vector3 APR = (Angle, Pitch, Roll);
 		A_Face(Target, 0, 0, 0, 0, FAF_BOTTOM, Target.Height * 0.75);
 		Vector3 APR2 = (Angle, Pitch, Roll);
-		Turner = new('MC_QuatTurner');
-		[Angle, Pitch, Roll] = Turner.GetTurnDouble2(APR2, (FFRandom(-5, 5), -FFRandom(0, 10), 0));
-		A_SpawnProjectile('MCArrowProjectile', 32, 0, 0, CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH, pitch);
+		Turner = new('TM_QuatTurner');
+		Vector3 RNG;
+		if (Target is "PlayerPawn")
+			RNG = (FFRandom(-5, 5), -FFRandom(0, 10),0);
+		else
+			RNG = (FFRandom(-2.5, 2.5), -FFRandom(0, 5),0);
+		[Angle, Pitch, Roll] = Turner.GetTurnDouble2(APR2, RNG);
+		A_SpawnProjectile('TM_ArrowProjectile', 32, 0, 0, CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH, pitch);
 		Angle = APR.X;
 		Pitch = APR.Y;
 		Roll = APR.Z;
 	}
 	
+	override void EnterIdle()
+	{
+		AttackCharge = 0;
+		SetArmAnimation('Idle');
+		Super.EnterIdle();
+	}
+	
+	override void EnterSee()
+	{
+		AttackCharge = 0;
+		SetArmAnimation('Alert');
+		Super.EnterSee();
+	}
+	
+	private void SetBowAnimation(int stage)
+	{
+		if (Bow)	Bow.Frame = stage % Fr_E;
+	}
+	
 	States
 	{
-	Spawn:
-		TNT1 AA 35;
-		Goto IdleMove;
-	Idle:
-		TNT1 A 0 
-		{
-			SetArmAnimation('Spawn');
-			AttackCharge = 0;
-			UpdateLimbs();
-			return A_Jump(256, IRandom(1, 4));
-		}
-	Idle2:
-		TNT1 AAAAAAAAAA 17 Look();
-	IdleMove:
-		TNT1 A 0 
-		{
-			LookTimer = 0;
-			return A_Jump(256, IRandom(1, 35*2));
-		}
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 LookWander();
-		Goto Idle;
 	See:
-		TNT1 A 0 SetArmAnimation('Alert');
-	Chasing:
 		TNT1 A 1 
 		{
 			Chase('Melee', null, 0, 30, true);
@@ -294,7 +292,7 @@ Class MCSkeleton : MCUndead
 }
 
 
-Class MCArrowProjectile : MinecraftProjectile	
+Class TM_ArrowProjectile : TM_Projectile	
 {
 	const _Radius = 0.75;
 	const _Height = 0.75;
@@ -302,11 +300,11 @@ Class MCArrowProjectile : MinecraftProjectile
 	const RealRadius = RealScale * _Radius;
 	const RealHeight = RealScale * _Height;
 	
-	private MinecraftMonster Owner;
+	private TM_Monster Owner;
 	Default
 	{
 		Projectile;
-		-NOGRAVITY
+		+NOGRAVITY
 		+HITTRACER
 		
 		Radius RealRadius;
@@ -325,7 +323,7 @@ Class MCArrowProjectile : MinecraftProjectile
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		Owner = MinecraftMonster(Target);
+		Owner = TM_Monster(Target);
 	}
 	
 	private void ArrowDeath()
@@ -353,6 +351,8 @@ Class MCArrowProjectile : MinecraftProjectile
 	States
 	{
 	Spawn:
+		ASDF AA 1 A_FaceMovementDirection(0,0);
+		ASDF A 0 { bNOGRAVITY = false; }
 		ASDF A 1 A_FaceMovementDirection(0,0);
 		Wait;
 	Crash:
@@ -368,11 +368,11 @@ Class MCArrowProjectile : MinecraftProjectile
 	}
 }
 
-Class MCSkeletonStray : MCSkeleton
+Class TM_SkeletonStray : TM_Skeleton
 {
 	Default
 	{
-		MCSkeleton.Type S_Stray;
+		TM_Skeleton.Type S_Stray;
 		ActiveSound "Minecraft/Stray/Idle";
 		PainSound "Minecraft/Stray/Hurt";
 		DeathSound "Minecraft/Stray/Death";
@@ -382,23 +382,106 @@ Class MCSkeletonStray : MCSkeleton
 	}
 }
 
-Class MCSkeletonWither : MCSkeleton
+Class TM_SkeletonWither : TM_Skeleton
 {
 	const WitherScale = 9.0;
+	const _Range = RealRadius + 8;
 	Default
 	{
-		MCSkeleton.Type S_Wither;
+		TM_Skeleton.Type S_Wither;
 		ActiveSound "Minecraft/WitherSkeleton/Idle";
 		PainSound "Minecraft/WitherSkeleton/Hurt";
 		DeathSound "Minecraft/WitherSkeleton/Death";
+		Health 250;
+		Mass 200;
 		Scale WitherScale;
-		
+		MeleeRange _Range;
 		DamageFactor "Slime", 0.0;
 		DamageFactor "Wither", 0.0;
 		DamageFactor "Fire", 0.0;
 		
 		Tag "Wither Skeleton";
-		Obituary "%o 's flesh withered away thanks to a Wither Skeleton.";
+		Obituary "%o 's flesh withered away by a Wither Skeleton.";
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Limb[LegL].StepSound = "Minecraft/WitherSkeleton/Step";
+		Limb[LegR].StepSound = "Minecraft/WitherSkeleton/Step";
+	}
+	
+	override bool DropItems(Actor src, Actor inf, Name mod)
+	{
+		InitDrops();
+		for (int i = 0; i < 4; i++)
+			if (irandom(0,2) == 0)
+				Drops.Add('TM_PearlAmmo', irandom(1,5));
+				
+		int amt = irandom(15, 25);
+		if (irandom(0,1) > 0)	Drops.Add('TM_PearlHealth', amt);
+		else					Drops.Add('TM_PearlArmor', amt);
+		
+		return TM_Monster.DropItems(src, inf, mod);
+	}
+	
+	// Don't spawn with armor as these guys are tough.
+	override void SpawnArmor()	{}
+	
+	override void SpawnWeapon()
+	{
+		int chances[WR_ArmR + 1];
+		bool skip = true;
+		for (int i = WR_ArmL; i <= WR_ArmR; i++)
+		{
+			chances[i] = irandom(0,200);
+			if (skip && chances[i] > 100)
+			{
+				skip = false;
+				continue;
+			}
+			int 						frm = WP_Stone;
+				 if (chances[i] <= 20)	frm = WP_Netherite;
+			else if (chances[i] <= 50)	frm = WP_Diamond;
+			else if (Chances[i] <= 100)	frm = WP_Iron;
+			
+			SetArmor(i, frm);
+		}
+	}
+	
+	override void EnterSee()
+	{
+		Super.EnterSee();
+		Speed = Default.Speed * 1.5;
+	}
+	
+	override void EnterIdle()
+	{
+		Super.EnterIdle();
+		Speed = Default.Speed;
+	}
+	
+	override void SetMeleeAnimation()
+	{
+		if (bKILLED || bDESTROYED)	return;
+		for (int i = 0; i < Limb.Size(); i++)
+		if ((i == ArmR || i == ArmL) && Limb[i])
+		{
+			Limb[i].SetAnimation('ZombieMelee');
+		}
+	}
+	
+	States
+	{
+	See:
+		---- A 1 
+		{
+			Chase("Melee", null, _3dmelee: true);
+		}
+		Wait;
+	Melee:
+		---- A 1 DoMelee(random[rng](25, 35));
+		Goto See;
 	}
 }
 
@@ -406,13 +489,13 @@ Class MCSkeletonWither : MCSkeleton
 // Limbs
 //==============================================================================
 
-Class MCSkeletonArm : MCBodyPartArm
+Class TM_SkeletonArm : TM_BodyPartArm
 {
 	const BowYaw = 20.0;
 	Default
 	{
-		MCBodyPart.Gib 'MCSkeletonArmGib';
-		MCBodyPart.CurAction (E_Swing|E_Sway);
+		TM_BodyPart.Gib 'TM_SkeletonArmGib';
+		TM_BodyPart.CurAction (E_Swing|E_Sway);
 		Radius 0.8;
 		Height 2.0;
 	}
@@ -430,8 +513,11 @@ Class MCSkeletonArm : MCBodyPartArm
 	States
 	{
 	Spawn:
-		ASDF A -1 NoDelay
+		ASDF A 0;
+	Idle:
+		---- A -1
 		{
+			NoAim = true;
 			CurAction = (E_Swing|E_Sway);
 			SetYaw(0);
 			SetPitch(0);
@@ -440,6 +526,8 @@ Class MCSkeletonArm : MCBodyPartArm
 	Alert:
 		---- A -1
 		{
+			if (owner && owner.GetClass() == 'TM_Skeleton')
+				NoAim = false;
 			CurAction = E_Sway;
 			SetPitch(-90);
 			BowOut();
@@ -456,107 +544,113 @@ Class MCSkeletonArm : MCBodyPartArm
 	ZombieMelee:
 		---- A 8 SetPitch(-160, false);
 		---- A -1 SetPitch(-90, false);
+		Goto Alert;
 	}
 }
 
-Class MCSkeletonArmRight : MCSkeletonArm
+Class TM_SkeletonArmRight : TM_SkeletonArm
 {
 	Default
 	{
-		MCBodyPart.SineOffset 180, 180, 180;
-		MCBodyPart.VelSineOffset 180;
+		TM_BodyPart.SideID TMS_Right;
+		TM_BodyPart.SineOffset 180, 180, 180;
+		TM_BodyPart.VelSineOffset 180;
 	}
 }
 
-Class MCSkeletonArmLeft : MCSkeletonArm
+Class TM_SkeletonArmLeft : TM_SkeletonArm
 {
+	Default
+	{
+		TM_BodyPart.SideID TMS_Left;
+	}
 	override void BowIn()
 	{
 		SetYaw(-BowYaw);
 	}
 }
 
-Class MCSkeletonBody : MCBodyPartBody
+Class TM_SkeletonBody : TM_BodyPartBody
 {
 }
 
-Class MCSkeletonHead : MCBodyPartHead
+Class TM_SkeletonHead : TM_BodyPartHead
 {
 }
 
-Class MCSkeletonLeg : MCBodyPartLeg
+Class TM_SkeletonLeg : TM_BodyPartLeg
 {
 	Default
 	{
-		MCBodyPart.Gib 'MCSkeletonLegGib';
-		MCBodyPart.StepSound "Minecraft/Skeleton/Step";
+		TM_BodyPart.Gib 'TM_SkeletonLegGib';
+		TM_BodyPart.StepSound "Minecraft/Skeleton/Step";
 		Radius 0.8;
 		Height 2.0;
 	}
 }
 
-Class MCSkeletonLegRight : MCSkeletonLeg
-{
-}
-
-Class MCSkeletonLegLeft : MCSkeletonLeg
+Class TM_SkeletonLegRight : TM_SkeletonLeg
 {
 	Default
 	{
-		MCBodyPart.SineOffset 180, 180, 180;
-		MCBodyPart.VelSineOffset 180;
+		TM_BodyPart.SideID TMS_Right;
 	}
 }
 
-Class MCSkeletonArmGib : MCBodyPartGib
+Class TM_SkeletonLegLeft : TM_SkeletonLeg
 {
+	Default
+	{
+		TM_BodyPart.SideID TMS_Left;
+		TM_BodyPart.SineOffset 180, 180, 180;
+		TM_BodyPart.VelSineOffset 180;
+	}
 }
 
-Class MCSkeletonHeadGib : MCBodyPartGib
-{
-}
+Class TM_SkeletonArmGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -.9;	}	}
 
-Class MCSkeletonLegGib : MCBodyPartGib
-{
-}
+Class TM_SkeletonHeadGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, 0.8;	}	}
 
-Class MCSkeletonBodyGib : MCBodyPartGib
-{
-}
+Class TM_SkeletonLegGib : TM_BodyPartGib
+{	Default	{	TM_BodyPartGib.Offsets 0, 0, -1.2;	}	}
+
+Class TM_SkeletonBodyGib : TM_BodyPartGib	{}
 
 //------------------------------------------------------------------------------
 // Stray edition. The only difference is the extra coverings and different head.
 // These go over the skeleton's positions, and the arms stick out a little more.
 //------------------------------------------------------------------------------
 
-Class MCSkeletonStrayArmRight : MCBodyPartArm
+Class TM_SkeletonStrayArmRight : TM_BodyPartArm
 {
 }
 
-Class MCSkeletonStrayArmLeft : MCBodyPartArm
+Class TM_SkeletonStrayArmLeft : TM_BodyPartArm
 {
 }
 
-Class MCSkeletonStrayLeg : MCBodyPartLeg
+Class TM_SkeletonStrayLeg : TM_BodyPartLeg
 {
 }
 
-Class MCSkeletonStrayBody : MCBodyPartBody
+Class TM_SkeletonStrayBody : TM_BodyPartBody
 {
 }
 
-Class MCSkeletonStrayHead : MCBodyPartHead
+Class TM_SkeletonStrayHead : TM_BodyPartHead
 {
 }
 
-Class MCSkeletonStrayHeadGib : MCBodyPartGib
+Class TM_SkeletonStrayHeadGib : TM_BodyPartGib
 {
 }
 
-Class MCSkeletonStrayArmGib : MCBodyPartGib
+Class TM_SkeletonStrayArmGib : TM_BodyPartGib
 {
 }
 
-Class MCSkeletonStrayLegGib : MCBodyPartGib
+Class TM_SkeletonStrayLegGib : TM_BodyPartGib
 {
 }

@@ -1,48 +1,53 @@
-extend class MinecraftMonster
+extend class TM_Monster
 {
 	enum EMobTypes
 	{
 		M_Normal = 0,
 		M_Undead,
-		M_Anthropod,
+		M_Arthropod,
 	};
 	const AttackDelayMax = 35;
 	const DefaultDrownTimer = 35 * 30;
-	
-	MinecraftHandler Event;
-	
+	meta bool CanArmor;
 	protected bool OnGround;
 	private Vector3 PrevVel;
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
 				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
-				ActiveSoundDelay, DamageTimer, DespawnTimer;
+				ActiveSoundDelay, DamageTimer, DespawnTimer, 
+				DmgOverOn, DmgOverOff;
 	private bool wasOnGround, Jumping;
 	private double HealthMul;
 	protected bool IgnoreSecGrav;
+	protected TM_ItemDrops Drops;
 	
 	double DespawnRangeMin, DespawnRangeMax, SpawnRangeMin, SpawnRangeMax;
-	protected MC_QuatTurner Turner;
-	Array<MCBodyPart> Limb;
+	protected TM_QuatTurner Turner;
 	protected Vector2 PrevScale;
 	protected Vector3 PrevAngs, PrevPos, AngVel, HoldAngs;
 	Vector3 Angs;
 	protected uint PrevTrans;
-	protected int CurStyle, PrevStyle;
-	protected int AttackDelay;
-	protected int SoundDelay;
-	protected bool Passive, Neutral;
-	protected int IdleTimer, ChaseCheckTimer, LookTimer;
+	protected int	PrevStyle, AttackDelay, SoundDelay, 
+					IdleTimer, ChaseCheckTimer, LookTimer, 
+					ActSoundMin, ActSoundMax;
+	protected bool Passive, Neutral, Baby;
 	protected double SoundPitch, PrevAlpha, OverScale;
 	
-	double FallDmgVel, VelLen, PosLen, VelPosLen, MislChance,
-		MaxChaseRange, MaxSightRange;
+	double FallDmgVel, VelLen, PosLen, VelPosLen, MeleeMoveSpeed,
+		MaxChaseRange, MaxSightRange, JumpHeight, MislRange;
 	
 	meta bool PeacefulDespawn;
 	meta int MobType;
 	Sound StepSound;
 	int StepSoundDelay;
 	
-	Property MislChance:	MislChance;
+	//(Second * 4) + IRandom(0,Second * 2);
+	Property ActSoundDelay:	ActSoundMin, ActSoundMax;
+	Property JumpHeight:	JumpHeight;
+	Property DamageForceOn:		DmgOverOn;
+	Property DamageForceOff:	DmgOverOff;
+	Property CanArmor:		CanArmor;
+	Property Baby:			Baby;
+	Property MislRange:		MislRange;
 	Property SpawnRange: 	SpawnRangeMin, SpawnRangeMax;
 	Property DespawnRange:	DespawnRangeMin, DespawnRangeMax;
 	Property FallDmgVel:	FallDmgVel;
@@ -59,18 +64,20 @@ extend class MinecraftMonster
 	
 	Default
 	{
-		MinecraftMonster.MislChance -1;
-		MinecraftMonster.SpawnRange 	1024, 3072;
-		MinecraftMonster.DespawnRange	3072, 5120;
-		MinecraftMonster.SightTimeOut Second * 5;
-		MinecraftMonster.OverScale 1.0;
-		MinecraftMonster.SoundPitch 1.0;
-		MinecraftMonster.FallDmgVel 15.0;
-		MinecraftMonster.DrownTimer DefaultDrownTimer;
-		MinecraftMonster.PeacefulDespawn true;
-		MinecraftMonster.MobType M_Normal;
-		MinecraftMonster.MaxSightRange 768;
-		MinecraftMonster.MaxChaseRange 2048;
+		TM_Monster.ActSoundDelay Second * 4, Second * 6;
+		TM_Monster.JumpHeight 32.0;
+		TM_Monster.CanArmor false;
+		TM_Monster.SpawnRange 	1024, 3072;
+		TM_Monster.DespawnRange	3073, 5120;
+		TM_Monster.SightTimeOut Second * 5;
+		TM_Monster.OverScale 1.0;
+		TM_Monster.SoundPitch 1.0;
+		TM_Monster.FallDmgVel 15.0;
+		TM_Monster.DrownTimer DefaultDrownTimer;
+		TM_Monster.PeacefulDespawn true;
+		TM_Monster.MobType M_Normal;
+		TM_Monster.MaxSightRange 768;
+		TM_Monster.MaxChaseRange 2048;
 		MaxTargetRange 768;
 		Monster;
 		Health 100;
@@ -79,6 +86,7 @@ extend class MinecraftMonster
 		PushFactor 0.3;
 		PainChance 0; // Handled internally.
 		MaxDropoffHeight 64;
+		MaxStepHeight 16;
 		+NEVERRESPAWN
 		+NEVERFAST
 		-COUNTKILL
@@ -93,18 +101,33 @@ extend class MinecraftMonster
 		+ALWAYSTELEFRAG
 		+NOTELESTOMP
 		+NOKILLSCRIPTS
-		+DONTSPLASH
+	//	+DONTSPLASH
 		+FORCEINFIGHTING
+		+SLIDESONWALLS
 		
 		// Monster
 		DamageFactor "Creeper", 0.25;
+		DamageFactor "CreeperND", 0.25; // All non-TM actors are immune to this.
 		DamageFactor "Ghast", 0.25;
+		DamageFactor "InstantDamage", 1.0;
+		DamageFactor "Wither", 1.0;
+		DamageFactor "Fangs", 1.0;
+		DamageFactor "Poison", 1.0;
 		
 		// Environment
 		DamageFactor "Crush", 2000.0;
-		DamageFactor "Falling", 2.0;
 		DamageFactor "Fire", 1.0;
-		DamageFactor "Slime", 1.0;
+		DamageFactor "SoulFire", 1.0;
+		DamageFactor "HellFire", 1.0;
 		DamageFactor "DamageSector", 1.0;
+		DamageFactor "Slime", 1.0;
+		DamageFactor "Falling", 1.0;
+		DamageFactor "Drowning", 1.0;
+		
+		// Forced Damage Types (disregards environment settings, these always
+		// take effect)
+		DamageFactor "Void", 2000;
+		DamageFactor "VoidNormal", 1.0;
+		
 	}
 }

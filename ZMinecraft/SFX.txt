@@ -1,12 +1,16 @@
-Class MCExplosion : MinecraftEntity
+
+Class TM_Explosion : TM_Entity
 {
-	meta bool Smokeless;
-	meta bool Silent;
+	bool BigRings;
+	bool Smokeless;
+	bool Silent;
 	Property Silent: Silent;
 	Property Smokeless: Smokeless;
+	Property BigRings: BigRings;
 	Default
 	{
-		MCExplosion.Silent false;
+		TM_Explosion.Silent false;
+		TM_Explosion.BigRings true;
 		Radius 1;
 		Height 1;
 		Scale 256;
@@ -18,6 +22,8 @@ Class MCExplosion : MinecraftEntity
 		RenderStyle "None";
 	}
 	
+	
+	
 	States
 	{
 	Spawn:
@@ -27,42 +33,44 @@ Class MCExplosion : MinecraftEntity
 		}
 		TNT1 A 10
 		{
-			
+			if (BigRings)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					Actor ex[2];
+					for (int j = 0; j < 2; j++)
+					{
+						ex[j] = Spawn('TM_ExplosionSpriteMega', pos + (0, 0, height * 0.5), ALLOW_REPLACE);
+						if (ex[j])
+						{
+							ex[j].roll = i * 90;
+							ex[j].A_SetScale(Scale.X / 16.0);
+						}
+					}
+					if (ex[1])	ex[1].bFLATSPRITE = true;
+				}
+			}
 			int mm = int(ceil(Scale.X)); //Main explosion
 			int nn = int(round(0.5 * Scale.X)); //
 			for (int i = 0; i < mm; i++)
 			{
-				Class<Actor> spr = (i <= nn) ? 'MCExplosionSprite' : 'MCExplosionSpriteDelay';
+				Class<Actor> spr = (i <= nn) ? 'TM_ExplosionSprite' : 'TM_ExplosionSpriteDelay';
 				Angle = irandom(0,359);
-				Pitch = ffrandom(-90, 90);
+				Pitch = frandom(-90, 90);
 				double dist = ffrandom(0.1, 1.0) * Scale.X;
 				
-				A_SpawnItemEx(spr, cos(pitch) * dist, 0, -sin(pitch) * dist, flags: SXF_NOCHECKPOSITION);
+				bool b; Actor a;
+			//	double zz = -sin(pitch * dist);
+				[b, a] = A_SpawnItemEx(spr, cos(pitch) * dist, 0, -sin(pitch) * dist, 
+					flags: SXF_NOCHECKPOSITION);
 				
-				if (MCC_SFX < 1)	continue;
-				if (!Smokeless && (i <= nn))
+				
+				let espr = TM_ExplosionSprite(a);
+				if (espr)
 				{
-					int rngcap = (MCC_SFX == 1) ? 4 : 2;
-					if (irandom(1, rngcap) != 1)	continue;
+					espr.Smokeless = Smokeless;
 					
-					double velo = frandom(2.0, 4.0);
-					Vector2 AP = (frandom(0,359),frandom(-90,90));
-					A_SpawnItemEx("MCExplosionSmoke", 
-						cos(pitch) * dist, 0, -sin(pitch) * dist, 
-						cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
-						AP.X, SXF_NOCHECKPOSITION);
-				}		
-				/*
-				if (!Smokeless && i < nn)
-				{
-					double velo = frandom(2.0, 4.0);
-					Vector2 AP = (random(0,359),random(-90,90));
-					A_SpawnItemEx("MCExplosionSmoke", 
-						cos(AP.Y) * dist, 0, -sin(AP.Y) * dist,
-						cos(AP.Y) * velo, 0, -sin(AP.Y) * velo, 
-						AP.X, SXF_NOCHECKPOSITION, 64);
 				}
-				*/
 				
 			}
 		}
@@ -70,22 +78,31 @@ Class MCExplosion : MinecraftEntity
 	}
 }
 
-Class MCExplosionSmokeless : MCExplosion
+
+
+Class TM_ExplosionSmokeless : TM_Explosion
 {
 	Default
 	{
-		MCExplosion.Smokeless true;
+		TM_Explosion.Smokeless true;
 	}
 }
 
-Class MCExplosionSprite : Actor
+Class TM_ExplosionSprite : Actor
 {
 	mixin TM_FastRNG;
+	
 	int DelayMin, DelayMax;
+	bool RandomRoll, RandomScale, Smokeless;
+	
+	Property RandomRoll: RandomRoll;
+	Property RandomScale: RandomScale;
 	Property Delay: DelayMin, DelayMax;
 	Default
 	{
-		MCExplosionSprite.Delay 0, 0;
+		TM_ExplosionSprite.RandomRoll true;
+		TM_ExplosionSprite.RandomScale true;
+		TM_ExplosionSprite.Delay 0, 0;
 		+NOINTERACTION
 		+NOBLOCKMAP
 		+ROLLSPRITE
@@ -94,20 +111,37 @@ Class MCExplosionSprite : Actor
 		Scale 3.5;
 	}
 	
+	void SpawnSmoke()
+	{
+		if (TMV_SFX > 0 && !Smokeless && Pos.Z >= FloorZ && Pos.Z <= CeilingZ)
+		{
+			int rngcap = (TMV_SFX == 1) ? 4 : 2;
+			if (irandom(1, rngcap) != 1)	return;
+			
+			double velo = FFrandom(0.0, 1.0);
+			Vector2 AP = (FFrandom(0,359),FFrandom(-90,0));
+			A_SpawnItemEx("TM_ExplosionSmoke", 
+				0, 0, 0,
+			//	cos(pitch) * dist, 0, -sin(pitch) * dist, 
+				cos(AP.Y) * velo, 0, -sin(AP.Y) * velo * 2, 
+				AP.X, SXF_NOCHECKPOSITION);
+		}
+	}
+	
 	States
 	{
 	Spawn:
 		TNT1 A 1 NoDelay 
 		{
-			roll = randompick(0, 90, 180, 270);
-			A_SetScale(Scale.X + ffrandom(-0.35, 0.35));
+			if (RandomRoll) 	roll = randompick(0, 90, 180, 270);
+			if (RandomScale)	A_SetScale(Scale.X + ffrandom(-0.35, 0.35));
 			static const Name Trans[] = 
 			{
-				'MCExplo1',
-				'MCExplo2',
-				'MCExplo3',
-				'MCExplo4',
-				'MCExplo5'
+				'TM_Explo1',
+				'TM_Explo2',
+				'TM_Explo3',
+				'TM_Explo4',
+				'TM_Explo5'
 			};
 			int size = Trans.Size();
 			int i = irandom(0, size);
@@ -115,20 +149,43 @@ Class MCExplosionSprite : Actor
 				A_SetTranslation(Trans[i]);
 			A_SetTics(Max(0, irandom(DelayMin, DelayMax)));
 		}
+		X208 A 1 SpawnSmoke();
 		X208 ABCDEFGHIJKLMNOP 1;
 		Stop;
 	}
 }
 
-Class MCExplosionSpriteDelay : MCExplosionSprite
+Class TM_ExplosionSpriteMega : Actor
 {
+	// Scale is handled by the main explosion spawner.
 	Default
 	{
-		MCExplosionSprite.Delay 1, 10;
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+BRIGHT
+		+ROLLSPRITE
+		+FORCEXYBILLBOARD
+		Translation "TM_Explo2";
+	}
+	
+	States
+	{
+	Spawn:
+		X208 ABCDEFGHIJ 1;
+		#### KLMNOP 2;
+		Stop;
 	}
 }
 
-Class MCExplosionSmoke : Actor
+Class TM_ExplosionSpriteDelay : TM_ExplosionSprite
+{
+	Default
+	{
+		TM_ExplosionSprite.Delay 1, 10;
+	}
+}
+
+Class TM_ExplosionSmoke : Actor
 {
 	mixin TM_FastRNG;
 	Default
@@ -150,6 +207,7 @@ Class MCExplosionSmoke : Actor
 		if (IsFrozen())	return;
 		
 		Vel.XY *= 0.98;
+		
 		if (Vel.Z < 1.0)
 			Vel.Z += 0.05;
 		Super.Tick();
@@ -159,6 +217,191 @@ Class MCExplosionSmoke : Actor
 	{
 	Spawn:
 		X208 QRSTUVWX random(10, 30);
+		Stop;
+	}
+}
+
+Class TM_FuseSmoke : TM_ExplosionSmoke
+{
+	Default
+	{
+		Scale 1.0;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		A_SetScale(Scale.X + FFRandom(0.0, 0.5));
+		
+		static const Name Trans[] = 
+		{
+			'TM_Fuse1',
+			'TM_Fuse2',
+			'TM_Fuse3',
+			'TM_Fuse4',
+			'TM_Fuse5'
+		};
+		int size = Trans.Size();
+		int i = irandom(0, size - 1);
+		A_SetTranslation(Trans[i]);
+		
+	}
+	
+	States
+	{
+	Spawn:
+		X208 QRSTUVWX random(5, 15);
+		Stop;
+	}
+}
+
+Class TM_LavaFire : TM_Entity
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		Scale 0.4;
+	}
+}
+
+Class TM_LavaEmber : TM_Entity
+{
+	const TMin = Second * 1;
+	const TMax = Second * 3;
+	const SMin = 0.20;
+	const SMax = 0.30;
+	private double Scalar;
+	Default
+	{
+		Projectile;
+		Radius 4;
+		Height 4;
+		+BRIGHT
+		+THRUACTORS
+		-NOGRAVITY
+		+NOTRIGGER
+		-ACTIVATEPCROSS
+		-ACTIVATEMCROSS
+		+DONTSPLASH
+		+BOUNCEONWALLS
+		Scale 0.25;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		A_SetScale(ffrandom(SMin, SMax));
+		Scalar = Scale.X / ffrandom(TMin, TMax);
+		bXFLIP = irandom(0,1);
+		bYFLIP = irandom(0,1);
+	}
+	
+	private int SpawnDelay;
+	void DoTick()
+	{
+		if (bDESTROYED)	return;
+		
+		A_SetScale(Scale.X - Scalar);
+		if (Scale.X <= 0.0 || WaterLevel > 2)
+		{	Destroy();	return;	}
+		
+		if (TMV_SFX > 0 && !bNOINTERACTION)
+		{
+			if (--SpawnDelay < 1)
+			{
+				SpawnDelay = (TMV_SFX == 1) ? irandom(10, 20) : irandom(5, 10);
+				
+				A_SpawnItemEx("TM_FuseSmoke", 
+					ffrandom(-2, 2), ffrandom(-2, 2), ffrandom(0, 2),
+					0, 0, ffrandom(0.2, 2.0), 0, SXF_NOCHECKPOSITION);
+			}
+		}
+	}
+	
+	States
+	{
+	Spawn:
+		X216 J 1 DoTick();
+		Wait;
+	Death:
+		---- A 1 
+		{
+			bNOINTERACTION = true;
+			DoTick();
+		}
+		Wait;
+	}
+}
+
+Class TM_LavaEmberSpawner : Actor
+{
+	mixin TM_FastRNG;
+	int SMin, SMax;
+	Property Count: SMin, SMax;
+	Default
+	{
+		TM_LavaEmberSpawner.Count 4, 8;
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOSECTOR
+	}
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		
+		int count = irandom(smin, smax);
+		for (int i = 0; i < count; i++)
+			A_SpawnItemEx('TM_LavaEmber',
+				ffrandom(3,6), 0, ffrandom(0,2),
+				ffrandom(3,6), 0, ffrandom(10, 20), 
+				irandom(0,359), SXF_NOCHECKPOSITION);
+				
+		Destroy();
+	}
+}
+Class TM_LavaEmberSpawner_Small : TM_LavaEmberSpawner
+{
+	Default
+	{
+		TM_LavaEmberSpawner.Count 1, 3;
+	}
+}
+
+Class TM_PotionParticle : TM_Entity
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOTONAUTOMAP
+		+BRIGHT
+		+ROLLSPRITE
+		Scale 0.25;
+	}
+	
+	private int _Tics;
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		roll = 90 * irandom(0,3);
+		_Tics = irandom(3,6);
+	}
+	
+	override void Tick()
+	{
+		if (IsFrozen())	return;
+		
+		Super.Tick();
+		
+		Vel.XY *= 0.95;
+		Vel.Z += 0.05;
+	}
+	
+	States
+	{
+	Spawn:
+		X219 ABCDEFGH 1 A_SetTics(_Tics);
 		Stop;
 	}
 }

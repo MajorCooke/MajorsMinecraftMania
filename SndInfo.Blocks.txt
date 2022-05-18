@@ -1,0 +1,104 @@
+//$GZDB_Skip
+
+Minecraft/Grass1	"Sounds/Minecraft/block/break/grass1.ogg"
+Minecraft/Grass2	"Sounds/Minecraft/block/break/grass2.ogg"
+Minecraft/Grass3	"Sounds/Minecraft/block/break/grass3.ogg"
+Minecraft/Grass4	"Sounds/Minecraft/block/break/grass4.ogg"
+
+$random Minecraft/Grass
+{
+	Minecraft/Grass1
+	Minecraft/Grass2
+	Minecraft/Grass3
+	Minecraft/Grass4
+}
+
+$limit Minecraft/Grass 0
+$pitchset Minecraft/Grass 1.0
+
+Minecraft/Stone1	"Sounds/Minecraft/block/break/Stone1.ogg"
+Minecraft/Stone2	"Sounds/Minecraft/block/break/Stone2.ogg"
+Minecraft/Stone3	"Sounds/Minecraft/block/break/Stone3.ogg"
+Minecraft/Stone4	"Sounds/Minecraft/block/break/Stone4.ogg"
+
+$random Minecraft/Stone
+{
+	Minecraft/Stone1
+	Minecraft/Stone2
+	Minecraft/Stone3
+	Minecraft/Stone4
+}
+
+$limit Minecraft/Stone 0
+$pitchset Minecraft/Stone 1.0
+
+//------------------------------------------------------------------------------
+// Nether Portal
+
+Minecraft/NetherPortal/Idle		"Sounds/Minecraft/portal/portal.ogg"
+Minecraft/NetherPortal/Travel	"Sounds/Minecraft/portal/travel.ogg"
+Minecraft/NetherPortal/Trigger	"Sounds/Minecraft/portal/trigger.ogg"
+
+$limit Minecraft/NetherPortal/Idle	0
+$limit Minecraft/NetherPortal/Travel 0
+$limit Minecraft/NetherPortal/Trigger 0
+
+$pitchset Minecraft/NetherPortal/Idle	0.7 1.3
+$pitchset Minecraft/NetherPortal/Travel 0.7 1.3
+$pitchset Minecraft/NetherPortal/Trigger 0.7 1.3
+
+
+//------------------------------------------------------------------------------
+// End Portal
+
+Minecraft/EndPortal	"Sounds/Minecraft/block/end_portal/endportal.ogg"
+Minecraft/EyePlace1	"Sounds/Minecraft/block/end_portal/eyeplace1.ogg"
+Minecraft/EyePlace2	"Sounds/Minecraft/block/end_portal/eyeplace2.ogg"
+Minecraft/EyePlace3	"Sounds/Minecraft/block/end_portal/eyeplace3.ogg"
+
+$limit Minecraft/EndPortal 0
+$pitchset Minecraft/EndPortal 1.0
+
+$random Minecraft/EyePlace
+{
+	Minecraft/EyePlace1
+	Minecraft/EyePlace2
+	Minecraft/EyePlace3
+}
+
+$limit Minecraft/EyePlace 0
+$pitchset Minecraft/EyePlace 1.0
+
+//------------------------------------------------------------------------------
+// Lava
+Minecraft/Lava/Ambient	"Sounds/Minecraft/liquid/lava.ogg"
+Minecraft/Lava/Pop		"Sounds/Minecraft/liquid/lavapop.ogg"
+
+$random Minecraft/Lava
+{
+	Minecraft/Lava/Ambient
+	Minecraft/Lava/Pop
+}
+
+Minecraft/Lava/Splash1	"Sounds/Minecraft/item/bucket/empty_lava1.ogg"
+Minecraft/Lava/Splash2	"Sounds/Minecraft/item/bucket/empty_lava2.ogg"
+Minecraft/Lava/Splash3	"Sounds/Minecraft/item/bucket/empty_lava3.ogg"
+Minecraft/Lava/Splash4	"Sounds/Minecraft/item/bucket/fill_lava1.ogg"
+Minecraft/Lava/Splash5	"Sounds/Minecraft/item/bucket/fill_lava2.ogg"
+Minecraft/Lava/Splash6	"Sounds/Minecraft/item/bucket/fill_lava3.ogg"
+
+$random Minecraft/Lava/Splash
+{
+	Minecraft/Lava/Splash1
+	Minecraft/Lava/Splash2
+	Minecraft/Lava/Splash3
+	Minecraft/Lava/Splash4
+	Minecraft/Lava/Splash5
+	Minecraft/Lava/Splash6
+}
+
+$limit Minecraft/Lava 0
+$limit Minecraft/Lava/Splash 0
+
+$pitchset Minecraft/Lava 0.8 1.2
+$pitchset Minecraft/Lava/Splash 0.8 1.2

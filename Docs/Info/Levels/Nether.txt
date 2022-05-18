@@ -1,0 +1,262 @@
+================================================================================
+================================================================================
+The Nether
+================================================================================
+================================================================================
+
+To get there...
+
+Obsidian drops rarely from mobs, with the highest chance coming from endermen. 
+Only one block drops at a time. By themselves, obsidian is useless. But once 10 
+are collected, a Construction Star becomes available in your inventory. 
+Highlighting it will show block previews of the portal and all its blocks for 
+placement.
+
+Portal Construction tips:
+- The portal will self destruct if the ground or ceiling move into the location
+	of the portal. Any progress on the invasion waves will be for naught, but
+	the star is refunded.
+- Any blocks that are red means something is obstructing the portal's placement.
+- Make sure to place it in an area with lots of room and is completely clear of
+	other enemies to maximize survivability.
+- All other mobs will vanish when the invasion begins to keep the fight fair.
+- If the portal was put in a bad place, you can undeploy it after clearing the 
+	enemies. The invasion only needs to be fought once, but upon exiting the
+	current map means they'll need to be fought again.
+- Don't worry about Health & Armor unless they go up past 200 in the mods played
+	with. Both will be maximized upon entering the level each time.
+
+
+--------------
+- Netherland -
+--------------
+
+The Nether is an outpost of Hell, and this specific region is constructed for 
+the purpose of containing souls of all the victims these demons slaughter. 
+Unlike different areas of the Nether, these regions are closed off from the often
+aimless tunnel areas, as evident from the enormous lake of fire surrounding this
+mountain.
+
+Someone didn't want this place to be easily accessed, hence the hordes of undead
+and warrior piglins you'll have to slaughter to get into this sector.
+
+At the heart of this region is a sunken pit, a plateau of glamour, with a plinth
+containing something powerful. But the entire place is shielded off, with three
+possible keys in three different areas. Only one is needed to hit the switch and
+destroy the shield. At the same time, it'll shut down  the infernal machine
+pulling all the dead from the Overworld down to here, making it your priority.
+
+Beware... All the paths are equally difficult, it's just a matter of which one
+you want to tackle.
+
+Annotations:
+(U) - This monster is unleashed upon the world post Nether.
+
+--------------------
+- Soul Sand Valley -
+--------------------
+Exploration Map
+
++ Fewest enemy encounters
+- VERY BROAD region, with lots of exploration required
+
+--- Enemies ---
+* Ghasts (U)
+* Wither Skeletons (U)
+* Blazes
+
+--- Hazards ---
+* Unkillable ghosts
+* Quick Soul Sand & Soil
+* Soul Fire
+* Soul Lava
+
+The west region is filled with soul sand and soil. This is where all the souls 
+are being stored, with indentured servants carrying the encased souls into this
+multi-layered cavern. This place is vast, marked by the occasional cyan flame of
+damnation, and soul lava.
+
+Soul sand slows down any (un)living entity that walks through, as the souls try
+to grasp at physical entities in an effort to have them pull the soul out of
+their prison. This wouldn't be a problem if there aren't monsters chasing you.
+They are few in number here, but they're the least of your concerns. The immortal
+spirits that haunt the area will hunt you down if you don't run. Avoid them at
+all costs and keep moving.
+
+The most dangerous opponents here are the Blazes. A single fireball can ignite 
+into Soul Fire, which bypasses all armor. Ghasts are very rare, but they're the
+WORST. Their fireballs can ignite multiple blocks around them, spelling certain
+death for a careless marine.
+
+But the biggest challenge is finding the key. It could be on any layer, top or
+bottom, surrounded by Soul Lava and a Wither Skeleton mob spawner that will take
+a lot of fire power to destroy. If victorious, the threat will cease and the key
+is yours for the taking.
+
+--------------------
+- The Lost Bastion -
+--------------------
+Siege Mission
+
+* Balanced between exploration and combat
+
+--- Enemies ---
+All Nether Enemies
+All Piglins (U)
+
+--- Hazards ---
+* Soul Fire Lake
+* Lava Eruptions
+* Traps
+
+The souls of the dead go here to be encased in Soul Sand, which is then sent to
+the Valley afterwards. A giant device of nether magic emits a column of cyan,
+materializing their prison and trapping them within.
+
+This region is effectively a siege mission: break through the defenses and 
+destroy the processor to retrieve the key. Simple, but Hellishly difficult.
+
+To start off, the outermost defense is the surrounding nether fortress. Blazes
+spawn out the wazoo and rain fire down upon intruders, while the skeletons come
+to celebrate the skewing of your innards. An impenetrable shield surrounds the
+bastion, which will fail only without the mob spawners. Destroy them to proceed.
+
+In the midst of a bastion surrounding the soul processor is the Golden Armada.
+No, not that one - the piglins all clad in enchanted golden armor. The bastion
+itself is armed to the teeth, featuring witches that help run the device. This
+area holds a legion of soldiers, but also many prisoners - including hoglins and
+zoglins.
+
+Penetrating the main gate is suicidal simply because of the overwhelming pigpower
+they possess, of metal, blade and magic - but you can turn the tides in your
+favor through subterfuge. Unleashing the caged is a good tactic, but don't get
+caught in the infighting. It's possible to blast your way through, but make sure
+you're loaded for bear. And unless you're capable of killing them in one hit, DO
+NOT attack the monsters with thorns enchantment!
+
+If you unleash temporary aid, you have several options at your disposal, but you
+can only let loose one kind. The lever has been drastically rusted and will break
+after just one use, so choose wisely.
+
+* Hoglins & Zoglins
+	Will run rampant and launch many a piglin into the air, guaranteeing many
+	will be flung into the lava. However, zoglins are treachorous foes whose
+	undeath state has defiled their sense of judgment and will attack all but
+	themselves. They'll prioritize the army over you, allowing for you to get
+	a massive window of opportunity to strike at the witches directly, but be
+	fast. They won't last long, especially with infighting among themselves.
+	At most, they'll be able to take out 1/2 of the occupying army.
+	
+* Overworld Undead
+	Make no mistake: Piglins and undead HATE each other, except Ziglins since
+	they were brethren. Opening a portal to Overworld's deepest caverns will
+	belch a tidal wave of undeath INTO the Nether, a perverted invasion. This
+	will lock the Processor in a state that can only be undone by destruction.
+	The waves of undeath will serve as a distraction for the guard towers, and
+	all the sharp shooters will be drawn into raining down steel, removing them
+	as a threat. The Piglin army will slowly be overwhelmed by the endless waves,
+	however. If the undead succeed, they'll start turning the souls into more
+	undead that you will have to fight through, making it harder to reach the
+	spire, but they're weaker than the piglins at least. Destroy the device to
+	close the portal. But hurry! Time is your enemy. Strike when both sides
+	are weakest, or you will be overwhelmed.
+	
+* B.F.C. (BOSS)
+	Big Fucking Gun? Meet the Big Fucking Creeper. Unleashing this tormented
+	monstrosity guarantees the destruction of the army... and potentially, you.
+	An experimental beast infused with unholy magic by witches, this bitch has
+	more than it takes to destroy all the piglins by belching up endless creepers.
+	While she lays siege to the Bastion, STAY OUT OF HER WAY, or better still,
+	stay outside the keep while she unleashes Hell on them all. But the witches
+	know better... They know you unleashed her, so they tie the force field
+	protecting the device to her life force before running away. Kill them before
+	they escape the island for some massive bonus goodies - you'll need them.
+	
+	While she can be harmed, she is undying. Follow her out the huge hole she'll
+	make in the bastion to where more souls swirl, waiting in line to enter the
+	bastion. As you battle her, the souls will occasionally bombard her with 
+	Soul Fire. Lure her over the flames before they go out, which will negate her
+	regeneration so long as she's engulfed in the cyan heat. Be careful - the
+	lower her health, the more she spams TNT and creepers. She is immune to fire,
+	but not soul fire. Get the souls to bombard the lava pits around the place and 
+	either lure her into stepping over/into the lava carelessly, or let your guns
+	knock her into it. Beware, the creepers spawned by her ALWAYS explode, so 
+	check your distance. They also run constantly. Keep on the move and don't 
+	allow her to pin you. Keep wailing on her until she dies.
+	
+* None
+	You'll take the armada by yourself. The switch will not activate. But if you
+	want an extra challenge, you can activate this after defeating the army, for
+	fun. Maybe there's a reward to it...?
+
+Regardless, the objective is clear: Destroy the device, recover the key. Then,
+evacuate ASAP - the device was suppressing tectonic activity to keep the area
+stable, thus lava will begin to rise and consume everything.
+
+-----------------
+- Death Furnace -
+-----------------
++ Linear
+- Slaughterfest
+
+--- Enemies ---
+* All Nether Enemies
+--- Hazards ---
+* Fire
+
+A path worthy of those who want to go out in a blaze of glory while rocking it
+to Mick Gordon. 
+
+This area in comparison is far smaller then the others, but packs far more
+enemies. All of them are hostile towards you, and they do not infight. A vast
+Hellfire furnace fueled by abyssal flames, the purple black fires of Hell's
+Darkness are fatal to anything touching it. Avoid them, or if clever enough, use
+them by knocking back enemies into the flames. 
+
+Dead corpses brought here by the overworld's hostile undead will rain down into
+the flames, specifically the soul fire. Upon splattering the bodies, the spirits
+are reconstituted into more demonic undead. And they are ENDLESS, until you can
+destroy the furnace. Bring your A game as you would the demons in your realm.
+
+Tips for conquering this area:
+* Keep Fire Resistance at level 3. This mitigates damage from abyssal fire down
+	to 20 from insta-kill (without invulnerability)
+* Focus on witches as they spawn, to maximize fire resistance. Keep an eye out
+	for resistance potions too, to further cut damage intake.
+* Blazes are a problem here. Aside setting the ground on fire, there's a chance
+	that instead of extinguishing after a time, it upgrades into soul fire which
+	is eternal until shot. Miniscule chance it becomes Abyssal, which cannot be
+	put out by force but doesn't last forever (still a long time).
+* Shoot the bodies as they fall to destroy them before they touch the soul fire
+	This will free the spirit and prevent the furnace from building a minion
+	with it, reducing the number of monsters you have to endure for that wave.
+	Rockets are best. BFG rays are a very close second, if you time it right.
+
+--------
+- Post -
+--------
+Managed to get a key? Nothing less is expected of a true Slayer. But there's a
+BIG bonus for each extra key included. Care to test your mettle?
+
+The switch can be activated multiple times to adjust how many keys to use when
+constructing the Wither. Each key will increase the Wither's health substantially
+and make it more aggressive, while also increasing rewards - specifically, the
+number of nether stars it drops. When ready, jump into the pit where the base of
+the Wither lies in wait. The boss will activate shortly after.
+
+------------------
+--- The Wither ---
+------------------
+See Bosses.txt
+
+-------------
+- Aftermath -
+-------------
+The Wither's violent bodily explosion will cause this region of the Nether to
+collapse - lava pouring in from the roof, blocks falling, the whole area coming
+down. One of the walls will break down. Jump onto the soul sand path, and activate
+the Nether Star to gain a speed boost.
+
+You have one minute to reach the portal and escape before the entire foundation
+buckles and crushes you. Be on guard - lava will break through the cavern roof
+which can slow you down, even if fire resistance is active.

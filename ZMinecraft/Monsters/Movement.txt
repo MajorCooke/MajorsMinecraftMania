@@ -1,12 +1,35 @@
-extend class MinecraftMonster
+extend class TM_Monster
 {
 	// 
 	virtual void ChaseExtra() {}
 	
+	int, int GetBlockFlags()
+	{
+		int b1 = 0, b2 = 0;
+		
+		b1 |= Line.ML_BLOCKING|Line.ML_BLOCKEVERYTHING;
+		
+		if (!bNOBLOCKMONST)
+		{
+			if (bFLOAT)	b1 |= Line.ML_BLOCK_FLOATERS;
+			else		b2 |= Line.ML2_BLOCKLANDMONSTERS;
+		}
+		
+		return b1, b2;
+	}
 	
+	
+	
+	Vector2 NextPos(double speed, double ang)
+	{
+		return Vec2Angle(speed, ang);
+	}
 	
 	private int StepTics;
-	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", int flags = 0, double maxturn = 30.0, bool _3dmelee = false, double range = 0)
+	private double LockSpeed, LockAng, LockStepHeight;
+	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", 
+		int flags = 0, double maxturn = 30.0, bool _3dmelee = false, 
+		double range = 0, Vector3 SolidCheckPos = (0,0,-1))
 	{
 		if (bKILLED)
 			return;
@@ -24,13 +47,13 @@ extend class MinecraftMonster
 			{
 				Array<Actor> Temp; Temp.Clear();
 				for (int i = 0; i < Damagers.Size(); i++)
-					if (Damagers[i] && Damagers[i].Health > 0)
+					if (Damagers[i] && !Damagers[i].bKILLED)
 						Temp.Push(Damagers[i]);
 				Damagers.Move(Temp);
 				
 				if (Tracer == Target)	Tracer = null;
 				ClearTarget();
-				SetState(ResolveState("Idle"));
+				EnterIdle();
 				return;
 			}
 			else Target = Goal;
@@ -38,116 +61,7 @@ extend class MinecraftMonster
 		
 		if (ChaseTics > 0)
 			ChaseTics--;
-		
-		bool good = false;
-		// Use regular A_Chase if cannot see.
-		bool sight = CheckSight(Target, CSFlags);
-		if (ChaseTics < 1 && (NotBottomMount || sight)) 
-		{
 			
-			if (Target)
-			{
-				// Turning handled by the inventory item itself if mounted.
-				if (NotBottomMount)
-					good = true;
-				else
-				{
-					HoldAngs = (Angle, Pitch, Roll);
-					
-					double ang = AngleTo(Target);
-					bool fear = CheckFear(Target);
-					if (fear)
-					{
-						ang += 180;
-						melee = missile = null;
-						
-					}
-					else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
-					
-					double oldz = pos.z;
-					if ((flags & CHF_DONTMOVE) || Jumping)
-					{
-						good = true;
-					}
-					else if (bFLOAT)
-					{
-						double c = cos(Pitch) * Speed;
-						double s = -sin(Pitch) * Speed;
-						
-						Vector2 new = Vec2Angle(Speed, ang);
-						
-						SetZ(pos.z + s);
-						good = TryMove(new, bDROPOFF);
-						if (!good)
-						{
-							SetZ(oldz);
-							ChaseTics = 18;
-						}
-					}
-					else
-					{
-						Vector2 nmpos = Vec2Angle(speed, ang);
-						if (OnGround && Vel.Z == 0.0)
-						{
-							FCheckPosition tm;
-							ClearBlockingInfo();
-							
-							if (TryMove(nmpos, bDROPOFF, false, tm))
-							{
-								good = true;
-																
-								if (max(floorz, oldz) - min(floorz, oldz) <= MaxStepHeight)
-									SetZ(floorz);
-								
-								if (VelPosLen <= speed)
-									vel.XY = vel.XY * 0.8;
-							}
-							else // Try to see if jumping is applicable.
-							{
-								/*
-								let bm = BlockingMobj;
-								if (bm)
-								{
-									if (bm.pos.z + bm.height < (bm.pos.z + bm.height) * 0.5)
-									{
-										Jumping = true;
-									}
-								}
-								else
-								{
-									//Vel.Z = Sqrt(2 * GetGravity() * JumpHeight);
-									let BL = BlockingLine;
-									if (BL)
-									{
-										int fg = BL.Flags;
-										int f2 = BL.Flags2;
-										
-										if (!(fg & Line.)
-									}
-								}
-								*/
-							}
-						}
-						if (!good && OnGround)
-							ChaseTics = 18;
-							
-						newflags |= CHF_DONTMOVE;
-					}
-					
-				}
-				
-				// Move was good. Do the chase but without actually moving. 
-				if (good)
-					newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
-				else
-				{
-					Angle = HoldAngs.X;
-					Pitch = HoldAngs.Y;
-					Roll =	HoldAngs.Z;
-				}
-			}
-		}
-		
 		bool nochase = false;
 		if (CheckGoal(true))
 		{
@@ -162,35 +76,414 @@ extend class MinecraftMonster
 		}
 		else
 		{
-			
-			if (missile != null && MislChance > -1)
-			{
-				MislChance = Min(MislChance, 1.0);
-			}
-			
-			if (_3dmelee && !bJUSTATTACKED && Targetable(Target))
+			if ( _3dmelee && !bJUSTATTACKED && Targetable(Target))
 			{
 				let s = ResolveState(melee);
-				if (s)
+				if (s && CheckTrace(Target, MeleeRange))
 				{
-					if (CheckTrace(Target, MeleeRange))
-					{
-						bJUSTATTACKED = true;
-						SetState(s);
-						nochase = true;
-					}
+					bJUSTATTACKED = true;
+					SetState(s);
+					nochase = true;				
+				}
+			}
+			if (MislRange >= Radius)
+			{
+				let s = ResolveState(missile);
+				if (s && CheckTrace(Target, MislRange))
+				{
+					bJUSTATTACKED = true;
+					SetState(s);
+					nochase = true;
 				}
 			}
 		}
 		
+		
+		
+		bool good = false;
+		// Use regular A_Chase if cannot see.
+		if (NotBottomMount || nochase || (!OnGround && !bFLOAT))
+		{
+			good = true;
+			newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
+		}
+		else if (Jumping || (ChaseTics < 1 && CheckSight(Target, CSFlags))) 
+		{
+			// Turning handled by the inventory item itself if mounted.
+			if (NotBottomMount)
+				good = true;
+			else
+			{
+				HoldAngs = (Angle, Pitch, Roll);
+				
+				double ang = AngleTo(Target);
+				bool fear = CheckFear(Target);
+				if (fear)
+				{
+					ang += 180;
+					melee = missile = null;
+					
+				}
+				else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
+				
+				double oldz = pos.z;
+				if ((flags & CHF_DONTMOVE))
+				{
+					good = true;
+				}
+				else if (bFLOAT)
+				{
+					double c = cos(Pitch) * Speed;
+					double s = -sin(Pitch) * Speed;
+					
+					Vector2 new = Vec2Angle(Speed, ang);
+					
+					SetZ(pos.z + s);
+					good = TryMove(new, bDROPOFF);
+					if (!good)
+					{
+						SetZ(oldz);
+						ChaseTics = 18;
+					}
+				}
+				else
+				{
+					if (Jumping || (OnGround && Vel.Z ~== 0.0))
+					{
+						good = DoTryMove(speed, ang);
+					}
+					
+				}	
+			}
+			// Move was good. Do the chase but without actually moving. 
+			if (good)
+				newflags = CHF_DONTMOVE|CHF_DONTTURN|CHF_NODIRECTIONTURN|CHF_NOPOSTATTACKTURN;
+			else
+			{
+				if (OnGround && !bFLOAT)
+					ChaseTics = 18;
+				Angle = HoldAngs.X;
+				Pitch = HoldAngs.Y;
+				Roll =	HoldAngs.Z;
+			}
+		}
+		else if (!bFLOAT)
+		{
+			if (Jumping)
+			{
+				good = DoTryMove(speed, angle);
+			}
+			else
+			{
+				Vector3 old = pos, oldprev = prev;
+				int oldMoveDir = MoveDir;
+				int OldReactionTime = ReactionTime;
+				int OldMoveCount = movecount;
+				double oldang = angle;
+				
+				ClearBlockingInfo();
+				A_Chase(null, null, CHF_STOPIFBLOCKED);
+				
+				if (BlockingMobj || BlockingLine)
+				{
+					MoveDir = oldMoveDir;
+					ReactionTime = oldReactionTime;
+					movecount = OldMoveCount;
+					Angle = oldang;
+					
+					good = DoTryMove(speed, angle);
+				}
+				else good = true;
+			}
+			newflags |= CHF_DONTMOVE|CHF_DONTTURN|CHF_NOPOSTATTACKTURN;
+		}
+		
+		if (!bFLOAT && OnGround && !(newflags & CHF_DONTMOVE) && Vel.Z ~== 0.0 && 
+			!(Vel.XY ~== (0, 0)) && Vel.XY.Length() < speed * 0.5)
+			Vel.XY = (0,0);
+		
+		// Check for solids in the way of the missile position.
+		/*
+		Vector3 SCP = Vec3Offset(SolidCheckPos.X, SolidCheckPos.Y, SolidCheckPos.Z);
+		bool SolidCheck = (SCP.Z < Pos.Z || SCP.Z >= Pos.Z + Height);
+		if (!SolidCheck)
+		{
+			Vector2 AP = (angle, pitch);
+			let trc = new('TM_SolidTracer');
+			trc.Trg = self;
+			A_Face(Target, 0, 0, 0, 0, FAF_BOTTOM, 0.5);
+			trc.Trace(SCP, CurSector, TM_Map.AnglesToVector(angle, pitch), MeleeRange, 0);
+			Angle = AP.x;
+			Pitch = AP.y;
+			
+			// Disable melee attacks if a purely solid non-combatant actor is in
+			// the way.
+			if (trc.Results.HitType == TRACE_HitActor)
+			{	melee = missile = null;	}
+		}
+		*/
+		
+		
 		if (!good && (angle % 45 != 0.0))
 			AlignMoveDir();
-				
+		
 		if (!nochase)
 			A_Chase(melee, missile, flags|newflags);
-		
+			
 		if (!(PrePos ~== Pos))
 			DoStepSound();
+	}
+	
+	void ChaseWeapons(statelabel melee = "Melee", statelabel missile = "Missile", 
+		int flags = 0, double maxturn = 30.0, bool _3dmelee = false, 
+		double range = 0, Vector3 SolidCheckPos = (0,0,-1))
+	{
+		if (ArmorInv)
+		{
+			// Disable melee if possessing a ranged weapon and no melee in the
+			// other hand.
+			if (ArmorInv.HasRanged())
+			{
+				if (!ArmorInv.HasMelee())	melee = null;
+			}
+			// No ranged weapon, so shut down missile attempts.
+			else missile = null;
+		}
+	
+		Chase(melee, missile, flags, maxturn, _3dmelee, range, SolidCheckPos);
+	}
+	
+	void BackAway(Actor who, double Range)
+	{
+		if (!who)	return;
+		
+		double Dist = Distance3DSquared(who);
+		// Try to back away from enemies that get too close.
+		if (Dist < (Range) ** 2)
+		{
+			double _speed = speed;
+			bool nofear = bNOFEAR;
+			bool afraid = bFRIGHTENED;
+			bFRIGHTENED = true;
+			bNOFEAR = false;
+			speed *= 0.5;
+			
+			A_Chase(null, null, CHF_NODIRECTIONTURN|CHF_NOPLAYACTIVE);
+			
+			speed = _speed;
+			bNOFEAR = nofear;
+			bFRIGHTENED = afraid;
+		}
+	}
+	
+	protected bool TryWander(int flags = 0)
+	{
+		if (Jumping)
+		{
+			return DoTryMove(speed, angle);
+		}
+	
+		if (bINCONVERSATION)
+			return false;
+
+		if (bSTANDSTILL)
+			return false;
+
+		if (reactiontime != 0)
+		{
+			reactiontime--;
+			return false;
+		}
+
+		// turn towards movement direction if not there yet
+		if (!(flags & CHF_NODIRECTIONTURN) && (movedir < DI_NODIR))
+		{
+			Angle = floor(Angle / 45) * 45.0;
+			double delta = deltaangle(Angle, (movedir * 45));
+			if (delta < 0)		Angle -= 45;
+			else if (delta > 0)	Angle += 45;
+		}
+			
+		
+		ClearBlockingInfo();
+		
+		bool blocked = !MonsterMove();
+		if (blocked)
+		{
+			blocked = !DoTryMove(speed, angle);
+		}
+		if ((blocked && !(flags & CHF_STOPIFBLOCKED)) || (--movecount < 0 && !(flags & CHF_NORANDOMTURN)))
+		{	
+			RandomChaseDir();
+			movecount += 5;
+		}
+		return !blocked;
+		
+	}
+	
+	bool CheckLineInFOV(Line l, double fov)
+	{
+		double maxAng = cos(fov/2);
+		Vector2 viewDir = AngleToVector(angle);
+
+		Vector2 v1Dir = level.Vec2Diff(pos.xy, l.v1.p);
+		double v1Dist = v1Dir.Length();
+		bool v1InView = !v1Dist || (viewDir dot (v1Dir / v1Dist) >= maxAng);
+
+		Vector2 v2Dir = level.Vec2Diff(pos.xy, l.v2.p);
+		double v2Dist = v2Dir.Length();
+		bool v2InView = !v2Dist || (viewDir dot (v2Dir / v2Dist) >= maxAng);
+
+		return v1InView && v2InView;
+	}
+	
+	protected bool, double CheckJumpable(Vector3 next, FCheckPosition tm = null)
+	{
+		if (JumpHeight <= 0)	return false, 0;
+		
+		Sector s = null;
+		let bm = BlockingMobj;
+		if (bm)
+		{
+			double bmtop = bm.pos.z + bm.height;
+			double h = bmtop - pos.z;
+			if (h <= JumpHeight)
+			{
+				return true, h;
+			}
+			return false, 0;
+		}
+		else if (BlockingLine)
+		{
+			//Vel.Z = Sqrt(2 * GetGravity() * JumpHeight);
+			let BL = BlockingLine;
+			
+		//	if (!CheckLineInFOV(BL, 90))
+		//		return false, -4;
+			
+			int fg = BL.Flags;
+			int f2 = BL.Flags2;
+			/*
+			int b1, b2;
+			[b1, b2] = GetBlockFlags();
+			*/
+			
+			
+		//	if (!(fg & b1) && !(f2 & b2))
+			// Impassible
+			if ((fg & Line.ML_BLOCKING) || !(fg & Line.ML_TWOSIDED))
+			{
+				return false, -1;
+			}
+			// Line is blocking land monsters
+			if (!bNOBLOCKMONST && 
+				((fg & Line.ML_BLOCKMONSTERS) || (f2 & Line.ML2_BLOCKLANDMONSTERS)))
+			{
+				return false, -2;
+			}
+			int nextside = TM_S7_Math.PointOnLineSidePrecise(next.x, next.y, BL);
+			
+			if (nextside == 1)		s = BL.backsector;
+			else if (nextside == 0)	s = BL.frontsector;
+			
+			//No sectors attached
+			if (!s) return false, -3;
+			
+			
+		}
+		
+		double topz, botz;
+		if (tm)
+		{
+			topz = tm.ceilingz;
+			botz = tm.floorz;
+		}
+		else
+		{
+			if (!s)	{	s = level.PointInSector(next.XY);	}
+			topz = s.NextHighestCeilingAt(next.X, next.Y, next.Z, next.Z);
+			botz = s.NextLowestFloorAt(next.X, next.Y, topz);
+		}
+		// floor is below me
+		if (botz <= pos.z)
+			return false, -4;
+		// can't fit
+		if (topz - botz < height + 1)
+			return false, -5;
+		
+		// Too high to jump up
+		double h = botz - pos.z;
+		if (h > JumpHeight)
+			return false, -6;
+		
+		
+		return true, h;
+	}
+	protected void SetJumping(double ang, double sp)
+	{
+		if (!Jumping)
+		{
+			Vel.XY = (0,0);
+			ChaseTics = 18;
+			AlignMoveDir();
+			Jumping = true;
+		//	LockAng = ang;
+			LockAng = moveDir * 45;
+			LockSpeed = sp;
+			LockStepHeight = MaxStepHeight;
+			MaxStepHeight = 4.0;
+		}		
+	}
+	
+	protected void UnsetJumping()
+	{
+		if (Jumping)
+		{
+			Jumping = false;
+			MaxStepHeight = LockStepHeight;
+		}
+	}
+	
+	protected bool DoTryMove(double _speed, double _ang)
+	{
+		if (Pos.Z > FloorZ && !Jumping)
+			return false;
+	
+		ClearBlockingInfo();
+		FCheckPosition tm;
+		bool good = false;
+		Vector2 nmpos = Vec2Angle(_speed, _ang);
+		if (TryMove(nmpos, bDROPOFF, false, tm))
+		{
+			good = true;
+			
+			if (!Jumping && max(floorz, pos.z) - min(floorz, pos.z) <= MaxStepHeight)
+				SetZ(floorz);
+				
+			UnsetJumping();
+			
+			if (VelPosLen <= _speed)
+				vel.XY = vel.XY * 0.8;
+		}
+		
+		else if (!Jumping) // Try to see if jumping is applicable.
+		{
+			double h = 0;
+			[good, h] = CheckJumpable((nmpos, pos.z), tm);
+			if (good)
+			{
+				SetJumping(_speed, _ang);
+				Vel.Z = sqrt(2 * GetRealGravity(false) * h);
+				if (TMV_Debug == 11)
+					Console.Printf("Harumph! %.2f", vel.z);
+			}
+			else if (TMV_Debug == 11)
+				Console.Printf("Nope. %d", h);
+			
+		}
+		else if (Jumping)	good = true;
+		
+		return good;
 	}
 	
 	void DoStepSound()
@@ -215,5 +508,43 @@ extend class MinecraftMonster
 		double deg = roundee % 45.0;
 		int DirAdd = (deg >= 22.5) ? 1 : 0;
 		moveDir = uint((roundee / 45.0) + DirAdd) % 8;
+	}
+}
+
+Class TM_SolidTracer : LineTracer
+{
+	Actor Trg;
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			case TRACE_HitActor:
+			{
+				let mo = Results.HitActor;
+				if (mo && mo != Trg && mo.bSOLID && !mo.bTHRUACTORS && !mo.bSHOOTABLE)
+					return TRACE_Stop;
+				return TRACE_Skip;
+			}
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKING | Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKSIGHT))
+					return TRACE_Stop;
+				
+				if ((hf & Line.ML_BLOCKING) && !(hf & Line.ML_TWOSIDED))
+					return TRACE_Stop;
+				
+			}
+		}
+		return TRACE_Skip;
 	}
 }

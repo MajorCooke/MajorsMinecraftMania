@@ -1,0 +1,700 @@
+/*==============================================================================
+	Fire blocks
+	
+There are 3 types of fire damage/types.
+
+* Normal
+Standard orange fire. Most nether mobs are immune to it.
+
+* Soul Fire
+Cyan fire found on soul blocks. Only mini-boss+ tiers are immune to it.
+
+* Void Fire
+Purple fire that eats through armor.
+
+* Hell Fire
+Black fire. (Near) Instant Death. Only Herobrine is resistant.
+==============================================================================*/
+
+extend class TM_Handler
+{
+	bool SpawnFireBlock(Actor Owner, Actor Missile, Vector3 pos, 
+						Vector2 duration = (525, 1575), //15 to 45 seconds
+						TM_Block hit = null, int id = FIRE_Normal, bool force = false)
+	{
+		if (id < FIRE_Min || id > FIRE_Max)
+		{
+			Console.Printf("Invalid fire ID %d. Valid ranges: [%d, %d]", id, FIRE_Min, FIRE_Max);
+			return false;
+		}
+	
+		// Check for a fire block first.
+		pos = TM_Global.AdjustBlockPos(pos);
+		
+		TM_Block block = hit;
+		if (!block) block = CheckBlockAt(pos, true);
+		if (block)
+		{
+			Name type = 'Fire';
+			Switch(id)
+			{
+				Case FIRE_Void: type = "VoidFire";	break;
+				Case FIRE_Soul: type = "SoulFire";	break;
+				Case FIRE_Hell: type = "HellFire";	break;
+			}
+			
+			let fire = TM_Block_Fire(block);
+			if (fire)
+				fire.SetType(id, force, (duration.x < 0 && duration.y < 0));
+			else
+				block.DamageMobj(Missile, Owner, 10, type);
+			return true;
+		}
+		
+		if (!level.IsPointInLevel(pos))
+			return false;
+		
+		// None there, so check for room and position.
+		Sector s = level.PointInSector(pos.XY);
+		if (!s)	return false;
+		
+		double bz = s.NextLowestFloorAt(pos.x, pos.y, pos.z + 1);
+		double tz = s.NextHighestCeilingAt(pos.x, pos.y, pos.z + 1, pos.z + 2);
+		
+		
+		
+		
+		let defs = GetDefaultByType('TM_Block_Fire');
+		// Too small to fit in, or too high off the ground.
+		if (tz - bz < defs.Height || abs(pos.z - bz) >= BlockHeight)	
+			return false;
+			
+		if (pos.z < bz)	
+			pos.z = bz;
+		if (pos.z + defs.Height > tz)
+			pos.z = tz - defs.Height;
+		
+		//
+		let ter = s.GetFloorTerrain(Sector.floor);
+		if (ter && ter.IsLiquid)	return false;
+		
+		
+		let flame = TM_Block_Fire(Actor.Spawn('TM_Block_Fire', (pos)));
+		if (flame)	
+		{
+			flame.SetType(id, force, (duration.x < 0 && duration.y < 0));
+			Vector3 rp = flame.pos;
+			rp.z = flame.FloorZ;
+			rp = TM_Global.AdjustBlockPos(rp);
+			flame.SetPos(rp, true);
+			flame.Target = Owner;
+		}
+		return (Flame != null);
+	}
+}
+
+Class TM_Block_Fire : TM_Block
+{
+	bool SpawnedByOther;
+	Vector3 NextPos;
+	const _Height = BlockHeight / 4;
+	const Light = "FireLight";
+	const HellFireHP = 10000; // It'll take a very powerful damaging attack to eliminate.
+	Default
+	{
+	//	TM_Block.GLFlags 0;
+		TM_Block.GLRGB 255, 128, 10;
+		TM_Block.GLRadius 64, 64;
+		TM_Block.GLPos 0, 4, 0;
+		TM_Block.GLEnabled true;
+		TM_Block.ShowDamage false;
+		TM_Block.Flammable 0;
+		+SOLID
+		-STOPRAILS
+		+NEVERTARGET
+		+BRIGHT
+		+NOTELEPORT
+		+NOTELESTOMP
+		Health 1;
+		Height _Height; 
+		DamageFactor "Ghast", 0;
+		DamageFactor "Fire", 0;
+		DamageFactor "SoulFire", 0;
+		DamageFactor "VoidFire", 0;
+		DamageFactor "HellFire", 0;
+		DamageType "Fire";
+		Tag "Fire";
+		ActiveSound "Minecraft/Fire";
+		DeathSound "Minecraft/Fizz";
+	}
+	
+	override String GetObituary(Actor victim, Actor inflictor, Name mod, bool playerattack)
+	{
+		if (DamageType == 'HellFire')
+		{
+			if (UseKill)
+				return "%o farted on Hellfire. The Hellfire farted back, far harder.";
+			return "%o was instantly vaporized by the abyssal darkness flame from Hell.";
+		}
+		else if (DamageType == 'VoidFire')
+			return "%o was iced over by Void Fire.";
+		else if (DamageType == 'SoulFire')
+			return "%o's armor couldn't protect against the flames of the Soul.";
+		else 
+			return "%o stopped, dropped and coaled to ash.";
+	}
+	
+	private Array<Actor> ToFlame;
+	private int SoundDelay, SmokeDelay, Timer, Type;
+	private bool Eternal, ForceType;
+	
+	int GetType()	{	return Type;	}
+	
+	override int DamageMobj(Actor i, Actor s, int damage, Name mod, int flags, double angle)
+	{
+		if (bKILLED)	return -1;
+		if (flags & DMG_FORCED)	
+			return Super.DamageMobj(i, s, damage, mod, flags, angle);
+		
+		if (mod == 'Fire') {}
+		else if (mod == 'SoulFire')
+		{
+			if (!ForceType && Type < FIRE_Soul)	SetType(FIRE_Soul);
+		}
+		else if (mod == 'VoidFire')
+		{
+			if (!ForceType && Type < FIRE_Void)	SetType(FIRE_Void);
+		}
+		else if (mod == 'HellFire')
+		{
+			if (!ForceType && Type < FIRE_Hell)	SetType(FIRE_Hell);
+		}
+		else return Super.DamageMobj(i, s, damage, mod, flags, angle);
+		
+		
+		
+		if (!Eternal)
+			Timer += damage;
+		
+		return -1;
+	}
+	
+	void SetType(int t, bool force = false, bool forever = false)
+	{
+		if (bKILLED)	return;
+		
+		StateLabel Next = null;
+		Type = t;
+		if (t >= FIRE_Hell)
+		{
+			Eternal = true;
+			DamageType = "HellFire";
+			LR = 255;
+			LG = 255;
+			LB = 255;
+			SetTag("Hell Fire");
+			Next = "Hell";
+			Health = HellFireHP;
+		}
+		else if (t == FIRE_Void)
+		{
+			Eternal = true;
+			DamageType = "VoidFire";
+			LR = 255;
+			LG = 0;
+			LB = 255;
+			SetTag("Void Fire");
+			Next = "Void";
+		}
+		else if (t == FIRE_Soul)
+		{
+			Eternal = true;
+			DamageType = "SoulFire";
+			LR = 78;
+			LG = 241;
+			LB = 246;
+			SetTag("Soul Fire");
+			Next = "Soul";
+		}
+		else
+		{
+			DamageType = "Fire";
+			LR = Default.LR;
+			LG = Default.LG;
+			LB = Default.LB;
+			SetTag("Fire");
+			Eternal = forever;
+			Next = "Normal";
+			
+		}
+		
+		if (force)
+			Eternal = forever;
+			
+		ForceType = force;
+		
+		if (t >= FIRE_Hell)	
+		{
+			LFlags |= DynamicLight.LF_SUBTRACTIVE;
+			StartHealth = Health = HellFireHP;
+			
+		}
+		else				
+		{
+			LFlags &= ~DynamicLight.LF_SUBTRACTIVE;
+			StartHealth = Health = Default.Health;
+		}
+		SetLight(true);
+		SetState(ResolveState(Next));
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		Timer = Second * irandom(15, 45);
+		Type = Max(FIRE_Normal, Type);
+		PosChanged();
+	}
+	
+	override void PosChanged()
+	{
+		if (ForceType)	return;
+		String s = "";
+		let mo = GetNeighbor(Side_Bottom);
+		if (mo is "TM_Block_SoulSand" ||
+			mo is "TM_Block_SoulSoil")
+		{
+			SetType(FIRE_Soul, true, true);
+			return;
+		}
+		else
+		{
+			
+			double a = 0.0; Sector b = null; F3DFloor TD = null;
+			[a, b, TD] = CurSector.NextLowestFloorAt(pos.x, pos.y, pos.z + 1);
+			
+			if (TD)	s = TexMan.GetName(TD.GetTexture(1));
+			else 	s = TexMan.GetName(CurSector.GetTexture(0));
+			
+				
+			if (s ~== "SOULSAND" ||
+				s ~== "SOULSOIL")
+			{
+				SetType(FIRE_Soul, true, true);
+				return;
+			}
+		}
+		
+		
+		if (mo is "TM_Block_Netherrack" || s ~== "FNETHRR")
+			Eternal = true;
+		else Eternal = false;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		if (bDESTROYED)	return;
+		
+		if (bKILLED || IsFrozen())	
+		{	ToFlame.Clear();	return;		}
+		
+		if (WaterLevel > 0 && Type != FIRE_Void && Type != FIRE_Hell)
+		{	A_Die();	return;		}
+		
+		// Make sure it's on an ignitable block, or on the ground. Ignored if
+		// forced to spawn.
+		if (!ForceType)
+		{
+			let mo = GetNeighbor(Side_Bottom);
+			if (mo)
+			{
+				if ((mo.Flammable <= 0) || mo.bKILLED)
+				{
+					Destroy();
+					return;
+				}
+				
+				if (mo is "TM_Block_Netherrack" ||
+					mo is "TM_Block_SoulSand" ||
+					mo is "TM_Block_SoulSoil")
+					Eternal = true;
+			}			
+		}
+		
+		
+		GetEvent();
+		// Attempt to damage anything coming into contact with this block.
+		if (ToFlame.Size() > 0)
+		{
+			bool good = false;
+			for (int i = 0; i < ToFlame.Size(); i++)
+			{
+				let mo = ToFlame[i];
+				if (mo && (mo.bSHOOTABLE || mo.bVULNERABLE))
+				{
+					if (!TM_Global.IsImmune(mo, DamageType) &&
+						TM_S7_Math.TestAABB(pos, (radius-1, 16), mo.pos, (mo.radius, mo.height)))
+					{
+						// INSTANT DEATH
+						if (Type == FIRE_Hell)
+						{
+							bEXTREMEDEATH = true;
+							Actor giver = target;
+							if (!giver)	giver = self;
+							mo.DamageMobj(self, giver, clamp(mo.health, 2000, TELEFRAG_DAMAGE - 1), 'HellFire', DMG_FOILINVUL|DMG_FOILBUDDHA|DMG_NO_ARMOR|DMG_THRUSTLESS);
+							
+						}
+						else
+						{
+							bEXTREMEDEATH = false;
+							Actor giver = target;
+							if (!giver)	giver = self;
+							Event.GiveStatus(mo, giver, 'TM_OnFireEffect', Second * 10, Type);
+							if (TMV_Debug == 23)
+								Console.Printf("Giving fire type %d", type);
+						}
+					}
+				}
+				else ToFlame[i] = null;
+			}
+			if (!good)
+				ToFlame.Clear();
+		}
+		
+		// Effects
+		if (TMV_SFX > 0 && --SmokeDelay < 1)
+		{
+			SmokeDelay = (TMV_SFX == 1) ? irandom(20, 40) : irandom(10, 20);
+			if (!CheckRange(2048))
+			{
+				bool b; Actor a;
+				[b, a] = A_SpawnItemEx('TM_FuseSmoke', 
+					ffrandom(-Radius + 1, Radius - 1),
+					ffrandom(-Radius + 1, Radius - 1),
+					BlockHeight * ffrandom(0.25, 0.75),
+					0, 0, ffrandom(0.0, 0.5), 0, SXF_NOCHECKPOSITION);
+				
+				if (a && b)
+				{
+					a.Scale *= 1.5;
+				}
+			}
+		}
+		
+		if (--SoundDelay < 1)
+		{
+			SoundDelay = irandom(Second, Second * 10);
+			A_StartSound(ActiveSound, CHAN_BODY, CHANF_OVERLAP);
+		}
+		
+		if (!Eternal && --Timer < 1)
+		{
+			Destroy();
+			return;			
+		}
+	}
+	
+	private bool UseKill;
+	override bool Used(Actor user)
+	{
+		if (!bKILLED && user && !user.bKILLED)
+		{
+			if (type == FIRE_Hell)
+			{
+				bEXTREMEDEATH = true;
+				UseKill = true;
+				user.DamageMobj(self, self, clamp(user.health, 2000, TELEFRAG_DAMAGE - 1), DamageType, DMG_NO_ARMOR|DMG_FOILINVUL|DMG_FOILBUDDHA|DMG_THRUSTLESS);
+			}
+			DamageMobj(user, user, health, 'Use', DMG_FORCED);
+			return true;
+		}
+		return false;
+	}
+	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		if (bKILLED)	return false;
+		if (other && other.bMISSILE)	return true;
+	
+		if (other && !(other is 'TM_Block') && !other.bKILLED && 
+			(other.bSHOOTABLE || other.bVULNERABLE) &&
+			ToFlame.Find(other) >= ToFlame.Size())
+			{
+				ToFlame.Push(other);
+			}
+			
+		return false;
+	}
+	
+	override void Die(Actor s, Actor i, int flags, name mod)
+	{
+		if (bKILLEd)	return;
+		if (InvulType == INF_Indestructible && RealHP > 0)
+			return;
+		
+		bNOINTERACTION = bKILLED = true;
+		SetLight(false);
+		A_ChangeLinkFlags(1, 1);
+		A_UnsetShootable();
+		A_StartSound(DeathSound, flags: CHANF_OVERLAP);
+	//	Super.Die(s, i, flags, mod);
+		SetState(ResolveState("Death"));
+		
+	}
+	
+	override void OnDestroy()
+	{
+		if (TMV_Debug == 20)
+			Console.Printf("Destroyed");
+		Super.OnDestroy();
+	}
+	
+	private int phase;
+	
+	States
+	{
+	Spawn:
+		X209 A 0 NoDelay
+		{
+			StateLabel Next = "Normal";
+				 if (Type == FIRE_Hell)	Next = "Hell";
+			else if (Type == FIRE_Void) Next = "Void";
+			else if (Type == FIRE_Soul) Next = "Soul";
+			
+			return ResolveState(Next);
+		}
+	Normal:
+		X209 A 0 A_Jump(256, irandom(1,16));
+	NormalLoop:
+		---- A 0 { Phase = 0; }
+		X209 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X210 ABCDEF 2 { Phase++; }
+		Loop;
+	Soul:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));
+	SoulLoop:
+		---- A 0 { Phase = 0; }
+		X211 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X212 ABCDEF 2 { Phase++; }
+		Loop;
+	Void:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));
+	VoidLoop:
+		---- A 0 { Phase = 0; }
+		X213 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X214 ABCDEF 2 { Phase++; }
+		Loop;
+	Hell:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));		
+	HellLoop:
+		---- A 0 { Phase = 0; }
+		X215 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X216 ABCDEF 2 { Phase++; }
+		Loop;
+	Death:
+		TNT1 A 2;
+		Stop;
+	}
+}
+
+//==============================================================================
+// 
+//==============================================================================
+Class TM_ActorFlame : TM_Entity
+{
+	Default
+	{
+		+NOINTERACTION
+		+NOBLOCKMAP
+		+NOTONAUTOMAP
+		+FORCEYBILLBOARD
+		+BRIGHT
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		bBRIGHT = true;
+	}
+	private int Phase;
+	States
+	{
+	Spawn:
+	Normal:
+		X209 A 0 NoDelay A_Jump(256, irandom(1,16));
+	NormalLoop:
+		---- A 0 { Phase = 0; }
+		X209 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X210 ABCDEF 2 { Phase++; }
+		Loop;
+	Soul:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));
+	SoulLoop:
+		---- A 0 { Phase = 0; }
+		X211 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X212 ABCDEF 2 { Phase++; }
+		Loop;
+	Void:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));
+	VoidLoop:
+		---- A 0 { Phase = 0; }
+		X213 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X214 ABCDEF 2 { Phase++; }
+		Loop;
+	Hell:
+		---- A 0 A_Jump(256, (phase > 0 ? phase : irandom(1,16)));		
+	HellLoop:
+		---- A 0 { Phase = 0; }
+		X215 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2 { Phase++; }
+		X216 ABCDEF 2 { Phase++; }
+		Loop;
+	}
+}
+/*
+Class TM_FireTick : Thinker
+{
+	private Array<Actor> Flames, Fires;
+	Actor Target, LastFire;
+	int Delay, Damage, Flags;
+	private int Timer, FireDelay;
+	protected bool SoulFire;
+	
+	static TM_FireTick Create(Actor target, Actor block, bool soul = false, 
+		int damage = 10, int flags = 0,	int duration = Second * 10, int delay = Second)
+	{
+		if (!target || duration < 1)
+			return null;
+	
+		let th = new('TM_FireTick');
+		th.Target = target;
+		th.Damage = damage;
+		th.Flags = flags;
+		th.Delay = delay;
+		th.SetTimer(duration);
+		th.AddFire(block);
+		th.SetSoulFire(soul, true);
+		
+		return th;
+	}
+	
+	override void PostBeginPlay()
+	{
+		ChangeStatNum(STAT_USER + 3);
+		Super.PostBeginPlay();
+		Flames.Clear();
+		Fires.Clear();
+		
+		if (!Target)	{	Destroy();	return;	}
+		if (Target.Radius > 0 && Target.Height > 0)
+		{
+			Vector2 Scale = ( // Based on image dimensions.
+				TM_GlobalMaths.RemapRange(1, 0, 16, 0, Target.Radius),
+				TM_GlobalMaths.RemapRange(1, 0, 16, 0, Target.Height));
+			
+			let mo = Actor.Spawn('TM_ActorFlame', Target.Pos, ALLOW_REPLACE);
+			Flames.Push(mo);
+		}
+	}
+	
+	override void OnDestroy()
+	{
+		for (int i = 0; i < Flames.Size(); i++)
+			if (Flames[i])	Flames[i].Destroy();
+		Super.OnDestroy();
+	}
+	
+	bool IsSoulFire() { return SoulFire; }
+	
+	void SetSoulFire(bool on, bool force = false)
+	{
+		StateLabel next = "Spawn";
+		if (on)
+		{
+			next = "Soul";
+			Flags |= DMG_NO_ARMOR;
+		}
+		else	Flags &= ~DMG_NO_ARMOR;
+		
+		if (force || SoulFire != on)
+		{
+			for (int i = 0; i < Flames.Size(); i++)
+				if (Flames[i]) Flames[i].SetStateLabel(next);
+		}
+		
+		SoulFire = on;
+	}
+	
+	bool StandingInFire()
+	{
+		bool intersect = false;
+		for (int i = 0; i < Fires.Size(); i++)
+		{
+			let mo = Fires[i];
+			if (mo && TM_S7_Math.TestAABB(
+					Target.Pos, (Target.Radius, Target.Height), 
+					mo.Pos, (mo.Radius, mo.Height)))
+				intersect = true;
+			else Fires[i] = null;
+		}
+		return intersect;
+	}
+	
+	override void Tick()
+	{
+		if (bDESTROYED)	return;
+		if (!Target || Target.bKILLED)	{	Destroy();	return;		}
+		else if (Target.IsFrozen())	return;
+		
+		if (--Timer < 1)	{	Destroy();	return;	}
+		
+		if (StandingInFire())
+		{
+			if (Target is "PlayerPawn")	FireDelay = 0; // The custom protection will make them immune.
+			else if (FireDelay > 18)	FireDelay = 18; // Enemies will rapidly take damage.
+		}
+		
+		if (FireDelay < 1 || --FireDelay < 1)
+		{
+			if (Target.DamageMobj(LastFire, LastFire, Damage, (SoulFire ? 'SoulFire' : 'Fire'), Flags|DMG_THRUSTLESS) > 0)
+				FireDelay = Delay;
+		}
+		
+		bool invis = (Target.Player && Target == players[consoleplayer].camera && (!Target.player.cheats & CF_CHASECAM));
+		
+		for (int i = 0; i < Flames.Size(); i++)
+		{
+			let mo = Flames[i];
+			if (!mo)	continue;
+			mo.SetOrigin(Target.pos, true);
+			mo.Prev = Target.Prev;
+		}
+	}
+	
+	void SetTimer(int amt)	{ Timer = amt;	}
+	
+	void AddFire(Actor mo)
+	{
+		if (!mo)	return;
+		
+		// Ensure the fire block isn't recorded already.
+		if (Fires.Find(mo) < Fires.Size())
+		{
+			LastFire = mo;
+			return;
+		}
+		
+		// Look for an empty space.
+		for (int i = 0; i < Fires.Size(); i++)
+		{
+			if (!Fires[i])	
+			{	
+				Fires[i] = LastFire = mo;
+				return;	
+			}
+		}
+		// None found so push a new slot.
+		Fires.Push(mo);
+	}
+}
+*/

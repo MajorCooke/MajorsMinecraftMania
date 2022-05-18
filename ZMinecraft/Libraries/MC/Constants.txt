@@ -1,0 +1,49 @@
+enum TM_EUtilNums
+{
+	Second = 35,
+	Minute = Second * 60
+};
+
+enum TM_EFrameInts
+{
+	Fr_A = 0,
+	Fr_B = 1,
+	Fr_C,
+	Fr_D,
+	Fr_E,
+	Fr_F,
+	Fr_G,
+	Fr_H,
+	Fr_I,
+	Fr_J,
+	Fr_K,
+	Fr_L,
+	Fr_M,
+	Fr_N,
+	Fr_O,
+	Fr_P,
+	Fr_Q,
+	Fr_R,
+	Fr_S,
+	Fr_T,
+	Fr_U,
+	Fr_V,
+	Fr_W,
+	Fr_X,
+	Fr_Y,
+	Fr_Z,
+};
+
+enum TM_ECustomDmgFlags
+{
+	DMG_INFO = 1 << 30
+};
+
+enum TM_ECustomExploFlags
+{
+	RADF_ALWAYSTHRUST = 1 << 30,
+	RADF_NOFACTORTHRUST = 1 << 31,
+	
+	EXF_PARENT = 		1 << 0,
+	EXF_INVERSE =		1 << 1,
+};

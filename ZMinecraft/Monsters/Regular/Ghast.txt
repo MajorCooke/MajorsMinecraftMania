@@ -32,7 +32,7 @@ Minecraft/Ghast/Scream
 
 */
 
-Class MCGhastDrop : RandomSpawner
+Class TM_GhastDrop : RandomSpawner
 {
 	Default
 	{
@@ -43,7 +43,7 @@ Class MCGhastDrop : RandomSpawner
 	}
 }
 
-Class MCGhast : MinecraftMonster
+Class TM_Ghast : TM_Monster
 {
 	const _Radius = 1.6;
 	const _Height = 3.2;
@@ -76,24 +76,27 @@ Class MCGhast : MinecraftMonster
 		+DROPOFF
 		+BRIGHT
 		
-		MinecraftMonster.DespawnRange 4096, 8192;
-		MinecraftMonster.SightTimeOut 0;
+		TM_Monster.DespawnRange 4096, 8192;
+		TM_Monster.SightTimeOut 0;
 		
+		// Immune to most environmental damage types, but soul fire can hurt them.
 		DamageFactor "DamageSector", 0.0;
 		DamageFactor "Fire", 0.0;
+		DamageFactor "HellFire", 0.0;
 		DamageFactor "Falling", 0.0;
 		DamageFactor "Drowning", 0.0;
+		DamageFactor "Void", 0.0; // Can't exactly fall off the map now, can it?
 		
 		
 		ActiveSound "Minecraft/Ghast/Moan";
 		PainSound "Minecraft/Ghast/Scream";
 		DeathSound "Minecraft/Ghast/Death";
 		
-		MinecraftMonster.MaxChaseRange 3096;
-		MinecraftMonster.MaxSightRange 2048;
+		TM_Monster.MaxChaseRange 4096;
+		TM_Monster.MaxSightRange 2048;
 		MaxStepHeight 0;
 		
-		Mass 1000;
+		Mass 500;
 		Health 500;
 		Scale RealScale;
 		Radius RealRadius;
@@ -122,16 +125,16 @@ Class MCGhast : MinecraftMonster
 	{
 		Super.PostBeginPlay();
 		Init(LimbCount);
-		Limb[Head] = MCBodyPart(Spawn('MCGhastHead', pos));
-		Limb[Ten1] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten2] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten3] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten4] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten5] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten6] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten7] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten8] = MCBodyPart(Spawn('MCGhastTentacle', pos));
-		Limb[Ten9] = MCBodyPart(Spawn('MCGhastTentacle', pos));
+		Limb[Head] = TM_BodyPart(Spawn('TM_GhastHead', pos));
+		Limb[Ten1] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten2] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten3] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten4] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten5] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten6] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten7] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten8] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
+		Limb[Ten9] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
 		
 		Limb[Head].Owner = self;
 		Limb[Head].Master = self;
@@ -192,7 +195,7 @@ Class MCGhast : MinecraftMonster
 			VelTimer = Second * IRandom(1, 4);
 			AP = (	ffrandom(0, 360),
 					ffrandom(-75, 75));
-			NextVel = MC_S7_Math.Vec3FromAngle(AP.X, AP.Y, TopSpeed);
+			NextVel = TM_S7_Math.Vec3FromAngle(AP.X, AP.Y, TopSpeed);
 		}
 			
 		// If bouncing off geometry, adopt the new direction.
@@ -218,7 +221,7 @@ Class MCGhast : MinecraftMonster
 				(!bNOBLOCKMONST && (f & Line.ML_BLOCKMONSTERS)) ||
 				(bBLOCKASPLAYER && (f & Line.ML_BLOCK_PLAYERS)))
 			{
-				int CurSide = MC_S7_Math.PointOnLineSidePrecise(pos.x, pos.y, BlockingLine);
+				int CurSide = TM_S7_Math.PointOnLineSidePrecise(pos.x, pos.y, BlockingLine);
 				Vector3 normal = (BlockingLine.Delta.Y, -BlockingLine.Delta.X, 0).Unit();
 				if (CurSide > 0)	normal *= -1;
 				
@@ -226,8 +229,8 @@ Class MCGhast : MinecraftMonster
 				if (NVel ~== (0,0,0))	NVel = PreVel;
 				
 				double len = NextVel.Length();
-				NextVel = MC_S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
-				Vel = MC_S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
+				NextVel = TM_S7_Math.ReflectVector(NextVel.Unit(), normal) * len;
+				Vel = TM_S7_Math.ReflectVector(NVel.Unit(), normal) * VelLen;
 			}
 		}
 		
@@ -259,12 +262,12 @@ Class MCGhast : MinecraftMonster
 		if (ValidateTarget(false, flags: VTF_Chase))
 		{
 			A_FaceTarget(0);
-			FaceDir(45);
+		//	FaceDir(45);
 		}
 		else
 		{
 			A_ClearTarget();
-			SetState(ResolveState('Idle'));
+			EnterIdle();
 		}
 	}
 	
@@ -277,14 +280,14 @@ Class MCGhast : MinecraftMonster
 	{
 		if (!Target)	return;
 		
-		MCBodyPartHead head = GetHead();
+		TM_BodyPartHead head = GetHead();
 		Vector3 SpawnPos;
 		SpawnPos = Vec3Angle(
 			2.0 * Scale.X * OverScale, 
 			((head) ? head.angle : angle), 
 			0.0 * Scale.X * OverScale);
 		
-		let ball = MCGhastFireball(Spawn('MCGhastFireball', SpawnPos, ALLOW_REPLACE));
+		let ball = TM_GhastFireball(Spawn('TM_GhastFireball', SpawnPos, ALLOW_REPLACE));
 		if (ball)
 		{
 			ball.Target = self;
@@ -341,8 +344,11 @@ Class MCGhast : MinecraftMonster
 // being reflected by a player.
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-
-Class MCGhastFireball : MinecraftProjectile
+Class TM_Vector3
+{
+	Vector3 v;
+}
+Class TM_GhastFireball : TM_Projectile
 {
 	const HOffset = 0.45;
 	const RealDamage = 10;
@@ -352,7 +358,7 @@ Class MCGhastFireball : MinecraftProjectile
 	Property Timer: Timer;
 	Default
 	{
-		MCGhastFireball.Timer Minute;
+		TM_GhastFireball.Timer Minute;
 		Projectile;
 		Speed 40;
 		Damage 0;
@@ -369,7 +375,7 @@ Class MCGhastFireball : MinecraftProjectile
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		HitBox = Spawn('MCGhastFireballReflect', pos);
+		HitBox = Spawn('TM_GhastFireballReflect', pos);
 		if (HitBox)	
 		{
 			HitBox.Master = self;
@@ -377,7 +383,7 @@ Class MCGhastFireball : MinecraftProjectile
 			HitBox.A_SetSize(Radius * mul, Height * mul);
 		}
 			
-		Flame = Spawn('MCGhastFire', pos + (0,0,Height * HOffset));
+		Flame = Spawn('TM_GhastFire', pos + (0,0,Height * HOffset));
 		if (Flame)	Flame.Master = self;
 	}
 	
@@ -395,7 +401,7 @@ Class MCGhastFireball : MinecraftProjectile
 	
 	override bool CanCollideWith(Actor other, bool passive)
 	{
-		if (other is 'MCGhastFireball' || other is 'MCGhastFireballReflect')	
+		if (other is 'TM_GhastFireball' || other is 'TM_GhastFireballReflect')	
 			return true;
 		
 		return (!passive);
@@ -414,7 +420,7 @@ Class MCGhastFireball : MinecraftProjectile
 			
 			ret = (bRIPPER) ? -1 : 0;
 			
-			if (victim is 'MCGhast' && Target is 'PlayerPawn')
+			if (victim is 'TM_Ghast' && Target is 'PlayerPawn')
 				dmg = Max(victim.Health * 10, victim.SpawnHealth());
 			else
 				dmg *= irandom(1, (bSTRIFEDAMAGE) ? 4 : 8);
@@ -427,7 +433,7 @@ Class MCGhastFireball : MinecraftProjectile
 	override void Activate(Actor activator)
 	{
 		Actor mo = activator;
-		if (mo && mo.player)
+		if (mo)
 		{
 			Actor temp = Target;
 			Target = mo;
@@ -466,6 +472,30 @@ Class MCGhastFireball : MinecraftProjectile
 		
 	}
 	
+	private void GenerateFlames()
+	{
+		GetEvent();
+		Vector3 np = pos;
+		np = TM_Global.AdjustBlockPos(np);
+		Array<TM_Vector3> vec; vec.Clear();
+		
+		for (double xx = -32; xx <= 32; xx += 32)
+		{
+			for (double yy = -32; yy <= 32; yy += 32)
+			{
+				double zz = CurSector.NextLowestFloorAt(pos.x + xx, pos.y + yy, pos.z + 1);
+				if (abs(zz - pos.z) > 64)
+					continue;
+					
+				if (irandom(0,3) > 0)
+					continue;
+				
+				if (Event)
+					Event.SpawnFireBlock(Target, Self, (pos.x + xx, pos.y + yy, zz));
+			}
+		}
+	}
+	
 	States
 	{
 	Spawn:
@@ -490,6 +520,7 @@ Class MCGhastFireball : MinecraftProjectile
 			{
 				Explode(true, 300, 96, 32, 64 * 30, flags: 0, DamageType: DmgType);
 				bKILLED = true;
+				GenerateFlames();
 			}
 			DestroyOthers();
 		}
@@ -499,7 +530,7 @@ Class MCGhastFireball : MinecraftProjectile
 
 // The box is set by the fireball to be 2x the size of the fireball. Pressing
 // use on it will reflect the fireball. Only players can do this.
-Class MCGhastFireballReflect : Actor
+Class TM_GhastFireballReflect : Actor
 {
 	private int Timer;
 	Default
@@ -550,7 +581,7 @@ Class MCGhastFireballReflect : Actor
 	}
 }
 
-Class MCGhastFire : Actor
+Class TM_GhastFire : Actor
 {
 	Default
 	{
@@ -559,30 +590,24 @@ Class MCGhastFire : Actor
 		+NOTONAUTOMAP
 		+FORCEYBILLBOARD
 		+BRIGHT
-		Scale 3.0;
+		Scale 0.75;
 	}
 	
 	States
 	{
 	Spawn:
-		X211 A 0 NoDelay A_Jump(256, "F1", "F2");
-	F1:
 		X209 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2;
 		X210 ABCDEF 2;
-		Loop;
-	F2:
-		X211 ABCDEFGHIJKLMNOPQRSTUVWXYZ 2;
-		X212 ABCDEF 2;
 		Loop;
 	}
 }
 
-Class MCGhastHead : MCBodyPartHead
+Class TM_GhastHead : TM_BodyPartHead
 {
 	Default
 	{
-		MCBodyPartHead.NoAim true;
-		MCBodyPart.CopyFrames MCFrames_FromMaster;
+		TM_BodyPart.NoAim true;
+		TM_BodyPart.CopyFrames TM_Frames_FromMaster;
 	}
 	override void DoMotion()
 	{
@@ -592,15 +617,15 @@ Class MCGhastHead : MCBodyPartHead
 		A_SetPitch(0);
 	}
 }
-Class MCGhastTentacle : MCBodyPartArm
+Class TM_GhastTentacle : TM_BodyPartArm
 {
 	Default
 	{
-		MCBodyPart.ForceIdleSway true;
-		MCBodyPart.SineDistance 0, 10, 0;
-		MCBodyPart.SineSpeed 0, 2, 0;
+		TM_BodyPart.ForceIdleSway true;
+		TM_BodyPart.SineDistance 0, 10, 0;
+		TM_BodyPart.SineSpeed 0, 2, 0;
 	}
 }
 
-Class MCGhastTentacleGib: MCBodyPartGib {}
+Class TM_GhastTentacleGib: TM_BodyPartGib {}
 

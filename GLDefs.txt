@@ -1,3 +1,4 @@
+
 // Auto doesn't work due to the naming conventions so this must be done manually.
 brightmap sprite "Materials/Enderman.png"
 {

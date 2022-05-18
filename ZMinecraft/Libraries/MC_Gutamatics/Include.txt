@@ -1,0 +1,4 @@
+#include "ZMinecraft/Libraries/MC_Gutamatics/GlobalMaths.txt"
+#include "ZMinecraft/Libraries/MC_Gutamatics/Matrix.txt"
+#include "ZMinecraft/Libraries/MC_Gutamatics/Quaternion.txt"
+#include "ZMinecraft/Libraries/MC_Gutamatics/VectorUtil.txt"

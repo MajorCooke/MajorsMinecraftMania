@@ -7,21 +7,8 @@ described as such:
 Peaceful Mode
 	Defaults to Off. If enabled, monsters can despawn based on Peaceful Behavior.
 
-Difficulty
-	Set your monster difficulty here. Defaults to Normal.
-		
-	* Easy: 
-		Monsters deal less damage and don't spawn with protective gear.
 
-	* Normal: 
-		Monsters deal regular damage. Baby variants can spawn a bit more 
-		frequently. Zombies and others may have a sword if they don't spawn with
-		a weapon by default, which increases their damage. Small chance to be
-		wearing armor which further reduces incoming damage.
 		
-	* Hard:
-		Monsters deal more damage. Some mobs can inflict debuffs, and some can
-		spawn wearing full sets of armor.
 		
 Peaceful Behavior
 
@@ -47,7 +34,16 @@ Peaceful Behavior
 		Monsters spawn docile, following the rules of the current difficulty.
 		I.e. Hard allows mobs to spawn with armor, etc.
 		
+Spawn Difficulty
+	Adjusts the spawn ratios of different monsters.
+
+AI Difficulty
+	Set your monster difficulty here. Defaults to medium. Various specific parts
+	are adjusted to make them harder. I.e. zombies gain speed, skeletons attack
+	faster, creepers can walk while hissing...
+		
 - Spawner Tweaks -
+
 
 	The minutes, seconds and random seconds adjust how often waves of monsters 
 	should spawn up to the maximum limit. Random seconds adds anywhere from the
@@ -84,24 +80,44 @@ Monsters Drop Items
 	Many monsters have drops to balance out the added difficulty this mod brings,
 	as it directly compounds with infinite enemies.
 	
+	Ammo, health and armor come in the form of pearls. This ensures maximum
+	compatibility, ensuring all custom weapons can be affected.
+	
 	Zombies 
 		Health and/or Armor bonuses
+		Ammo Pearls (if weaponized)
 	
 	Skeletons 
 		Ammo
+		Health/Armor (if armored)
 	
 	Creepers 
-		Weapons (Rarely) (No pistol/chainsaw)
+		TNT
+		
+	Endermen
+		Weapons (no chainsaw/pistol)
+		Powerups
+		Backpack
+		
+	Spider
+		Health/Armor/Ammo (picks one)
+		
+	Ghast
+		Backpack/Soulsphere/Megasphere (picks one)
+		
+	
 		
 	NOTE: The player must deal at least 1 point of damage to them, or they won't
 	drop anything at all. This is to prevent exploiting/farming in damaging sectors
 	in addition to spawning lots of items and potentially slowing the game down.
 	
+
+	
 Environment Damage
 	Toggles whether monsters can take environment damage. This includes sector,
 	falling and drowning damage. Note: Some monsters are naturally immune to these
-	to reflect the respective behavior in Minecraft, such as Zombie Pigmen being
-	immune to fire and lava.
+	to reflect the respective behavior in Minecraft, such as ziglins being immune
+	to fire and lava.
 	
 	Fall Damage
 		Enemies can take fall damage if this is enabled. This isn't the same as

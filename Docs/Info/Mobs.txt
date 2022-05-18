@@ -1,0 +1,146 @@
+
+
+================================================================================
+- Monster Information -
+================================================================================
+Monsters can spawn anywhere and at any time. While they do not combust 
+spontaneously when walking outside, they do take damage from damage floors and
+are instantly killed by crushers. They cannot trigger any line/sector actions
+since they would otherwise break sensitive maps, but they can teleport.
+
+Special DOOM-specific Behaviors included:
+* Die instantly to crushers
+* Take damage from damaging floors (except fire immune) (toggleable)
+* Take fall damage (toggleable)
+* Can drown (toggleable)
+* Do not drop anything if not damaged by a player before death
+* Never triggers line/sector/action specials, and cannot be assigned specials
+* Spawn on 3D floors
+* Don't spawn in sectors connected with SkyViewpoints
+
+Any monster will attempt to spawn at a distance from the player. Without certain
+conditions, they will also despawn with a chance that grows the further the player
+is away from them. They will attempt to spawn in safe areas where they cannot
+naturally be damaged, if sector damage is enabled in the option menu. But if it's
+disabled, they can spawn in any sector regardless of the floor having damage or
+not.
+
+When a player is damaged by a Minecraft enemy, they become immune for half a 
+second to damage coming from them. That means it's possible for a player to become
+immune to an explosion from a creeper that would otherwise annihilate them if a
+zombie were to melee them. This is not a bug - it's a feature. =P
+
+--------------------------------------------------------------------------------
+***** Monsters *****
+=== Zombies ===
+= Regular =
+This cumbersome beast is slow moving, yet hits quite hard if his grabby hands
+get around your limbs. As they're undead, they're rather tough with stamina but
+are also bumbling and, well, quite brain dead.
+
+Type: Undead
+
+- Natural armor: 8% damage reduction
+- Chance to call other zombies to help from all around when damaged
++ Slow
++ Moves straight towards foes, good for exploding in groups
+
+
+= Baby =
+Half the size of zombies, these guys spawn rarely but are harder to kill due to
+size.
+
+- 50% faster than adults
++ Explosion/Slime/Fire damage doubled against them
++ Doesn't spawn with armor or weapons
+
+=== Skeletons ===
+Type: Undead
+= Regular =
+How these things can act without meat is probably demonic in nature. Having shed
+their rotten exoskeleton, these creatures are more nimble but also more brittle
+than their cousin counterparts. They wield bows and prefer to keep a distance 
+from their foes, backing away when within a certain range of the enemy.
+
+Differences from Minecraft:
+* They're a bit smarter in this mod. Whenever their arrows hit an unintended
+	target, and the target goes after them in turn, they'll turn their full
+	attention towards them and attempt to finish them off quickly.
+	
++ No natural resistance
++ Immune to Regeneration
+- Immune to Poison, Drowning
+- Can hold and shoot arrows of varying effects
+
+= Wither =
+An ashen skeleton resurrected via Hell magic or from souls in the Nether. 
+Skeletons that are destroyed via fire damage are imbued and reconstructed in the
+Nether, and given swords as more powerful foes which makes them dangerous up close.
+
++ Melee only variant
++ No armor
++ Immune to regeneration
+- Can spawn with 1-2 swords, increasing damage
+- Stronger, faster
+- Immune to fire, poison, slime
+
+
+=== Creeper ===
+A failed pig-monster with camoflauge green skin and an explosive temper (quite 
+physically), these walking PTSD trigger creatures make like a dog's fart upon 
+arrival: silent, and deadly, save for the soft hiss...
+
+But you're Doomguy! You can outright kill ANYTHING! Right? ...Right?
+
+- Big explosions
+- Silent except for hissing
+- Can explode when dropping over an edge when taking fall damage
+- Always explodes if dying by falling
++ Explosions deal extra damage to non-minecraft enemies (player is immune to this)
+
+=== Enderman ===
+An alien creature that naturally isn't hostile to anything, unless attacked or
+looked at the head. When angered, staring at their head will make them hold still.
+
+- Increased health, damage, speed and can teleport
++ Neutral until attacked or stared at in the head
++ No armor or immunities
+
+
+=== Spider ===
+An abnormally large arachnopod that triggers arachnophobia, by leaping at enemies
+
+- Leaps at enemies
+- Moves through obstacles
+- Smaller in height
++ Bigger in radius, more vulnerable to explosions
++ Can fall off cliffs and kill itself.
+
+=== Ghast ===
+A big floating monster that moves in a sporadic manner and shoots fireballs from
+long distances.
+
+- Immune to fire, slime and damage sectors
+- Fireballs ignite the ground if close enough
++ Press "use" on the fireballs when close enough to reflect them
++ Reflected fireballs insta-kill ghasts
++ Slow, easy targets for hitscans
+
+
+=== Blaze ===
+Floating fire elemental that shoots fire charges which ignites anything they hit,
+including setting the ground on fire. This is the result of a soul combined with
+the Nether flame.
+
+- Immune to fire, slime and damage sectors
++ Vulnerable to water sectors (if they don't deal sector damage themselves)
+
+=== Ziglin ===
+Zombified Piglins (AKA Ziglins) are repentant souls of Piglins that have given up
+their greed. But they won't hesitate to go all out and gang up on anyone that
+attacks them as a whole mob.
+
++ Neutral until attacked
+- Immune to fire, slime, damage sectors
+- Pulls other ziglins in to fight with it (if they have line of sight) when 
+	attacked
