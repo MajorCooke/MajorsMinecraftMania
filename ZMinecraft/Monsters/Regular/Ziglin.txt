@@ -168,12 +168,13 @@ Class TM_Ziglin : TM_Undead
 			
 		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		
-		if (src && !src.bKILLED && Targetable(src) && src == Target)
+		if (src && !src.bKILLED && Targetable(src))
 		{
 			Speed = Default.Speed * 2;
 			SetAngry(true);
 			AngerDelay = irandom(1, 15);
 			RemoveGoal();
+			Target = src;
 			// intentionally not checking Dif_Hard since they always do this.
 			if (TMV_AIDifficulty == Dif_Medium)
 				DoAlertMonsters(src);
