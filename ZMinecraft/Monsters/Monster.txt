@@ -332,6 +332,7 @@ Class TM_Monster : TM_Entity abstract
 		
 		CurStyle = GetRenderStyle();
 		/*
+		bADDLIGHTLEVEL = true;
 		if (LightLevel >= 255)
 		{
 			LightLevel = 255;

@@ -211,7 +211,8 @@ mixin Class TM_UpdateLimbs
 				//	Limb[i].CopyAngles(self);
 					Limb[i].SetNextAngles(NA);
 				}
-			//	Limb[i].LightLevel = LightLevel;
+				Limb[i].bADDLIGHTLEVEL = bADDLIGHTLEVEL;
+				Limb[i].LightLevel = LightLevel;
 				Limb[i].CurStyle = CurStyle;
 				Limb[i].A_SetRenderStyle(alpha, CurStyle);
 				Limb[i].Translation = Translation;
@@ -574,11 +575,11 @@ Class TM_BodyPart : TM_Entity
 			
 		}
 		
-		let g = TM_BodyPartGib(Spawn(Gib, pos, ALLOW_REPLACE));
+		let g = TM_BodyPartGib(Spawn(Gib, pos + WorldOffset, ALLOW_REPLACE));
 		if (g)
 		{
 			// TO DO: Rework the spawning to be more appropriate. 
-			g.Warp(self, 
+			g.Warp(g, 
 				(Ofs.X + g.OffX) * cos(pitch), 
 				(Ofs.Y + g.OffY), 
 				(Ofs.Z + g.OffZ) * -sin(pitch), 
@@ -682,22 +683,27 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 			if (!who)	return;
 		}
 		
-		Vector3 px, py, pz, origin, _Ang, NP;
+		Vector3 px, py, pz, origin, _Ang, NP, NPos;
 		_Ang = (CurAng + AngOff);
 		
 		double _p = ((start) ? 0 : who.pitch);
 		[px, py, pz] = TM_CoordUtil.GetAxes(_p, who.angle, who.roll);
-		origin = who.pos + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz);
+		origin = who.pos; // + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz)
+		NPos = who.WorldOffset + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz);
 		
 		if (!(RelOff ~== (0,0,0)))
 		{
 			[px, py, pz] = TM_CoordUtil.GetAxes(_Ang.Y, _Ang.X, _Ang.Z);
-			origin += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+		//	origin += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
+			NPos += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
 		}
 		
-		origin += AbsOff;
-		if (!(origin ~== pos))
+	//	origin += AbsOff;
+		NPos += AbsOff;
+		if (origin != pos)
 			SetOrigin(origin, interp);
+			
+		WorldOffset = NPos;
 	}
 	
 	// Updates the scale of all vectors based on scale so their limbs grow
@@ -1082,7 +1088,7 @@ Class TM_BodyPartHead : TM_BodyPart
 					if (TargetHead)
 					{
 						Target = TargetHead;
-						zof = Target.Pos.Z + Target.Height * 0.5;
+						zof = Target.Pos.Z + Target.WorldOffset.Z + Target.Height * 0.5;
 					}
 				}
 			}

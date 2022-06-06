@@ -230,7 +230,7 @@ extend class TM_Handler
 				{
 					Vector3 hitpos = etrc.Results.HitPos;
 					let head = mo.GetHead();
-					if (head && hitpos.z >= head.pos.z)
+					if (head && hitpos.z >= head.pos.z + head.WorldOffset.z)
 					{
 						mo.SetAngry(plr, true, true);
 					//	mo.Stared(plr);

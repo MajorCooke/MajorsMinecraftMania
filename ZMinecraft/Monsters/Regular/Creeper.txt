@@ -159,7 +159,7 @@ Class TM_Creeper : TM_Monster
 	
 	override void Activate(Actor activator)
 	{
-		if (health < 1 || bDESTROYED)	return;
+		if (bKILLED || bDESTROYED)	return;
 		Super.Activate(activator);
 		for (int i = 0; i < LimbX.Size(); i++)
 			if (LimbX[i])	LimbX[i].Activate(activator);
@@ -167,7 +167,7 @@ Class TM_Creeper : TM_Monster
 	
 	override void Deactivate(Actor activator)
 	{
-		if (health < 1 || bDESTROYED)	return;
+		if (bKILLED || bDESTROYED)	return;
 		Super.Deactivate(activator);
 		for (int i = 0; i < LimbX.Size(); i++)
 			if (LimbX[i])	LimbX[i].Deactivate(activator);
@@ -264,6 +264,9 @@ Class TM_Creeper : TM_Monster
 	{
 		Super.Tick();
 		
+		// Gives just a couple of tics to process explosion damage for missiles
+		// that blow up right upon impact, triggering the desired option in the
+		// menu.
 		if (bKILLED || IsFrozen())	
 		{
 			if (bKILLED && !IsFrozen())
@@ -291,12 +294,16 @@ Class TM_Creeper : TM_Monster
 					
 					if (Limb[i])
 					{
-					//	LimbX[i].CopyAngles(Limb[i], true);
+						
 					//	LimbX[i].UpdatePosition(Limb[i], start: false);
+					//	LimbX[i].CopyAngles(Limb[i], true);
+					
 						LimbX[i].SetOrigin(Limb[i].Pos, true);
+						LimbX[i].WorldOffset = Limb[i].WorldOffset;
 						LimbX[i].Angle = Limb[i].Angle;
 						LimbX[i].Pitch = Limb[i].Pitch;
 						LimbX[i].Roll = Limb[i].Roll;
+					
 					}
 					else
 					{
@@ -318,11 +325,7 @@ Class TM_Creeper : TM_Monster
 		if (!Charging && ChargeTimer > 0)
 			ChargeTimer--;
 		
-//		if (Targetable(Target) && 
-//			CheckSight(Target, CSFlags))
 		{
-		//	if (!OnGround && Vel.Z < -9.0)
-		//		SetExplosionCounting(true, true);
 		
 			// Handle the charging effects.
 			if (Charging && ChargeTimer < MaxCharge)
@@ -348,7 +351,7 @@ Class TM_Creeper : TM_Monster
 		if (bCORPSE)	return;
 		
 		bCORPSE = true;
-		Health = min(0, Health);
+		Health = 0;
 		
 		for (let probe = inv; probe; probe = probe.inv)
 			if (probe)	probe.OwnerDied();
@@ -393,7 +396,7 @@ Class TM_Creeper : TM_Monster
 			Kaboom();
 	}
 	
-	
+	/*
 	override void SpawnRiders()
 	{
 		if (NoRiders || bDESTROYED || bKILLED)	return;
@@ -406,7 +409,7 @@ Class TM_Creeper : TM_Monster
 		SpawnRider('TM_Creeper', hoff, 48);
 		SpawnRider('TM_Creeper', hoff, 16);
 	}
-	
+	*/
 
 	const MaxCharge = Second + 18; // Just above 1.5 seconds.
 	const MaxChargeFrac = 1.0 / MaxCharge;
@@ -431,15 +434,8 @@ Class TM_Creeper : TM_Monster
 	
 	bool InExploRange(Actor mo = null, bool twod = false, double dist = -1.0)
 	{
-		if (!mo)	
-		{
-			/*
-			ValidateTarget();
-			mo = Target;
-			if (!mo)	
-			*/
-			return false;
-		}
+		if (!mo)	return false;
+		
 		
 	//	if (ChargeFall && OnGround)	return true;
 		
@@ -475,13 +471,19 @@ Class TM_Creeper : TM_Monster
 		ChargeChaseSpeed = Speed * SpeedMul;	
 	}
 	
-	override void EnterIdle() { SetExplosionCounting(false); Super.EnterIdle(); }
+	override void EnterIdle() 
+	{ 
+		bBRIGHT = false;
+		SetExplosionCounting(false); 
+		Super.EnterIdle(); 
+	}
 	
 	States
 	{
 	See:
 		TNT1 A 1 
 		{
+			bBRIGHT = false;
 			if (OnGround)
 				SetExplosionCounting(false);
 			bool drop = bDROPOFF;
@@ -499,7 +501,7 @@ Class TM_Creeper : TM_Monster
 				return ResolveState("See");
 			}
 			SetExplosionCounting(true, pos.z > floorz);
-			
+			bBRIGHT = true;
 			if (ChargeChaseSpeed > 0 && Pos.Z <= FloorZ && VelLen <= Speed)
 			{
 				bool drop = bDROPOFF;

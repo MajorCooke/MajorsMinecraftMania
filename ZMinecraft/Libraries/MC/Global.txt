@@ -278,7 +278,7 @@ Class TM_Global play
 	static void FaceVector(Actor mo, Vector3 other)
 	{
 		if (!mo)	return;
-        Vector3 diff = level.Vec3Diff(mo.pos, other);
+        Vector3 diff = level.Vec3Diff(mo.pos + mo.WorldOffset, other);
         mo.angle = VectorAngle(diff.X, diff.Y);
         mo.pitch = -VectorAngle(diff.XY.Length(), diff.Z);
     }
