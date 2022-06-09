@@ -6,6 +6,7 @@ extend class TM_Monster
 	protected Array<Actor> Damagers;
 	protected bool GodMode, TrueBuddha;
 	
+	// Replicates DamageMobj from GZDoom source code (mostly).
 	protected virtual int CalculateDamage(out Actor i, out Actor s, int damage, out Name mod, out int flags, double angle)
 	{
 		int dmg = damage;
@@ -16,7 +17,7 @@ extend class TM_Monster
 			if (bDORMANT || NoDmgTimer > 0)	
 				return -1;
 		
-			bool telefrag = (damage >= TELEFRAG_DAMAGE && !bLAXTELEFRAGDMG && !bNODAMAGE);
+			bool telefrag = (!bNODAMAGE && !bLAXTELEFRAGDMG && damage >= TELEFRAG_DAMAGE);
 		
 			if (!telefrag)
 			{
@@ -27,8 +28,7 @@ extend class TM_Monster
 				if (bSPECTRAL && (!i || !i.bSPECTRAL))
 					return -1;
 				
-				if ((i && i.bPIERCEARMOR) || (s && s.bPIERCEARMOR) || mod == 'Falling' ||
-					mod == 'Drowning')
+				if ((i && i.bPIERCEARMOR) || mod == 'Falling' || mod == 'Drowning')
 					flags |= DMG_NO_ARMOR;
 					
 				if (i)	dmg = i.DoSpecialDamage(self, dmg, mod);
@@ -37,9 +37,9 @@ extend class TM_Monster
 				if (s)	
 				{					
 					if (s == self)
-						dmg = int(double(dmg) * SelfDamageFactor);
+						dmg = int(floor(double(dmg) * SelfDamageFactor));
 					
-					dmg = int(double(dmg) * s.DamageMultiply);
+					dmg = int(floor(double(dmg) * s.DamageMultiply));
 					
 					if (dmg > 0 && !(flags & DMG_NO_ENHANCE))	
 						dmg = s.GetModifiedDamage(mod, dmg, false, i, s, flags);
@@ -58,11 +58,12 @@ extend class TM_Monster
 			}
 		
 			
-			if (!bNOCLIP && i && i != self && !i.bNODAMAGETHRUST && 
-				!(flags & DMG_THRUSTLESS) && !bDONTTHRUST)
+			if (!bDONTTHRUST && !(flags & DMG_THRUSTLESS) && 
+				i && i != self && !i.bNODAMAGETHRUST)
 				ApplyKickback(i, s, dmg, angle, mod, flags);
 				
-			if (CanArmor && !telefrag && dmg > 0 && !(flags & DMG_NO_ARMOR) && inv)
+			// Armor absorption 
+			if (!telefrag && dmg > 0 && !(flags & DMG_NO_ARMOR) && inv)
 				for (let probe = inv; probe; probe = probe.inv)
 					probe.AbsorbDamage(dmg, mod, dmg, i, s, flags);
 				
@@ -87,6 +88,9 @@ extend class TM_Monster
 			DamageTypeReceived = mod;
 			if (s && Damagers.Find(s) >= Damagers.Size())
 				Damagers.Push(s);
+				
+			if (s && s.player)
+				PlayerDamaged = true;
 			
 			if ((!bNODAMAGE || (flags & DMG_FORCED)))
 				Health -= dmg;
@@ -121,8 +125,8 @@ extend class TM_Monster
 			{
 				if (bQUICKTORETALIATE || Threshold < 1)
 				{
-					if (!lastenemy || lastenemy.bKILLED)
-						lastenemy = target;
+			//		if (!lastenemy || lastenemy.bKILLED || lastenemy)
+			//			lastenemy = target;
 						
 					target = s;
 					

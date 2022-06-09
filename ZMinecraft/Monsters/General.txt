@@ -1,6 +1,6 @@
 
 // Contains info about who last damaged this actor. Used for DamageReact.
-Struct LastDamaged
+struct LastDamaged
 {
 	Actor i, s;
 	int damage, dmg, flags;
@@ -95,6 +95,7 @@ extend class TM_Monster
 		if (health < 1 || bDORMANT)	return;
 		
 		Damagers.Clear();
+		ClearTarget();
 		Array<Powerup> Powers; Powers.Clear();
 		Array<Inventory> Items; Items.Clear();
 		for (let probe = inv; probe; probe = probe.inv)
@@ -134,7 +135,8 @@ extend class TM_Monster
 		if (mod == 'Void')
 			return false;
 	
-		bool good = (src is 'PlayerPawn');
+		bool good = (PlayerDamaged || (src is 'PlayerPawn'));
+		/*
 		if (!good)
 		{
 			for (int i = 0; i < Damagers.Size(); i++)
@@ -142,8 +144,9 @@ extend class TM_Monster
 				if (Damagers[i] is 'PlayerPawn')	
 					good = true;	break;	
 			}
+			
 		}
-		
+		*/
 		if (good)
 		{
 			if (!Drops)	Drops = TM_ItemDrops.Create();

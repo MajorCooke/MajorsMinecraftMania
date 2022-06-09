@@ -19,6 +19,7 @@ extend class TM_Monster
 	private double HealthMul;
 	protected bool IgnoreSecGrav;
 	protected TM_ItemDrops Drops;
+	protected bool PlayerDamaged;
 	
 	double DespawnRangeMin, DespawnRangeMax, SpawnRangeMin, SpawnRangeMax;
 	protected TM_QuatTurner Turner;
@@ -85,7 +86,7 @@ extend class TM_Monster
 		Scale 6;
 		PushFactor 0.3;
 		PainChance 0; // Handled internally.
-		MaxDropoffHeight 64;
+		MaxDropoffHeight 128;
 		MaxStepHeight 16;
 		+NEVERRESPAWN
 		+NEVERFAST

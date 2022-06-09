@@ -420,14 +420,15 @@ Class TM_Monster : TM_Entity abstract
 		if (!appended && (dmgflags & DMG_EXPLOSION))
 		{
 			let src = TM_Monster(source);
-			if (src is 'TM_Creeper' && src.Damagers.Size() > 0)
+			if (src is 'TM_Creeper')
 			{
 				appended = true;
-				Damagers.Append(src.Damagers);
+				if (!PlayerDamaged)
+					PlayerDamaged = src.PlayerDamaged;
 			}
 		}
 		
-		bool Drop = (source is 'PlayerPawn');
+		bool Drop = PlayerDamaged || (source is 'PlayerPawn');
 		if (!Drop)
 		{
 			for (int i = 0; i < Damagers.Size(); i++)

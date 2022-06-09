@@ -1,77 +1,20 @@
-extend class TM_Monster
-{
-	enum EAMFlags
-	{
-		AM_NOPARENT =		1,
-		AM_FORCE =			1 << 1,
-		AM_FORCEONLYPLR =	1 << 2,
-		AM_SIGHT =			1 << 3,
-		
-	//	AM_EXCLUDE =	1 << 1,
-	};
+/*==============================================================================
 
-	virtual void AlertMonsters(double dist, Actor targ = null, Class<Actor> filter = null, int limit = 0, int flags = 0)
-	{
-		if (dist <= 0.0)	dist = MaxChaseRange;
-		if (!targ)
-		{
-			return;
-		}
-		
-		if (targ is GetClass())	return;
-		
-		if (targ.bKILLED || !targ.bSHOOTABLE ||
-			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
-			return;
-		
-		TM_Monster mo = null;
-		GetEvent();
-		if (!Event)	return;
-		
-		int count = limit;
-		for (int i = 0; i < Event.Monsters.Size(); i++)
-		{
-			let mo = TM_Monster(Event.Monsters.Actors[i]);
-			if (!mo || mo == self || mo.bKILLED)	continue;
-			
-			if (filter)
-			{
-				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
-					(!(flags & AM_NOPARENT) && !(mo is filter)))
-				{
-					if (TMV_Debug == 1)
-					{
-						Name cls = mo.GetClassName();
-						name fil = filter.GetClassName();
-						Console.Printf("%s doesn't fit filter %s, skipping", cls, fil);
-					}
-					continue;
-				}
-			}
-			
-			// out of range
-			if (Distance3DSquared(mo) > dist ** 2)
-				continue;
-				
-			// not in sight
-			if ((flags & AM_SIGHT) && !CheckSight(mo, CSFlags))
-				continue;
-			
-			bool change = ((flags & AM_FORCE) || !mo.Target || (mo.Target is 'PlayerPawn') || 
-							mo.Target.bKILLED);
-			if (!change)	continue;
-			
-			mo.bAMBUSH = true;
-			mo.CopyFriendliness(self, change, false);
-			
-			mo.Tracer = targ;
-			mo.SetActorRelation(targ, Rel_Hated);
-			
-			if (count > 0 && --count < 1)
-				return;
-		}
-	}
-}
+Relationships
+
+There are two kinds: class type and actor.
+
+Class Type
+	Defines default relationships for any actor that matches, acting as a default
+	set of rules. I.e. in Minecraft, skeletons run away from wolves, a default
+	behavior set for all of them.
+	
+Actor
+	Defines a relationship that overrides the default class type. I.e. Ziglins
+	are neutral to the players and won't attack unless hurt by them. In Triple M,
+	they only attack those who attack them and don't attack anyone else.
+
+==============================================================================*/
 
 Class TM_ClassRelation play
 {
@@ -334,19 +277,21 @@ Class TM_RelationManager play
 		}
 		return 0;
 	}
-	
-	Actor NextActorRelation(int type, bool raw = false) const
+		
+	Actor NextActorRelation(int type) const
 	{
 		if (type <= Rel_None || Actors.Size() < 1)
 			return null;
+		
 		for (int i = Actors.Size() - 1; i > -1; i--)
-		{
+		{	
 			let r = Actors[i];
-			if (!r)	continue;
 			
-			if (r.mo && !r.mo.bKILLED && r.Status == type)
+			if (r && r.mo && !r.mo.bKILLED && r.Status == type)
 				return r.mo;
+				
 		}
+		
 		return null;
 	}
 	
@@ -376,7 +321,7 @@ Class TM_RelationManager play
 	// At least one is needed to return true. Any at all.
 	bool CheckStatusType(int status) const
 	{
-		if (status <= Rel_None || status > Rel_Max || 
+		if (status <= Rel_None || status >= Rel_Max || 
 			(Classes.Size() < 1 && Actors.Size() < 1))
 			return false;
 		
@@ -405,7 +350,7 @@ Class TM_RelationManager play
 	{
 		act.Clear();
 		
-		if (status < 1 || status >= Rel_Max)	return;
+		if (status <= Rel_None || status >= Rel_Max)	return;
 		
 		int size = Actors.Size();
 		for (int i = 0; i < size; i++)
@@ -422,7 +367,7 @@ Class TM_RelationManager play
 	{
 		cls.Clear();
 		
-		if (status < 1 || status >= Rel_Max)	return;
+		if (status <= Rel_None || status >= Rel_Max)	return;
 		
 		int size = Classes.Size();
 		for (int i = 0; i < size; i++)
@@ -474,6 +419,78 @@ Class TM_RelationManager play
 
 extend class TM_Monster
 {
+	enum EAMFlags
+	{
+		AM_NOPARENT =		1,
+		AM_FORCE =			1 << 1,
+		AM_FORCEONLYPLR =	1 << 2,
+		AM_SIGHT =			1 << 3,
+		
+	//	AM_EXCLUDE =	1 << 1,
+	};
+
+	virtual void AlertMonsters(double dist, Actor targ = null, Class<Actor> filter = null, int limit = 0, int flags = 0)
+	{
+		if (dist <= 0.0)	dist = MaxChaseRange;
+		if (!targ)
+		{
+			return;
+		}
+		
+		if (targ is GetClass())	return;
+		
+		if (targ.bKILLED || !targ.bSHOOTABLE ||
+			targ.bNEVERTARGET || (!bFRIENDLY && targ.bNOTARGET))
+			return;
+		
+		TM_Monster mo = null;
+		GetEvent();
+		if (!Event)	return;
+		
+		int count = limit;
+		for (int i = 0; i < Event.Monsters.Size(); i++)
+		{
+			let mo = TM_Monster(Event.Monsters.Actors[i]);
+			if (!mo || mo == self || mo.bKILLED)	continue;
+			
+			if (filter)
+			{
+				if (((flags & AM_NOPARENT) && mo.GetClass() != filter) ||
+					(!(flags & AM_NOPARENT) && !(mo is filter)))
+				{
+					if (TMV_Debug == 1)
+					{
+						Name cls = mo.GetClassName();
+						name fil = filter.GetClassName();
+						Console.Printf("%s doesn't fit filter %s, skipping", cls, fil);
+					}
+					continue;
+				}
+			}
+			
+			// out of range
+			if (Distance3DSquared(mo) > dist ** 2)
+				continue;
+				
+			// not in sight
+			if ((flags & AM_SIGHT) && !CheckSight(mo, CSFlags))
+				continue;
+			
+			bool change = ((flags & AM_FORCE) || !mo.Target || (mo.Target is 'PlayerPawn') || 
+							mo.Target.bKILLED);
+			if (!change)	continue;
+			
+			mo.bAMBUSH = true;
+			mo.CopyFriendliness(self, change, false);
+			
+			mo.Tracer = targ;
+			mo.SetActorRelation(targ, Rel_Hated);
+			
+			if (count > 0 && --count < 1)
+				return;
+		}
+	}
+
 	//==========================================================================
 	// Relation stuff
 	//
@@ -515,12 +532,12 @@ extend class TM_Monster
 	
 	int CheckRelation(Actor mo, Class<Actor> cls = null) const
 	{
-		if (!Relations || (!mo && !cls))	return 0;
+		if (!Relations || (!mo && !cls))	return Rel_None;
 		
 		if (mo && !cls)	cls = mo.GetClass();
 		
 		int AR = Relations.FindActorRelation(mo);
-		if (AR >= Rel_None)	return AR;
+		if (AR > Rel_None)	return AR;
 		
 		return Relations.FindClassRelation(cls);
 	}
@@ -537,10 +554,10 @@ extend class TM_Monster
 			Relations.SetActorRelation(mo, status, priority);
 	}
 	
-	Actor NextActorRelation(int status, bool raw = false)
+	Actor NextActorRelation(int status)
 	{
 		if (status > Rel_None && Relations)
-			return Relations.NextActorRelation(status, raw);
+			return Relations.NextActorRelation(status);
 		return null;
 	}
 	
@@ -572,8 +589,8 @@ extend class TM_Monster
 		if (Relations)	Relations.RemoveActorRelation(who);
 	}
 	
-	
-	bool CheckRelationTarget(Actor mo) const
+	// Returns true if the actor can be targeted.
+	bool CheckRelationTarget(Actor mo, bool dmgers = false) const
 	{
 		if (!mo)		return false;
 		if (mo == Goal)	return true;
@@ -592,7 +609,7 @@ extend class TM_Monster
 				Case Rel_Ignored:	return false;
 				// 
 				Case Rel_Neutral:
-					return CheckActorDamager(mo);
+					return (dmgers ? CheckActorDamager(mo) : false);
 				Case Rel_None:
 				{
 					if (IsTeamMate(mo))
@@ -608,18 +625,18 @@ extend class TM_Monster
 					
 				}
 				Default:
-					return CheckActorDamager(mo);
+					return (dmgers ? CheckActorDamager(mo) : false);
 			}
 			return false;
 		}
 		return true;
 	}
 	
-	bool CheckActorDamager(Actor mo, int attack = 0) const
+	protected bool CheckActorDamager(Actor mo, int attack = 0) const
 	{
 		if (mo)
 		{
-			if (attack > 0 || (attack == 0 && AttackDamagers))	
+			if (attack > 0 || AttackDamagers)
 				return (Damagers.Find(mo) < Damagers.Size());
 		}
 		return false;
@@ -631,10 +648,8 @@ extend class TM_Monster
 		if (!mo)	
 		{
 			mo = Target;
-			if (!mo)	
-			{
+			if (!mo)
 				return;
-			}
 		}
 		LastEnemy = null;
 		if (Tracer == mo)
