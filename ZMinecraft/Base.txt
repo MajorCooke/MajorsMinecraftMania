@@ -229,7 +229,7 @@ Class TM_PlayerProtection : PowerProtection
 				
 				// Peaceful protects from TM damage, unless it's a boss/minion
 				// and the damage type isn't hellfire or void (prevent cheesing)
-				if (TMV_Peaceful && !source.bBOSSSPAWNED && !(source is "TM_Boss") && 
+				if (TMV_Peaceful && (source && !source.bBOSSSPAWNED && !(source is "TM_Boss")) && 
 					damageType != 'Hellfire' && damageType != 'Void')
 					return -1;
 				
