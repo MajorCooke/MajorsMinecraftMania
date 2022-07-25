@@ -170,7 +170,7 @@ Class TM_PlayerProtection : PowerProtection
 	{
 		DamageFactor "Ghast", 0.20;
 		DamageFactor "Creeper", 0.20;
-		DamageFactor "TNT", 0.20;
+		DamageFactor "TNT", 0.10;
 	}
 	
 	override void InitEffect()
