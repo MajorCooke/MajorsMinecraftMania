@@ -169,7 +169,7 @@ Class TM_PlayerProtection : PowerProtection
 	Default
 	{
 		DamageFactor "Ghast", 0.20;
-		DamageFactor "Creeper", 0.20;
+		DamageFactor "Creeper", 0.10;
 		DamageFactor "TNT", 0.10;
 	}
 	

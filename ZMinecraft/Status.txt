@@ -143,7 +143,10 @@ Class TM_StatusEffectInterval : TM_StatusEffect
 	}
 }
 
-Class PoisonEffect : TM_StatusEffectInterval
+// -10 HP per trigger. 
+// Potency levels < 5 affect how often to damage.
+// Potency levels >= 5 affect how much damage to give every ~0.5 seconds.
+Class TM_PoisonEffect : TM_StatusEffectInterval
 {
 	Default
 	{
@@ -184,7 +187,7 @@ Class PoisonEffect : TM_StatusEffectInterval
 	}
 }
 
-Class WitherEffect : TM_StatusEffectInterval
+Class TM_WitherEffect : TM_StatusEffectInterval
 {
 	Default
 	{
@@ -219,7 +222,7 @@ Class WitherEffect : TM_StatusEffectInterval
 }
 
 // -10% damage output per level
-Class WeaknessEffect : TM_StatusEffectDmg
+Class TM_WeaknessEffect : TM_StatusEffectDmg
 {
 	Default
 	{
@@ -237,7 +240,7 @@ Class WeaknessEffect : TM_StatusEffectDmg
 
 
 // +15% damage output per level
-Class StrengthEffect : TM_StatusEffectDmg
+Class TM_StrengthEffect : TM_StatusEffectDmg
 {
 	override void ModifyDamage(int damage, Name dmgType, out int newdamage, bool passive, Actor i, Actor s, int flags)
 	{
@@ -248,7 +251,7 @@ Class StrengthEffect : TM_StatusEffectDmg
 	}
 }
 // +1 health per potency
-Class RegenerationEffect : TM_StatusEffectInterval
+Class TM_RegenerationEffect : TM_StatusEffectInterval
 {
 	Default
 	{
@@ -271,7 +274,7 @@ Class RegenerationEffect : TM_StatusEffectInterval
 	}
 }
 
-Class InstantHealthEffect : TM_StatusEffectInterval
+Class TM_InstantHealthEffect : TM_StatusEffectInterval
 {
 	override void Trigger()
 	{
@@ -282,7 +285,7 @@ Class InstantHealthEffect : TM_StatusEffectInterval
 }
 
 // +20% speed per level.
-Class SpeedEffect : TM_StatusEffect
+Class TM_SpeedEffect : TM_StatusEffect
 {
 	override void Modified()
 	{
@@ -290,7 +293,7 @@ Class SpeedEffect : TM_StatusEffect
 	}
 }
 // -15% speed per level.
-Class SlownessEffect : TM_StatusEffect
+Class TM_SlownessEffect : TM_StatusEffect
 {
 	Default
 	{
@@ -304,7 +307,7 @@ Class SlownessEffect : TM_StatusEffect
 
 
 // +20% damage resistance per level.
-Class ResistanceEffect : TM_StatusEffectDmg
+Class TM_ResistanceEffect : TM_StatusEffectDmg
 {
 	override void DoEffect()
 	{
@@ -334,7 +337,7 @@ Class ResistanceEffect : TM_StatusEffectDmg
 }
 
 // Immunity to fire and slime damage.
-Class FireResistanceEffect : TM_StatusEffectDmg
+Class TM_FireResistanceEffect : TM_StatusEffectDmg
 {
 	override void ModifyDamage(int damage, Name mod, out int newdamage, bool passive, Actor i, Actor s, int flags)
 	{
@@ -388,12 +391,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 	
 	private Actor Flame;
 	private int Dmg, Flags;
-	/*
-	override bool TryPickup(in out Actor toucher)
-	{
-		if (toucher && TM_Global.IsImmune
-	}
-	*/
+	
 	override void InitEffect()
 	{
 		Super.InitEffect();
@@ -467,6 +465,8 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 		
 		if (Owner.WaterLevel > 0 && (Potency == FIRE_Normal || Potency == FIRE_Soul))
 		{	Destroy();	return;	}
+		
+		if (Owner.IsFrozen())	return;
 		
 		Super.DoEffect();
 		
@@ -587,12 +587,11 @@ extend Class TM_Handler
 		
 		let id = TexMan.CheckForTexture(tex);
 		if (!id)	return;
-		Vector2 s = TexMan.GetScaledSize(id); //[s.x, s.y] = TexMan.GetSize(id);
+		Vector2 s = TexMan.GetScaledSize(id);
 		double ratio = Screen.GetAspectRatio();
 		double nx = s.x;
 		s.x /= ratio;
 		nx -= s.x;
-	//	s = (64, 64);
 		
 		double w = Screen.GetWidth();
 		double h = Screen.GetHeight();
@@ -608,9 +607,6 @@ extend Class TM_Handler
 			DTA_SrcY, (-s.y * 0.45),
 			DTA_CenterOffset, true,
 			DTA_TopLeft, true
-		
-			);
-		
+		);
 	}
-	
 }

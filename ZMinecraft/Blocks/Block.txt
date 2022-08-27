@@ -1,6 +1,7 @@
 
 #include "ZMinecraft/Blocks/TNT.txt"
 #include "ZMinecraft/Blocks/Fire.txt"
+#include "ZMinecraft/Blocks/Spawner.txt"
 
 
 extend class TM_Handler
@@ -380,7 +381,8 @@ Class TM_Block : TM_Entity abstract
 	
 	void SetInvulType(int type)
 	{
-		if (bKILLED || type < 0 || type > INF_Indestructible)
+		type = clamp(type, 0, INF_Indestructible);
+		if (bKILLED)
 			return;
 			
 		InvulType = type;

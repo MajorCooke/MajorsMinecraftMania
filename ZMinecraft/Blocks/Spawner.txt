@@ -1,0 +1,15 @@
+/*==============================================================================
+	Spawner Block
+
+
+==============================================================================*/
+
+class TM_Block_Spawner : TM_Block
+{
+	Default
+	{
+		//$Category "Triple M/Blocks/Functional"
+		//$IgnoreRenderstyle
+		//$NotAngled
+	}
+}

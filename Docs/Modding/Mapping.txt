@@ -1,0 +1,29 @@
+Want to create maps for Triple M? This document is for you.
+
+Below you'll find information about the different elements added and how to control
+the spawn system through use of UDMF properties.
+
+There are several kinds of variables for different purposes: 
+* Global
+* Local
+
+NOTE: All UDMF tags are appended with "user_" (without the surrounding quotes: "")
+
+================================================================================
+Master Control Sector
+================================================================================
+
+
+
+
+---------------
+Global Vars
+---------------
+Global varaibles are only set in the master control sector (specified below), and only one master sector can be set. As such, setting any global variables outside of the master sector are also ignored.
+
+The variables are as follows:
+
+* TMMaster (int)
+Every map needs this in order to modify the spawner rules. 
+
+

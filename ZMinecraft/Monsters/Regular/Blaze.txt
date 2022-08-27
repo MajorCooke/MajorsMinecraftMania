@@ -252,7 +252,7 @@ Class TM_Blaze : TM_Monster
 		
 		Vector3 poz = (0,0,0);
 		let h = GetHead();
-		if (h)	poz = h.pos;
+		if (h)	poz = h.pos + h.WorldOffset;
 		
 		let fc = Spawn('TM_FireCharge', poz, ALLOW_REPLACE);
 		if (fc)

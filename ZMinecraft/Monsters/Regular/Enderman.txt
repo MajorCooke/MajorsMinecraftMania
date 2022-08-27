@@ -231,10 +231,7 @@ extend class TM_Handler
 					Vector3 hitpos = etrc.Results.HitPos;
 					let head = mo.GetHead();
 					if (head && hitpos.z >= head.pos.z + head.WorldOffset.z)
-					{
 						mo.SetAngry(plr, true, true);
-					//	mo.Stared(plr);
-					}
 				}
 			}
 		}
@@ -441,7 +438,7 @@ extend Class TM_Enderman
 		// contact is broken.
 		if (at)
 		{
-			bool trg = Targetable(Target);
+			bool trg = Targetable(Target, !stare);
 			if (trg && stare)
 			{
 				if (at == Target)
@@ -449,7 +446,7 @@ extend Class TM_Enderman
 				
 				return;
 			}
-			Angry = Targetable(at);
+			Angry = Targetable(at, !stare);
 		}
 		else Angry = false;
 		
@@ -531,7 +528,7 @@ extend Class TM_Enderman
 		StaredAt = false;
 		WasAngry = Angry;
 		
-		if (!(Scale ~== (0,0)) && !(OverScale ~== 0))
+		if (!(Scale ~== (0,0)) && ~(OverScale == 0))
 			JiggleLimbs();
 		
 		Super.Tick();

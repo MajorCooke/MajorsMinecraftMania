@@ -136,17 +136,7 @@ extend class TM_Monster
 			return false;
 	
 		bool good = (PlayerDamaged || (src is 'PlayerPawn'));
-		/*
-		if (!good)
-		{
-			for (int i = 0; i < Damagers.Size(); i++)
-			{
-				if (Damagers[i] is 'PlayerPawn')	
-					good = true;	break;	
-			}
-			
-		}
-		*/
+		
 		if (good)
 		{
 			if (!Drops)	Drops = TM_ItemDrops.Create();

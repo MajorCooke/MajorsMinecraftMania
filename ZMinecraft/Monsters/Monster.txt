@@ -136,6 +136,7 @@ Class TM_Monster : TM_Entity abstract
 				(TMV_PeacefulBehavior == CV_Minecraft && PeacefulDespawn > 0))));
 	}
 	
+	// By default, don't despawn if a boss, minion or it counts towards the kills.
 	virtual bool CanDespawn() const
 	{
 		return !(bBOSS || bBOSSSPAWNED || bCOUNTKILL);
@@ -143,8 +144,10 @@ Class TM_Monster : TM_Entity abstract
 	
 	virtual bool DespawnRange() const
 	{
+	
 		if (--DespawnTimer > 0)	
 			return false;
+			
 		/*
 		else
 		{
@@ -154,8 +157,11 @@ Class TM_Monster : TM_Entity abstract
 		}
 		return true;
 		*/
+				
+		if (CheckRange(DespawnRangeMax, true))
+			return true;
 		
-		if (CheckRange(DespawnRangeMin, true) && !Targetable(Target))
+		if (!Targetable(Target) && CheckRange(DespawnRangeMin, true))
 		{
 			double dmin = DespawnRangeMin,
 					dmax = DespawnRangeMax;
@@ -599,12 +605,17 @@ Class TM_Arthropod : TM_Monster
 
 Class TM_Boss : TM_Monster
 {
-	override bool ShouldPeacefulDespawn() const
+	// No despawning whatsoever.
+	override bool CanDespawn() const
 	{	return false;	}
+	
+	private int CFlags;
+	
 
 	Default
 	{
 		+BOSS
+		+ALLOWPAIN
 		TM_Monster.MobType M_Normal;
 		
 		// Bosses are immune to all environmental damage.
@@ -614,7 +625,23 @@ Class TM_Boss : TM_Monster
 		DamageFactor "Wither", 0.0;
 		DamageFactor "Drowning", 0.0;
 		DamageFactor "Falling", 0.0;
-		DamageFactor "SoulFire", 0.0;
-		DamageFactor "HellFire", 0.0;
+		DamageFactor "Creeper", 0.0;
+		
+		// Resilient to TNT
+		DamageFactor "TNT", 0.2;
+		
+		// Fires are not listed here since they should be vulnerable to mod weapons.
+		// It's simply Triple M fire they're immune to.
 	}
+	/*
+	override int DamageMobj(Actor i, Actor s, int damage, Name mod, int flags, double angle)
+	{
+		int dmg = 0;
+		if (s is 'PlayerPawn')
+		{
+			dmg = damage;
+		}
+		return Super.DamageMobj(i, s, dmg, mod, flags, angle);
+	}
+	*/
 }

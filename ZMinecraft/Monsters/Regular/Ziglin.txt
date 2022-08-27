@@ -212,6 +212,7 @@ Class TM_Ziglin : TM_Undead
 		if (Angry)
 		{
 			
+			Speed = Default.Speed * ((Target.Player) ? 2 : 3);
 			if (--AngerDelay < 1)
 			{
 				/*

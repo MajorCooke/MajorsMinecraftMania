@@ -144,6 +144,9 @@ Class TM_Handler : EventHandler
 	
 	override void WorldLoaded(WorldEvent e)
 	{
+		if (e.IsReopen)	
+			return;
+			
 		BannedSectors.Clear();
 		MountList.Clear();
 		Monsters = TM_AArray.Create();
@@ -153,7 +156,7 @@ Class TM_Handler : EventHandler
 		Timer[S_Spawn] = Second;
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
 		
-		
+		SetupSectorConnections();
 	}
 		
 	override void WorldThingSpawned(WorldEvent e)
@@ -195,8 +198,42 @@ Class TM_Handler : EventHandler
 		
 	}
 	
+	/*==========================================================================
+	Global Variables
 	
+	The idea here is to restrict monster spawning to certain sectors based on 
+	whether the player is in a sector or not, allowing for sector pairs. This
+	can be done in a few ways, all of which involve using UDMF tag(s).
 	
+	int user_TMMaster
+	
+	Only one of these is needed in a map, on a single sector. The rest are ignored.
+	Keep in mind the iterator will find the sector with the lowest index. 
+	Having a lone sector detached from everything else as a control sector is
+	recommended. Once set, this will be treated as the "master" sector to pull
+	global variables from - they all must be set in this same sector.
+	
+	1 - 
+	
+	----------------------------------------------------------------------------
+	Sector Variables
+	
+	These variables affect the sectors their set on, and can be multiple. Think
+	of this as a secondary tag ID.
+	----------------------------------------------------------------------------
+	Sector Restricting
+	user_TMRestrictSecID
+	===========================================================================*/
+	
+	private void SetupSectorConnections()
+	{
+	}
+	
+	//==========================================================================
+	// Sector Banning
+	//
+	// Used to stop monsters from spawning in map areas with a SkyViewpoint
+	//==========================================================================
 	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
 	// 2. Iterate through all lines that have a front or back sector connecting
 	// to it, and ban them too.

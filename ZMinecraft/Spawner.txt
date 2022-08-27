@@ -230,6 +230,9 @@ extend class TM_Handler
 		} while (true);
 	}
 	*/
+	
+	const _AngleInc = 30;
+	const _Div = 360 / _AngleInc;
 	void AttemptMonsterPlacement()
 	{
 		// Not exactly player aware but honestly, GZDoom isn't in a state of
@@ -247,20 +250,17 @@ extend class TM_Handler
 			Actor plr = players[i].mo;
 			if (!plr)	continue;
 				
-				
-			double inc = 30;
-			double div = 360 / inc;
-			double ang = irandom(0,div) * inc;
 			
-			int j = random(0,inc);
+			double ang = irandom(0,_Div) * _AngleInc;
 			
-			for (int k = 0; k < inc; k++)
+			int j = random(0,_AngleInc);
+			
+			for (int k = 0; k < _AngleInc; k++)
 			{
-				j = (j + 1) % inc;
-				ang = irandom(0, inc) * j;
+				j = (j + 1) % _AngleInc;
+				ang = irandom(0, _AngleInc) * j;
 				int dist = irandom(MoCue.SpawnRangeMin, MoCue.SpawnRangeMax);
 				Vector3 next; next.XY = plr.Vec2Angle(dist, ang);
-				//TM_Global.SnapVector3(np, (32, 32, 32), offset);
 				TM_Global.SnapVector2(next.XY, (32, 32), (16, 16));
 				
 				next.Z = MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
