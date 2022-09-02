@@ -509,7 +509,7 @@ Class TM_AmmoCondition
 	
 }
 
-
+// Unlike Damagetype Service, this one is a one-and-done deal.
 
 extend class TM_Handler
 {

@@ -1,3 +1,5 @@
+
+
 /*==============================================================================
 
 Ammo Service Class
@@ -36,6 +38,78 @@ Class TM_AmmoService : Service
 		}
 		return "";
 	}
+}
+
+/*==============================================================================
+Damagetype Service Class
+
+Requires the name "TM_DamageTypeService" in it. Simply append an affix to it
+
+Defines special interactions for different damage types. This means adding or 
+removing different DMG_* flags based on name.
+
+==============================================================================*/
+
+extend class TM_Handler
+{
+	private Array<Service> DmgServ;
+	private void SetupServices()
+	{
+		let it = ServiceIterator.Find("TM_DamageTypeService");
+		Service s;
+		while (s = it.Next())
+		{
+			if (s)	DmgServ.Push(s);
+		}
+	}
+	
+	// Passes in the current flags for modification by external mods. 
+	int CheckDamageType(Name dmgType, int flags)
+	{
+		int newflags = flags;
+		int check = -1;
+		for (int i = 0; i < DmgServ.Size(); i++)
+		{
+			if (DmgServ[i])
+				check = DmgServ[i].GetInt("", dmgType, newflags);
+				
+			if (check > 0)	newflags = check;
+		}
+		return newflags;
+	}
+}
+
+Class TM_DamageTypeService : Service
+{
+	private int ProcessCmdInt(String cmd, Name dmgType, int i, double d, Object o) const
+	{
+		Switch (dmgType)
+		{
+			// D4D Chainsaw ignores armor.
+			Case 'ChainsawPinata': 
+			Case 'ChainsawKill': 	i |= DMG_NO_ARMOR|DMG_NO_PROTECT;	break;
+			Default: 				return -1; //Means don't change anything.
+		}
+		return i;
+	}
+	
+	private int ProcessCmdIntOther(String cmd, Name dmgType, int i, double d, Object o) const
+	{
+		if (o is 'ChainsawPuff')
+			i |= DMG_NO_ARMOR|DMG_NO_PROTECT;
+		else i = -1;
+		return i;
+	}
+
+	// You can copy the following "Get" commands, but it's recommended to leave
+	// them alone and instead create the "Process" commands. Allows for both
+	// UI and Play interactions this way, should they ever be needed.
+	
+	override int GetInt(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdInt(req, str, i, d, o);	}
+	
+	override int GetIntUI(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdInt(req, str, i, d, o);	}
 }
 
 /*==============================================================================

@@ -157,7 +157,10 @@ Class TM_Handler : EventHandler
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
 		
 		SetupSectorConnections();
+		SetupServices();
 	}
+	
+	
 		
 	override void WorldThingSpawned(WorldEvent e)
 	{

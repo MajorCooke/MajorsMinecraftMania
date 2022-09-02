@@ -1,3 +1,5 @@
+
+
 extend class TM_Monster
 {
 	private uint TempTranslation;
@@ -73,14 +75,14 @@ extend class TM_Monster
 	
 	override int DamageMobj(Actor i, Actor s, int damage, Name mod, int flags, double angle)
 	{
-		if (bKILLED || (!bSHOOTABLE && !bVULNERABLE) || GodMode)	return -1;
+		if (bKILLED || (!bSHOOTABLE && !bVULNERABLE))
+			return -1;
+		
+		if (Event) flags = Event.CheckDamageType(mod, flags);
 		
 		double prevz = Vel.Z;
 		int dmg = CalculateDamage(i, s, damage, mod, flags, angle);
-		
-	//	dmg = Super.DamageMobj(i, s, damage, mod, 
-	//		flags|DMG_THRUSTLESS|DMG_NO_PROTECT|DMG_NO_FACTOR|DMG_NO_ARMOR, angle);
-		
+				
 		
 		// Add the damager to the list.
 		if (dmg > 0) 
@@ -92,14 +94,14 @@ extend class TM_Monster
 			if (s && s.player)
 				PlayerDamaged = true;
 			
-			if ((!bNODAMAGE || (flags & DMG_FORCED)))
+			if (!GodMode && (!bNODAMAGE || (flags & DMG_FORCED)))
 				Health -= dmg;
 		
 			if (Health < 1)
 			{
-				bool telefrag = (damage >= TELEFRAG_DAMAGE && !bLAXTELEFRAGDMG && !bNODAMAGE);
+				bool telefrag = (damage >= TELEFRAG_DAMAGE && !bLAXTELEFRAGDMG && (!bNODAMAGE || (flags & DMG_FORCED)));
 				if (TrueBuddha || 
-					(!telefrag && (bBUDDHA || FindInventory('PowerBuddha')) && (!i || !i.bFOILBUDDHA)))
+					(!telefrag && (!i || !i.bFOILBUDDHA) && (bBUDDHA || FindInventory('PowerBuddha'))))
 					Health = 1;
 				else
 				{
