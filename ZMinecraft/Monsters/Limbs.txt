@@ -1328,11 +1328,13 @@ Class TM_BodyPartGib : TM_Entity abstract
 		Projectile;
 		Radius 2;
 		Height 4;
+		+NOTONAUTOMAP
 		+THRUACTORS
 		+CANBOUNCEWATER
 		+BOUNCEONWALLS
 		+BOUNCEONCEILINGS
 		+BOUNCEAUTOOFFFLOORONLY
+	//	+NOINTERACTION
 		+NOTRIGGER
 		-NOGRAVITY
 		+CANNOTPUSH
@@ -1382,13 +1384,104 @@ Class TM_BodyPartGib : TM_Entity abstract
 		A_SetRoll(between.Y, SPF_INTERPOLATE);
 	}
 	
+	
+	// TO DO: Calculate direction of velocity and factor into account pitch of velocity
+	// so spherical radius/height can be included.
+	
+	// Main code by Marisa Kirisame, modified by me.
+	private Vector3 _vel;
+	private void TraceNextPos()
+	{
+		if (bKILLED)	return;
+		
+		double ang, pit;
+		Vector3 dest = level.Vec3Offset(pos, vel);
+		[ang, pit] = TM_S7_Math.GetAnglesTo(level, pos, dest);
+		double len = vel.Length();
+		double dist = len + (cos(pit) * radius) + (-sin(pit) * height * 0.5);
+		
+		if (len <= 3.0 && pos.z - floorz <= 2.0)
+		{
+			vel = (0,0,0);
+			bKILLED = true;
+			bMOVEWITHSECTOR = true;
+			SetState(FindState('Death'));
+			return;
+		}	
+		
+		let t = new('TM_BounceTracer');
+		dest = level.Vec3Offset(pos, vel);
+		
+		t.Trace(pos, CurSector, vel.Unit(), dist, 0);
+		let HitType = t.Results.HitType;
+		Vector3 normal = -t.Results.HitVector, end = t.Results.HitPos;//dir = t.Results.HitVector;
+		
+		if ( HitType == TRACE_HitWall )
+		{
+			normal = (t.Results.HitLine.delta.y,-t.Results.HitLine.delta.x,0).unit();
+			if ( t.Results.Side ) normal *= -1;
+		//	t.Results.HitLine.RemoteActivate(target,t.Results.Side,SPAC_Impact,t.Results.HitPos);
+			vel -= 2*normal*(vel dot normal);
+			if (WallBounceFactor > 0.0)		vel *= WallBounceFactor;
+			else							vel *= BounceFactor;
+		}
+		else if ( HitType == TRACE_HitFloor )
+		{
+			if ( t.Results.ffloor ) normal = -t.Results.ffloor.top.Normal;
+			else normal = t.Results.HitSector.floorplane.Normal;
+			vel -= 2*normal*(vel dot normal);
+			vel *= BounceFactor;
+		}
+		else if ( HitType == TRACE_HitCeiling )
+		{
+			if ( t.Results.ffloor ) normal = -t.Results.ffloor.bottom.Normal;
+			else normal = t.Results.HitSector.ceilingplane.Normal;
+			vel -= 2*normal*(vel dot normal);
+			vel *= BounceFactor;
+		}
+		else
+		{
+			// why the fuck
+			end = t.Results.HitPos = level.Vec3Offset(pos,vel);
+			normal *= 0;
+		}
+		
+		if (HitType != TRACE_HitNone)
+		{
+			end = level.Vec3Offset(pos, vel);
+		}
+		vel.Z -= GibGrav();
+		TM_Global.SetPos(self, end, true);
+	}
+	
+	private double GibGrav()
+	{
+		// Counteract gravity when underwater.
+		if (WaterLevel > 0 || 
+			((TMV_NoSectorGravity & TM_NSG_GIBMISLS) && 
+			!bNOGRAVITY && Gravity > 0.0))
+		{
+			double t = Gravity;
+			Gravity = 0;
+			
+			if (WaterLevel < 1)		return t;
+			else					return -(t * 0.3);
+		}
+		return GetGravity();
+	}
+	
 	override void Tick()
 	{
 		if (IsFrozen())	return;
 		
+		
+		
+		
+		// Old code
 		if (!bNOINTERACTION)
 		{
 			bDONTSPLASH = (Vel.Z >= -3.0);
+			
 			// Counteract gravity when underwater.
 			if (WaterLevel > 0 || 
 				((TMV_NoSectorGravity & TM_NSG_GIBMISLS) && 
@@ -1396,23 +1489,47 @@ Class TM_BodyPartGib : TM_Entity abstract
 			{
 				double t = Gravity;
 				Gravity = 0;
-				if (WaterLevel < 1)
-					Vel.Z -= t;
-				else
-					Vel.Z += (t * 0.3);
+				
+				if (WaterLevel < 1)		Vel.Z -= t;
+				else					Vel.Z += (t * 0.3);
+				
 				Super.Tick();
 				Gravity = t;
+				
+				if (bNOINTERACTION && pos.Z < floorz)
+				{
+					Vel = (0,0,0);
+					SetOrigin((pos.x, pos.y, floorz), false);
+				}
 			}
 			else	
 			{
+				if (bNOINTERACTION && pos.Z < floorz)
+				{
+					Vel = (0,0,0);
+					SetOrigin((pos.x, pos.y, floorz), false);
+				}
 				Super.Tick();
 			}
+			
 		}
+		/*
+		if (!bKILLED)
+		{
+			TraceNextPos();
+			bDONTSPLASH = (Vel.Z >= -3.0);	
+			_vel = vel;	vel = (0,0,0);
+			Super.Tick();
+			vel = _vel;
+			
+		}
+		*/
 		else Super.Tick();
 		
 		if ((bKILLED && ShortLife) || --LifeTime < 1)
 			A_FadeOut(FadeTime);
 	}
+	
 	private bool ShortLife;
 	States
 	{

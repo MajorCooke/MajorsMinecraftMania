@@ -71,7 +71,7 @@ extend class TM_Handler
 			
 		if (pos.z < bz)	
 			pos.z = bz;
-		if (pos.z + defs.Height > tz)
+		else if (pos.z + defs.Height > tz)
 			pos.z = tz - defs.Height;
 		
 		//
@@ -82,10 +82,12 @@ extend class TM_Handler
 		let flame = TM_Block_Fire(Actor.Spawn('TM_Block_Fire', (pos)));
 		if (flame)	
 		{
+			flame.ZAdjust = false; // Let the spawner handle the Z position.
 			flame.SetType(id, force, (duration.x < 0 && duration.y < 0));
 			Vector3 rp = flame.pos;
-			rp.z = flame.FloorZ;
-			rp = TM_Global.AdjustBlockPos(rp);
+			flame.FindFloorCeiling();
+			rp.z = flame.GetZAt(0);
+		//	rp.z = flame.CurSector.floorplane.ZAtPoint(rp.XY);
 			flame.SetPos(rp, true);
 			flame.Target = Owner;
 		}

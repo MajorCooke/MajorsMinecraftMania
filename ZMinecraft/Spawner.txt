@@ -248,7 +248,11 @@ extend class TM_Handler
 		{
 			if (!playeringame[i] || !players[i].mo)	continue;
 			Actor plr = players[i].mo;
-			if (!plr)	continue;
+			if (!plr)	
+			{
+				if (TMV_Debug == 24)	Console.Printf("-1");
+				continue;
+			}
 				
 			
 			double ang = irandom(0,_Div) * _AngleInc;
@@ -267,14 +271,28 @@ extend class TM_Handler
 				
 				
 				if (!level.IsPointInLevel(next))
+				{
+					if (TMV_Debug == 24)	Console.Printf("-2");
 					continue;
+				}
 				
 				// Don't spawn in sectors blocking player respawns.
 				// Don't allow spawning inside skyboxes.
 				Sector s = Level.PointInSector(next.XY);
 				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()) ||
 					s.GetUDMFInt("user_nospawn") > 0)
+				{
+					if (TMV_Debug == 24)	
+					{
+						if (s.Flags & Sector.SECF_NORESPAWN)
+							Console.Printf("-3");
+						else if (IsSectorBanned(s.Index()))
+							Console.Printf("-4");
+						else if (s.GetUDMFInt("user_nospawn") > 0)
+							Console.Printf("-5");
+					}
 					continue;
+				}
 				
 				bool TryGood = false;
 				int xcount = s.Get3DFloorCount();
@@ -333,16 +351,7 @@ extend class TM_Handler
 						[cz, ss, xf] = s.NextLowestFloorAt(next.X, next.Y, cz - 1, FFCF_3DRESTRICT);
 						
 						if (xf)	ss = xf.model;
-						
-						/*
-						Array<TM_XFloor> XXSwim; XXSwim.Clear();
-						if (TM_Global.InLiquidSector(XXSwim, next, (MoCue.Radius, MoCue.Height), true))
-						{
-							liq = true;
-							break;
-						}
-						*/
-						
+												
 						
 						// This array only contains contents if the mob can take
 						// damage from drowning or sectors. Better than calling

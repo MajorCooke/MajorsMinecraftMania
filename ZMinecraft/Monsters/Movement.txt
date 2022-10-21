@@ -127,7 +127,8 @@ extend class TM_Monster
 				else	A_Face(Target, maxturn, 0, flags: FAF_MIDDLE);
 				
 				double oldz = pos.z;
-				if ((flags & CHF_DONTMOVE))
+				
+				if (flags & CHF_DONTMOVE)
 				{
 					good = true;
 				}
@@ -183,8 +184,9 @@ extend class TM_Monster
 				
 				ClearBlockingInfo();
 				A_Chase(null, null, CHF_STOPIFBLOCKED);
+				newflags |= CHF_DONTMOVE|CHF_DONTTURN|CHF_NOPOSTATTACKTURN;
 				
-				if (BlockingMobj || BlockingLine)
+				if (old ~== pos)
 				{
 					MoveDir = oldMoveDir;
 					ReactionTime = oldReactionTime;
@@ -192,10 +194,12 @@ extend class TM_Monster
 					Angle = oldang;
 					
 					good = DoTryMove(speed, angle);
+					if (good)	TM_Global.SetPos(self, old, false);
+					
 				}
 				else good = true;
 			}
-			newflags |= CHF_DONTMOVE|CHF_DONTTURN|CHF_NOPOSTATTACKTURN;
+			
 		}
 		
 		if (!bFLOAT && OnGround && !(newflags & CHF_DONTMOVE) && Vel.Z ~== 0.0 && 

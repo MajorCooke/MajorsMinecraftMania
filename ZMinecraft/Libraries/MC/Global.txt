@@ -284,75 +284,98 @@ Class TM_Global play
     }
 	
 	//--------------------------------------------------------------------------
-	static Vector3 DoBounceTrace(Vector3 start, Sector sec, Vector3 vec, double dist)
+	// Casts a ray that bounces off of map geometry. Actors will come soon.
+	// Returns the following:
+	
+	// * end: The final destination.
+	// * dir: Direction of movement when the array runs out
+	// * WallCount: how many walls this ray hit
+	// * FloorCount: Applies to ceilings too.
+	
+	static Vector3, Vector3, int, int DoBounceTrace(Sector sec, Vector3 start, Vector3 dir, double dist)
 	{
 		let trc = new('TM_BounceTracer');
 		
 		if (!sec)
 		{
 			ThrowAbortException("DoBounceTrace: Sec cannot be null");
-			return (0,0,0);
+			return (0,0,0), (0,0,0), -1, -1;
 		}
-		
-		Vector3 HitPos, HitVec, _start = start;
-		int HitType;
-		
+		double _dist = dist;
+		Vector3 HitPos = start, HitVec = dir, _start = start;
+		int HitType, WallCount = 0, FloorCount = 0;
+		int failsafe = 50;
+		// Iterate through each trace until nothing is hit. 
 		do
 		{
-		
-			trc.Trace(start, sec, vec, dist, 0);
+			failsafe--;
+			if (failsafe < 1)
+			{
+				Console.Printf("Failsafe triggered");
+				break;
+			}
+			trc.Trace(start, sec, dir, dist, 0);
+			
+			HitType = trc.Results.HitType;
+			HitVec = trc.Results.HitVector;
+			
+			if (HitType == TRACE_HitNone)
+				break;
 			
 			HitPos = trc.Results.HitPos;
-			HitVec = trc.Results.HitVector;
-			HitType = trc.Results.HitType;
+			
 			
 			
 			double aa;	[aa, sec] = sec.LowestFloorAt(HitPos.XY);
-			dist -= level.vec3diff(start, HitPos).Length();
+			dist -= level.vec3diff(HitPos, start).Length();
 			start = HitPos;
 			
-			Switch (HitType)
+			if (HitType == TRACE_HitWall)
 			{
-				Case TRACE_HitWall:
-				{
-					let HitLine = trc.Results.HitLine;
-					// From Phantombeta's Se7envidas
-					double ang = VectorAngle (HitLine.delta.X, HitLine.delta.Y);
-                    let norm = (Actor.AngleToVector (ang - 90, 1.), 0).Unit ();
-
-                    if (TM_S7_Math.PointOnLineSidePrecise (HitPos.X, HitPos.Y, HitLine) == 1)
-                        norm = -norm;
-					
-					vec = norm;
-					break;
-				}
+				let HitLine = trc.Results.HitLine;
+				/*
+				Vector3 normal = (HitLine.delta.y,-HitLine.delta.x,0).unit();
+				if ( trc.Results.Side ) normal *= -1;
+			//	t.Results.HitLine.RemoteActivate(target,t.Results.Side,SPAC_Impact,t.Results.HitPos);
+				dir -= 2*normal*(dir dot normal);
+				*/
+				// From Phantombeta's Se7envidas
 				
-				Case TRACE_HitFloor:
-				Case TRACE_HitCeiling:
+				double ang = VectorAngle (HitLine.delta.X, HitLine.delta.Y);
+				let norm = (Actor.AngleToVector (ang - 90, 1.), 0).Unit();
+
+				if (TM_S7_Math.PointOnLineSidePrecise (HitPos.X, HitPos.Y, HitLine) == 1)
+					norm = -norm;
+				
+				//vel -= 2*normal*(vel dot normal);
+			//	dir = norm;				
+				dir = TM_S7_Math.ReflectVector(HitVec, norm);
+				
+				WallCount++;
+			}
+			else if (HitType == TRACE_HitFloor || HitType == TRACE_HitCeiling)
+			{
+				let _ffloor = trc.Results.ffloor;
+				Vector3 norm;
+				if (trc.Results.ffloor)
 				{
-					let _ffloor = trc.Results.ffloor;
-					Vector3 norm;
-					if (trc.Results.ffloor)
-					{
-						if (HitType == TRACE_HitFloor)	norm = _ffloor.top.normal;
-						else							norm = _ffloor.bottom.normal;
-					}
-					else
-					{
-						let _sec = trc.Results.HitSector;
-						if (HitType == TRACE_HitFloor)	norm = _sec.floorplane.normal;
-						else							norm = _sec.ceilingplane.normal;
-					}
-					vec = TM_S7_Math.ReflectVector(HitVec, norm);
-					break;
+					if (HitType == TRACE_HitFloor)	norm = _ffloor.top.normal;
+					else							norm = _ffloor.bottom.normal;
 				}
+				else
+				{
+					let _sec = trc.Results.HitSector;
+					if (HitType == TRACE_HitFloor)	norm = _sec.floorplane.normal;
+					else							norm = _sec.ceilingplane.normal;
+				}
+				dir = TM_S7_Math.ReflectVector(HitVec, norm);
+				FloorCount++;
 			}
 			
-		} while (trc.Results.HitType != TRACE_HitNone)
+		} while (trc.Results.HitType != TRACE_HitNone && dist > 0.0)
 		
-		_start = level.Vec3Offset(HitPos, vec);
-		
-		return HitPos;
+		Vector3 end = level.Vec3Offset(HitPos, dir);
+		return end, HitPos, WallCount, FloorCount;
 		
 	}
 }

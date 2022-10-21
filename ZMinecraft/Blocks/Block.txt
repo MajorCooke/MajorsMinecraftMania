@@ -65,13 +65,15 @@ Class TM_Block : TM_Entity abstract
 	
 	int 			LR, LG, LB, LRad1, LRad2, LFlags, LType;
 	double			LHoriz, LVert, LDepth;
+	bool 			ShowDamage, ZAdjust;
+	
 	protected bool	LEnabled;
 	meta int 		Flammable;
 	protected int 	RepairRate, RepairDelay,
 					InvulType,
 					RealHP, RealStartHP;
 	
-	bool 			ShowDamage;
+	
 	
 	// Light properties
 	Property GLRGB:			LR, LG, LB;		// Color
@@ -80,6 +82,7 @@ Class TM_Block : TM_Entity abstract
 	Property GLType:		LType;
 	Property GLPos:			LHoriz, LVert, LDepth;
 	Property GLEnabled:		LEnabled; // Light enabled upon spawning? Default: false
+	Property ZAdjust:		ZAdjust;
 	
 	// Show the cracking surface effect.
 	Property ShowDamage:	ShowDamage;
@@ -111,6 +114,7 @@ Class TM_Block : TM_Entity abstract
 		TM_Block.InvulType 0;
 		TM_Block.Repair -1, 1;	// Just like Minecraft, instantly repairs fully.
 		TM_Block.Flammable FLF_Ignitable;
+		TM_Block.ZAdjust true;
 		+NOBLOCKMONST
 		+SOLID
 		+SHOOTABLE
@@ -163,10 +167,6 @@ Class TM_Block : TM_Entity abstract
 		
 		if (!bNOINTERACTION)
 		{
-			/*
-			if (!(Pos.Z ~== RealPos.Z))
-				SetZ(RealPos.Z);
-			*/
 			UpdateBreakFX();
 		}
 		
@@ -338,10 +338,17 @@ Class TM_Block : TM_Entity abstract
 	void SetPos(Vector3 np, bool nosnap = false)
 	{
 		if (nosnap)	RealPos = np;
-		else		RealPos = TM_Global.AdjustBlockPos(np);
-		SetOrigin(RealPos, false);
+		else		
+		{
+			RealPos = TM_Global.AdjustBlockPos(np);
+			if (!ZAdjust) 
+				RealPos.z = np.z; // Don't adjust the z position if ZAdjust isn't wanted.
+		}
+		TM_Global.SetPos(self, RealPos, false);
+		
 		if (pos.z < floorz)	floorz = pos.z;
 		BrkOff = Pos + (0, 0, Height * 0.5);
+		
 		if (brk)	brk.SetOrigin(BrkOff, false);
 		PosChanged();
 	}
