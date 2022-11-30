@@ -50,6 +50,31 @@ removing different DMG_* flags based on name.
 
 ==============================================================================*/
 
+Class TM_DamageTypeService : Service
+{
+	private int ProcessCmdInt(String cmd, Name dmgType, int i, double d, Object o) const
+	{
+		Switch (dmgType)
+		{
+			// D4D Chainsaw ignores armor.
+			Case 'ChainsawPinata': 
+			Case 'ChainsawKill': 	i |= DMG_NO_ARMOR|DMG_NO_PROTECT;	break;
+			Default: 				return -1; //Means don't change anything.
+		}
+		return i;
+	}
+
+	// You can copy the following "Get" commands, but it's recommended to leave
+	// them alone and instead create the "Process" commands. Allows for both
+	// UI and Play interactions this way, should they ever be needed.
+	
+	override int GetInt(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdInt(req, str, i, d, o);	}
+	
+	override int GetIntUI(String req, String str, int i, double d, Object o)
+	{	return ProcessCmdInt(req, str, i, d, o);	}
+}
+
 extend class TM_Handler
 {
 	private Array<Service> DmgServ;
@@ -79,38 +104,11 @@ extend class TM_Handler
 	}
 }
 
-Class TM_DamageTypeService : Service
-{
-	private int ProcessCmdInt(String cmd, Name dmgType, int i, double d, Object o) const
-	{
-		Switch (dmgType)
-		{
-			// D4D Chainsaw ignores armor.
-			Case 'ChainsawPinata': 
-			Case 'ChainsawKill': 	i |= DMG_NO_ARMOR|DMG_NO_PROTECT;	break;
-			Default: 				return -1; //Means don't change anything.
-		}
-		return i;
-	}
-	
-	private int ProcessCmdIntOther(String cmd, Name dmgType, int i, double d, Object o) const
-	{
-		if (o is 'ChainsawPuff')
-			i |= DMG_NO_ARMOR|DMG_NO_PROTECT;
-		else i = -1;
-		return i;
-	}
+/*==============================================================================
 
-	// You can copy the following "Get" commands, but it's recommended to leave
-	// them alone and instead create the "Process" commands. Allows for both
-	// UI and Play interactions this way, should they ever be needed.
-	
-	override int GetInt(String req, String str, int i, double d, Object o)
-	{	return ProcessCmdInt(req, str, i, d, o);	}
-	
-	override int GetIntUI(String req, String str, int i, double d, Object o)
-	{	return ProcessCmdInt(req, str, i, d, o);	}
-}
+Banned Sectors Service Class
+
+==============================================================================*/
 
 /*==============================================================================
 
