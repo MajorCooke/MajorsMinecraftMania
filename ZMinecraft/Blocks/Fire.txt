@@ -335,9 +335,11 @@ Class TM_Block_Fire : TM_Block
 				let mo = ToFlame[i];
 				if (mo && (mo.bSHOOTABLE || mo.bVULNERABLE))
 				{
+					
 					if (!TM_Global.IsImmune(mo, DamageType) &&
 						TM_S7_Math.TestAABB(pos, (radius-1, 16), mo.pos, (mo.radius, mo.height)))
 					{
+						good = true;
 						// INSTANT DEATH
 						if (Type == FIRE_Hell)
 						{
