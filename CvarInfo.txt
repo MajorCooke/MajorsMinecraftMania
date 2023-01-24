@@ -56,6 +56,9 @@ server bool TMV_SpawnConditions = true;
 // Monster Properties
 //==============================================================================
 
+server bool TMV_SolidPlayers = false;
+server bool TMV_SolidTM = false;
+server bool TMV_SolidMonsters = true;
 
 // Monsters move directly towards their targets if they can.
 server bool TMV_EnhancedChase = true;

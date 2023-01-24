@@ -9,7 +9,7 @@ extend class TM_Monster
 	protected bool GodMode, TrueBuddha;
 	
 	// Replicates DamageMobj from GZDoom source code (mostly).
-	protected virtual int CalculateDamage(out Actor i, out Actor s, int damage, out Name mod, out int flags, double angle)
+	protected virtual int CalculateDamage(Actor i, Actor s, int damage, out Name mod, out int flags, double angle)
 	{
 		int dmg = damage;
 		bool forced = (flags & DMG_FORCED);
@@ -110,6 +110,8 @@ extend class TM_Monster
 					return dmg;	// Don't react if dead.
 				}
 			}
+			
+			
 		}
 		// Cancel jump
 		UnsetJumping();
@@ -127,9 +129,6 @@ extend class TM_Monster
 			{
 				if (bQUICKTORETALIATE || Threshold < 1)
 				{
-			//		if (!lastenemy || lastenemy.bKILLED || lastenemy)
-			//			lastenemy = target;
-						
 					target = s;
 					
 					if (CurState == SpawnState && SeeState)
@@ -145,6 +144,19 @@ extend class TM_Monster
 		
 		if (DamageTimer < 1)
 		{
+			// Record the damage so the monster can do any special reactions.
+			if (dmg > 0)
+			{
+				DmgInfo.i = i;
+				DmgInfo.s = s;
+				DmgInfo.damage = damage;
+				DmgInfo.dmg = dmg;
+				DmgInfo.mod = mod;
+				DmgInfo.flags = flags;
+				DmgInfo.angle = angle;
+				DmgInfo.used = false;
+			}
+		
 			// Is eligible for pain?
 			if (dopain)
 			{
@@ -204,19 +216,6 @@ extend class TM_Monster
 					else if (i)	ang = AngleTo(i);
 					Thrust(-1, ang);
 				}
-			}
-			
-			// Record the damage so the monster can do any special reactions.
-			if (dmg > 0)
-			{
-				DmgInfo.i = i;
-				DmgInfo.s = s;
-				DmgInfo.damage = damage;
-				DmgInfo.dmg = dmg;
-				DmgInfo.mod = DamageType;
-				DmgInfo.flags = flags;
-				DmgInfo.angle = angle;
-				DmgInfo.used = false;
 			}
 		}
 		return (bNODAMAGE) ? 0 : dmg;
@@ -473,7 +472,7 @@ extend class TM_Monster
 			Console.Printf("Velocity: %d -- Damage: %d -- death: %d", PrevVel.Z, ret, death);
 		}
 		
-		return ret;
+		return (ret > 0);
 	}
 	
 	
@@ -608,6 +607,7 @@ extend class TM_Monster
 						{
 							DrownTimer = 0;
 							DamageMobj(null, null, 10, "Drowning", DMG_NO_ARMOR|DMG_THRUSTLESS);
+							if (bKILLED)	return;
 						}
 					}
 					else if (CanDrown() && WaterLevel > 2)

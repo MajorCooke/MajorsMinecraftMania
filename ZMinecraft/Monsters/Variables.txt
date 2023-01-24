@@ -88,6 +88,8 @@ extend class TM_Monster
 		PainChance 0; // Handled internally.
 		MaxDropoffHeight 128;
 		MaxStepHeight 16;
+		+FORCEINFIGHTING
+		+DOHARMSPECIES
 		+NEVERRESPAWN
 		+NEVERFAST
 		-COUNTKILL
@@ -122,7 +124,7 @@ extend class TM_Monster
 		DamageFactor "HellFire", 1.0;
 		DamageFactor "DamageSector", 1.0;
 		DamageFactor "Slime", 1.0;
-		DamageFactor "Falling", 1.0;
+		DamageFactor "Falling", 1.5;
 		DamageFactor "Drowning", 1.0;
 		
 		// Forced Damage Types (disregards environment settings, these always

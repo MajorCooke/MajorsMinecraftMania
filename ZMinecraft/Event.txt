@@ -131,17 +131,6 @@ Class TM_Handler : EventHandler
 		}
 	}
 	
-	override void OnRegister()
-	{
-		if (!level || level.LevelName == 'TitleMap')
-		{
-			Destroy();
-			return;
-		}
-		Super.OnRegister();
-	}
-	
-	
 	override void WorldLoaded(WorldEvent e)
 	{
 		if (e.IsReopen)	
@@ -156,11 +145,8 @@ Class TM_Handler : EventHandler
 		Timer[S_Spawn] = Second;
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
 		
-		SetupSectorConnections();
 		SetupServices();
 	}
-	
-	
 		
 	override void WorldThingSpawned(WorldEvent e)
 	{
@@ -200,38 +186,7 @@ Class TM_Handler : EventHandler
 		}
 		
 	}
-	
-	/*==========================================================================
-	Global Variables
-	
-	The idea here is to restrict monster spawning to certain sectors based on 
-	whether the player is in a sector or not, allowing for sector pairs. This
-	can be done in a few ways, all of which involve using UDMF tag(s).
-	
-	int user_TMMaster
-	
-	Only one of these is needed in a map, on a single sector. The rest are ignored.
-	Keep in mind the iterator will find the sector with the lowest index. 
-	Having a lone sector detached from everything else as a control sector is
-	recommended. Once set, this will be treated as the "master" sector to pull
-	global variables from - they all must be set in this same sector.
-	
-	1 - 
-	
-	----------------------------------------------------------------------------
-	Sector Variables
-	
-	These variables affect the sectors their set on, and can be multiple. Think
-	of this as a secondary tag ID.
-	----------------------------------------------------------------------------
-	Sector Restricting
-	user_TMRestrictSecID
-	===========================================================================*/
-	
-	private void SetupSectorConnections()
-	{
-	}
-	
+		
 	//==========================================================================
 	// Sector Banning
 	//
@@ -261,7 +216,18 @@ Class TM_Handler : EventHandler
 		
 		Array<Int> Process; 
 		Process.Clear();
-		Process.Push(s.Index());
+		Process.Push(s.Index()); // Store the sector to ban for iteration.
+		
+		Array<Actor> plrs;
+		Array<Int> temp; temp.Copy(BannedSectors);
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])	continue;
+			let plr = players[i].mo;
+			if (!plr)	continue;
+			
+			plrs.Push(plr);
+		}
 		
 		int Failsafe = 2000;
 		while (Process.Size() > 0 && --Failsafe > 0)
@@ -289,8 +255,25 @@ Class TM_Handler : EventHandler
 				
 				if (l.frontsector)		index[0] = l.frontsector.Index();
 				if (l.backsector)		index[1] = l.backsector.Index();
-					
-				for (int j = 0; j < 2; j++)
+				
+				// Make sure the spawned sector the player is in doesn't bleed
+				// into via the sky viewpoints. If it does, simply undo it by 
+				// moving the copied temp array back and abort.
+				int j = 0;
+				for (j = 0; j < plrs.Size(); j++)
+				{
+					if (plrs[j] && (
+						plrs[j].CurSector == l.frontsector ||
+						plrs[j].CurSector == l.backsector))
+					{
+						BannedSectors.Move(temp);
+						Console.Printf("Sky viewpoint is connected to the play world. Sectors unbanned.");
+						return;
+					}
+						
+				}
+				
+				for (j = 0; j < 2; j++)
 				{
 					if (!IsSectorBanned(index[j]) && 
 						Process.Find(index[j]) >= Process.Size())
@@ -301,8 +284,9 @@ Class TM_Handler : EventHandler
 		
 		if (Failsafe < 1)
 		{
-			Console.Printf("Triple M WARNING! Sector iteration broke the failsafe!");
-			BannedSectors.Clear();
+		//	Console.Printf("Triple M: Sector iteration broke the failsafe!");
+			BannedSectors.Move(temp);
+			return;
 		}
 	}
 		

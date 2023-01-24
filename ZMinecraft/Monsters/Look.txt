@@ -303,22 +303,19 @@ extend class TM_Monster
 	virtual bool Targetable(Actor mo, bool relate = true) const
 	{
 		// Doesn't exist, is self or is passive.
-		if (!mo || mo == self)	
+		if (!mo || mo == self || passive)	
 			return false;
 		
 		// The actor's a goal so yes, it is targetable.
-		if (Goal && mo == Goal)
+		if (mo == Goal)
 			return true;
-			
-		if (passive)
-			return false;
 		
-		//  Dead, unshootable or not targetable.
+		// Dead, unshootable or not targetable.
 		if (mo.bKILLED || !mo.bSHOOTABLE ||	mo.bNEVERTARGET || (mo.bNOTARGET && !bFRIENDLY) ||
 			mo.bDORMANT)
 			return false;
 		
-		// Peaceful mode disallows targeting players.
+		// Peaceful mode disallows targeting players unless boss or spawned by one.
 		if (TMV_Peaceful && mo is 'PlayerPawn' && !bBOSS && !bBOSSSPAWNED)
 			return false;
 			

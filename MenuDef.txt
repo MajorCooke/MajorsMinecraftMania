@@ -80,8 +80,13 @@ OptionMenu "TripleMMonsterTweaks"
 	TripleMSlider "$TMM_HEALTHMUL1_TEXT",	"$TMM_HEALTHMUL1_SUB",		TMV_HealthMul,			0.5, 100.0, 0.1
 	TripleMSlider "$TMM_HEALTHMUL2_TEXT",	"$TMM_HEALTHMUL2_SUB",		TMV_HealthMul,			1.0, 100.0, 1.0
 	StaticText ""
+	StaticText "Collision Settings", GOLD
+	TripleMOption "Players",				"$TMM_SOLIDPLAYERS_SUB",	TMV_SolidPlayers,		"YesNo"
+	TripleMOption "Minecraft",				"$TMM_SOLIDTM_SUB",			TMV_SolidTM,			"YesNo"
+	TripleMOption "Non-TM",					"$TMM_SOLIDMONSTERS_SUB",	TMV_SolidMonsters,		"YesNo"
+	StaticText ""
 	StaticText "Damage Intake Options", GOLD
-	TripleMOption "$TMM_DMGMUL_TEXT",			"$TMM_DMGMUL_SUB",			TMV_DmgMul,				"OnOff"
+	TripleMOption "$TMM_DMGMUL_TEXT",		"$TMM_DMGMUL_SUB",			TMV_DmgMul,				"OnOff"
 	TripleMOption "$TMM_ENVIRODAMAGE_TEXT",	"$TMM_ENVIRODAMAGE_SUB",	TMV_EnvironmentDamage,	"OnOff"
 	TripleMOption "$TMM_FALLDAMAGE_TEXT", 	"$TMM_FALLDAMAGE_SUB",		TMV_FallDamage, 		"OnOff", TMV_EnvironmentDamage
 	TripleMOption "$TMM_SECTORDAMAGE_TEXT",	"$TMM_SECTORDAMAGE_SUB",	TMV_SectorDamage, 		"OnOff", TMV_EnvironmentDamage

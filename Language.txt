@@ -1,7 +1,7 @@
 [enu default]
 
-TMM_RELEASE_VERSION = "Alpha 0.22";
-TMM_RELEASE_DATE = "October 30, 2021";
+TMM_RELEASE_VERSION = 	"Alpha 0.3";
+TMM_RELEASE_DATE = 		"May 6, 2022";
 
 TMM_OPTIONS_TITLE = "Triple M Options";
 
@@ -80,6 +80,10 @@ TMM_NOSECGRAV_SUB = "Sector gravity is ignored and uses full gravity for the sel
 TMM_NOSKILLFACTOR_TEXT = "Prevent Skill Damage Factoring";
 TMM_NOSKILLFACTOR_SUB = "If enabled, players counteract skill based damage factoring.";
 
+TMM_SOLIDPLAYERS_SUB = 	"Can collide with players.";
+TMM_SOLIDTM_SUB =		"Can collide with Triple M monsters.";
+TMM_SOLIDMONSTERS_SUB =	"Can collide with Doom, etc. monsters.";
+
 //==============================================================================
 // Specific Monster texts
 //==============================================================================
@@ -114,6 +118,7 @@ TMM_ZOMBIEBABY_SUB = "Can Baby Zombies spawn? Smaller/faster but 2* slime/explos
 
 TMM_DMGMUL_TEXT = "Infight Damage Scaling";
 TMM_DMGMUL_SUB = "Minecraft enemies infighting damage scales with health.";
+
 
 //==============================================================================
 // Item specific

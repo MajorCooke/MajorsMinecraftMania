@@ -84,20 +84,29 @@ Class TM_Monster : TM_Entity abstract
 	private Array<Actor> Intersect;
 	override bool CanCollideWith(Actor other, bool passive)
 	{
+		if (!other)	return false;
 		if (other.bACTLIKEBRIDGE || other is 'TM_Block' || other.bMISSILE)	return true;
 		
 		if (other.bKILLED) return false;
 		
-		if (other is 'TM_Monster' || other is 'PlayerPawn')
+		// TO DO: Target enemies that intersect.
+		
+		bool issolid = true;
+			
+		if (other is 'TM_Monster')
+			issolid = TMV_SolidTM;
+		else if (!(other is 'TM_Monster') && other.bISMONSTER)
+			issolid = TMV_SolidMonsters;
+		else if (other is 'PlayerPawn' || other.player)
+			issolid = TMV_SolidPlayers;
+		
+		if (!issolid)
 		{
 			if (Intersect.Size() < 10 && 
 				Intersect.Find(other) >= Intersect.Size())
 				Intersect.Push(other);
-			
-			return false;
 		}
-		return !(bDORMANT && other is 'TM_Monster');
-		
+		return issolid;
 	}
 	
 	override bool CanResurrect(Actor other, bool passive)
@@ -251,19 +260,17 @@ Class TM_Monster : TM_Entity abstract
 				double vec = (mo.radius + radius) * 0.02;
 				if (!(mo.pos ~== pos))
 				{
+					double ang = mo.AngleTo(self);
 					if (mo is "TM_Monster")
-						mo.Thrust(vec, AngleTo(mo));
-					Thrust(vec, mo.AngleTo(self));
+						mo.Thrust(vec, ang + 180);
+					Thrust(vec, ang);
 				}
 			}
 			Intersect.Clear();
 		}
-			
-		
 		
 		if (!bDORMANT)
 		{
-			
 			wasOnGround = OnGround;
 			OnGround = ((Pos.Z <= FloorZ || bONMOBJ) && Vel.Z <= 0.0);
 			
@@ -278,11 +285,6 @@ Class TM_Monster : TM_Entity abstract
 			if (!Target)	Pitch = 0;
 			if (Lifetime < 5)	Lifetime++;
 			if (NoDmgTimer > 0) NoDmgTimer--;
-			if (!DmgInfo.Used)
-			{
-				DmgInfo.used = true;
-				DamageReact(DmgInfo.I, DmgInfo.S, DmgInfo.damage, DmgInfo.dmg, DmgInfo.mod, DmgInfo.flags, DmgInfo.angle, DmgInfo.secdmg);
-			}
 			
 			//----------------------------------------------------------------------
 			// Fall/Slime/Lava/Drowning damage handling.
@@ -292,7 +294,12 @@ Class TM_Monster : TM_Entity abstract
 				
 			if (bKILLED)	return;
 			
-			
+			// TO DO: FIX THIS SHIT
+			if (!DmgInfo.Used)
+			{
+				DmgInfo.used = true;
+				DamageReact(DmgInfo.I, DmgInfo.S, DmgInfo.damage, DmgInfo.dmg, DmgInfo.mod, DmgInfo.flags, DmgInfo.angle, DmgInfo.secdmg);
+			}
 			//------------------------------------------------------------------
 			// Play an active sound every 5-6 seconds.
 			//------------------------------------------------------------------
@@ -302,9 +309,7 @@ Class TM_Monster : TM_Entity abstract
 				if (ActiveSound != "")
 					A_StartSound(ActiveSound, CHAN_VOICE, CHANF_OVERLAP);
 			}
-			//------------------------------------------------------------------
-			//
-			//------------------------------------------------------------------
+			
 			if (AttackDelay > 0)
 				AttackDelay--;
 			//------------------------------------------------------------------
@@ -337,20 +342,6 @@ Class TM_Monster : TM_Entity abstract
 		else VelLen = PosLen = VelPosLen = 0;
 		
 		CurStyle = GetRenderStyle();
-		/*
-		bADDLIGHTLEVEL = true;
-		if (LightLevel >= 255)
-		{
-			LightLevel = 255;
-			LightAdd = -5;
-		}
-		else if (LightLevel <= 0)
-		{
-			LightLevel = 0;
-			LightAdd = 5;
-		}
-		LightLevel += LightAdd;
-		*/
 		UpdateLimbs(Angs);
 		
 		PrevWaterLevel = WaterLevel;

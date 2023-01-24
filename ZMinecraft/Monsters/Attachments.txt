@@ -242,7 +242,7 @@ Class TM_ArmorGib : TM_AttachGib
 // Pants:		0,		0,		-.85
 // Boot:		0,		0,		0
 
-Class TM_ArmorHeadGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, -0.81;	}	}
+Class TM_ArmorHeadGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, -0.81;	TM_BodyPartGib.EndPitch 0; TM_BodyPartGib.EndRoll 0;	}	}
 Class TM_ArmorArmLGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, 0.93;	}	}
 Class TM_ArmorArmRGib : TM_ArmorGib {	Default {	TM_BodyPartGib.Offsets 	0.0, 0.0, 0.93;	}	}
 Class TM_ArmorChestGib : TM_ArmorGib {	}

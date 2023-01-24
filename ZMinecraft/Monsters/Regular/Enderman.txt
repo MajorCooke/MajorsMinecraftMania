@@ -442,9 +442,10 @@ extend Class TM_Enderman
 			if (trg && stare)
 			{
 				if (at == Target)
+				{
 					MoveWait = 2;
-				
-				return;
+					return;
+				}
 			}
 			Angry = Targetable(at, !stare);
 		}
@@ -530,11 +531,7 @@ extend Class TM_Enderman
 		
 		if (!(Scale ~== (0,0)) && ~(OverScale == 0))
 			JiggleLimbs();
-		
-		Super.Tick();
-		
-		
-		
+			
 		if (Target)
 		{
 			if (Target.bKILLED || Target.bDESTROYED || 
@@ -544,21 +541,26 @@ extend Class TM_Enderman
 				SetAngry(null);
 			}
 		}
+		
+		Super.Tick();
 	}
 	
 	override bool CanWaterDamage() { return true; }
 	
 	override void DamageReact(Actor inf, Actor src, int damage, int dmg, Name mod, int flags, double angle, bool secdmg)
-	{
+	{			
 		if (dmg < 1 || mod == 'Falling')	return;
 		
-		if (!src && !inf && (mod == 'Fire' || mod == 'Slime' || mod == 'Drowning'))
+		if (mod == 'Fire' || mod == 'Slime' || mod == 'Drowning' || mod == 'Ice')
 		{
-			ClearRelations(Res_Actors);
-			SetAngry(null);
+			if (TMV_Debug == 10)
+				Console.Printf("Attempting teleport");
 			DoTeleport();
 			return;
 		}
+		else if (TMV_Debug == 10)
+			Console.Printf("Nothing");
+			
 		SetAngry(src);
 		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
 		
@@ -582,10 +584,6 @@ extend Class TM_Enderman
 			if (other is 'PlayerPawn' || other.bISMONSTER || other.bMISSILE)
 				return false;
 		}
-		else if (other is 'TM_ArrowProjectile')
-		{
-			if (IRandom(0,3))	return false;
-		}
 		return Super.CanCollideWith(other, passive);
 	}
 	
@@ -594,17 +592,17 @@ extend Class TM_Enderman
 	//
 	// Attempts to find a position nearby that doesn't have any damage sectors
 	// or at least doesn't take any damage from it. 
-	
+	private Array<TM_CVector3> Spots;
 	private bool InTeleport;
-	private bool GetTeleSpots(out Array<TM_CVector3> Spots, Actor mo = null, 
-		double dist = -1, double iter = -1, bool condition = true)
+	private bool GetTeleSpots(Actor mo = null, 
+		double dist = -1.0, double iter = -1.0, bool condition = true)
 	{
 		Spots.Clear();
 		if (bDESTROYED || bKILLED || dist == 0)	return false;
 		if (!mo)	mo = self;
 		
-		if (dist < 0)	dist = 2048;
-		if (iter < 1)	iter = 32;
+		if (dist < 0.0)	dist = 2048;
+		if (iter < 1.0)	iter = 32;
 		iter = round(iter);
 		
 		double i, j, k, l,
@@ -670,8 +668,7 @@ extend Class TM_Enderman
 	
 	protected bool DoTeleport()
 	{
-		Array<TM_CVector3> Spots;
-		GetTeleSpots(Spots, self, -1, 64);
+		GetTeleSpots(self, -1, 64);
 		double curz = pos.z;
 		Vector3 v;
 		
@@ -690,6 +687,7 @@ extend Class TM_Enderman
 				TeleSound();
 				return true;
 			}
+			SetZ(curz);
 		}
 		SetZ(curz);
 		return false;		
