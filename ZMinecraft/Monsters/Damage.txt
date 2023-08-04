@@ -679,7 +679,9 @@ extend class TM_Monster
 	virtual bool DoMelee(int damage = -1, int armdmg = -1, int delay = Second, 
 		bool adjust = true)
 	{
-		if (AttackDelay > 0 || !Targetable(Target) || !CheckTrace(Target, MeleeRange))
+		if (AttackDelay > 0 || !Targetable(Target) 
+			|| !CheckTrace(Target, MeleeRange)
+			)
 			return false;
 		
 		if (damage < 1)	
@@ -726,7 +728,7 @@ extend class TM_Monster
 Armor works as damage reduction, but unlike Doom armor, it remains behind. 
 There's no armor breakage... Yet.
 
-Each base armor type (head, chest, legs and boots) reduces armor reduction by
+Each base armor type (head, chest, legs and boots) reduces damage by
 the amounts listed in the arrays below.
 
 */

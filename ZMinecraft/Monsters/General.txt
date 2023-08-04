@@ -58,7 +58,7 @@ extend class TM_Monster
 	bool, double CheckTrace(Actor mo, double dist = 0, double zz = -1, bool flor = true, bool wall = true, bool ceil = true)
 	{
 		double dis = TraceDistance(mo, dist, zz);
-		bool ret = (dis >= 0 && dis <= dist);
+		bool ret = (dis >= 0.0 && dis <= dist);
 		return ret, dis;
 	}
 	double TraceDistance(Actor mo, double dist = 0, double zz = -1, bool flor = false, bool wall = true, bool ceil = false, bool solid = false)

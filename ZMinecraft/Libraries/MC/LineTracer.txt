@@ -35,6 +35,54 @@ Class TM_LineTracer : LineTracer
 	}
 }
 
+// Bouncing tracer, can be set for lines, floors, ceilings, and actors.
+Class TM_BounceTracer : LineTracer
+{
+	Array<Line> IgnoreL;
+	Array<Actor> IgnoreA;
+	
+	override ETraceStatus TraceCallback() 
+	{
+		switch (Results.HitType) 
+		{
+			case TRACE_HitActor:
+			{
+				return TRACE_Skip;
+				/*
+				if (IgnoreA.Size() < 1)
+					return TRACE_Stop;
+			
+				let mo = Results.HitActor;
+				return (IgnoreA.Find(mo) < IgnoreA.Size()) ? TRACE_Skip : TRACE_Stop;
+				*/
+			}
+
+			case TRACE_HitFloor:
+			case TRACE_HitCeiling:
+			case TRACE_HitNone:
+				return TRACE_Stop;
+			
+
+			case TRACE_HitWall:
+			{
+				if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower) 
+					return TRACE_Stop;
+
+				let hl = Results.HitLine;
+				int hf = hl.flags;
+				
+				if (hf & (Line.ML_BLOCKEVERYTHING | Line.ML_BLOCKPROJECTILE))
+					return TRACE_Stop;
+				
+				if ((hf & Line.ML_BLOCKING) && !(hf & Line.ML_TWOSIDED))
+					return TRACE_Stop;
+				
+			}
+		}
+		return TRACE_Skip;
+	}
+}
+
 // Tracer for GetDamageDistance. INTENTIONALLY skips over all terrain and actors
 // except for 'trg' so it can get the closest point to the hitbox and use that
 // for calculating distance. Massive actors otherwise will not be properly hurt.
