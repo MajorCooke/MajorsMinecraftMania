@@ -1,0 +1,52 @@
+extend class TM_Handler
+{
+	private void SetupBans()
+	{
+		Checksum = level.GetChecksum();
+		
+		Switch(Checksum)
+		{
+			Case 'C23AC4564765BB0834325735AFC7CA1D': // Profane Promiseland beta
+			{
+				// Central hub's nothern caco holes
+				BanRegion(-7872,-3328,-7232,-2944);
+				BanRegion(-5184,-3360,-4544,-2912);
+				BanRegion(-7168,-2880,-6784,-2240);
+				BanRegion(-5664,-2880,-5216,-2240);
+				BanRegion(-6432,-4128,-5984,-3680); // middle platform
+				
+				// First revenant window dressing
+				BanRegion(-6592,-5504,-5824,-4896);
+				BanSecNum(566);
+				BanSecNum(567);
+				
+				// Western poison sewer spawner section
+				BanRegion(-11392,-9792,-10240,-8848);
+				
+				// South swirly arena
+				BanRegion(-5312,-11456,-4544,-12800);
+				
+				// Revenight arena. You know which one... Caco chambers
+				BanRegion(-5280,1728,-3808,2112);
+				BanRegion(-5280,2880,-3808,3264);
+				BanRegion(-3072,2624,-3776,3250);
+				BanRegion(-3072,2368,-3739,1744);
+				
+				// Lava platforming after the above
+				BanSecNum(7376);
+				
+				
+				// Voodoo doll regions
+				BanRegion(-2528,-9216,-2464,-7808);
+				
+				break;
+			}
+			// Enable standard banning.
+			Default: 
+			{
+				Checksum = '';
+			}
+			
+		}
+	}
+}

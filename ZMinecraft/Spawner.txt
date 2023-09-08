@@ -118,7 +118,7 @@ extend class TM_Handler
 	}
 	//==========================================================================
 	// Attempts a normal map spawn via timer, and prepares it for creation.
-	// Only attempts to create 10 monsters at a time in order to keep a lid on
+	// Only attempts to create one monster at a time in order to keep a lid on
 	// performance issues.
 	//==========================================================================
 	
@@ -160,6 +160,8 @@ extend class TM_Handler
 		}
 	}	
 	
+	// Used to check the damage of a 3D floor, which uses the ceiling. But check
+	// the floor anyway in the event it does transfer.
 	bool CheckSectorDamage(Sector ss)
 	{
 		if (!ss || !MoCue)	return false;
@@ -180,56 +182,6 @@ extend class TM_Handler
 		}
 		return false;
 	}
-	/*
-	void GetZPositions(out Array<double> spawnZ, out Array<TM_XFloor> XSwim, Vector3 curPos, Vector3 newPos)
-	{
-		spawnZ.Clear();
-		Vector2 curPos = newPos.xy;
-		Sector s = level.pointInSector(curPos);
-		while (s.Portals[Sector.floor])
-		{
-			SectorPortal info = level.SectorPortals[s.Portals[Sector.floor]];
-			Sector newSec = info.mDestination;
-			if (!newSec)
-				break;
-			
-			curPos += info.mDisplacement;
-			s = newSec;
-		}
-
-		spawnZ.Push(s.floorPlane.ZAtPoint(curPos));
-		do
-		{
-			for (uint i = 0; i < s.Get3DFloorCount(); ++i)
-			{
-				F3DFloor ff = s.Get3DFloor(i);
-				if (!(ff.flags & F3DFloor.FF_EXISTS))
-					continue;
-				
-				double tz = ff.top.ZAtPoint(curPos.xy);
-				double bz = ff.bot.ZAtPoint(curPos.xy);
-				
-				if (ff.flags & F3DFloor.FF_SWIMMABLE)
-				{
-					
-				}
-				
-				spawnZ.Push(tz);
-			}
-			
-			if (!s.Portals[Sector.ceiling])
-				break;
-			
-			SectorPortal info = level.SectorPortals[s.Portals[Sector.ceiling]];
-			Sector newSec = info.mDestination;
-			if (!newSec)
-				break;
-			
-			curPos += info.mDisplacement;
-			s = newSec;
-		} while (true);
-	}
-	*/
 	
 	const _AngleInc = 30;
 	const _Div = 360 / _AngleInc;
@@ -257,7 +209,7 @@ extend class TM_Handler
 			
 			double ang = irandom(0,_Div) * _AngleInc;
 			
-			int j = random(0,_AngleInc);
+			int j = irandom(0,_AngleInc);
 			
 			for (int k = 0; k < _AngleInc; k++)
 			{
@@ -269,12 +221,16 @@ extend class TM_Handler
 				
 				next.Z = MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
 				
-				
+				// Check if in the void
 				if (!level.IsPointInLevel(next))
 				{
 					if (TMV_Debug == 24)	Console.Printf("-2");
 					continue;
 				}
+				
+				// Check if in a banned region.
+				if (IsPosBanned(next))
+					continue;
 				
 				// Don't spawn in sectors blocking player respawns.
 				// Don't allow spawning inside skyboxes.
@@ -312,7 +268,9 @@ extend class TM_Handler
 					// Won't fit regardless of 3d floors, so skip it.
 					if (abs(tz - fz) < MoCue.Height)
 						continue;
-						
+					
+					// Record swimmable floors. Those that are immmune to drowning
+					// can spawn here.
 					Array<TM_XFloor> XSwim; XSwim.Clear();
 					
 					if (envirodmg && 
@@ -332,17 +290,8 @@ extend class TM_Handler
 							}
 						}
 					}
-					/*
-					double headz = MoCue.Height * 0.5;
-					double headtop = headz;
-					let head = MoCue.GetHead();
-					if (head) 
-					{
-						headz = head.Pos.Z - MoCue.Pos.Z;
-						headtop = headz + head.Height * 0.75;
-					//	headoff = level.Vec3Diff(MoCue.Pos, 
-					}
-					*/
+					
+					
 					bool liq = false;
 					do
 					{
@@ -389,7 +338,7 @@ extend class TM_Handler
 					
 					// Go through and remove all Z positions that are outside
 					// the range of ZMin and ZMax.
-					if (s.GetUDMFInt("user_LimitZ") > 1)
+					if (s.GetUDMFInt("user_LimitZ") > 0)
 					{
 						int zmin = s.GetUDMFInt("user_ZMin");
 						int zmax = s.GetUDMFInt("user_ZMax");
@@ -405,27 +354,29 @@ extend class TM_Handler
 					}
 					
 					TM_Global.SetPos(MoCue, next, false);
-					
-					while (TryZ.Size() > 0)
 					{
-						int rng = irandom(0, TryZ.Size() - 1);
-						Vector3 to = (next.XY, TryZ[rng]);
-						
-						if (level.Vec3Diff(to, plr.pos).Length() > MoCue.SpawnRangeMax)
-						{	TryZ.Delete(rng);	continue;	}
-						
-						MoCue.SetZ(to.Z);
-						MoCue.FindFloorCeiling();
-						MoCue.UpdateWaterLevel(false);
-						
-						if (MoCue.WaterLevel < 3 || !MoCue.CanDrown())
-							TryGood = MoCue.TryMove(to.XY, true);
-						
-						// Found a good spot. Prepare it for activation.
-						if (TryGood)	break;
-						
-						// Not a good spot so delete the attempt.
-						TryZ.Delete(rng);
+						while (TryZ.Size() > 0)
+						{
+							// Don't attempt to use a position that's already done.
+							int rng = irandom(0, TryZ.Size() - 1);							
+							Vector3 to = (next.XY, TryZ[rng]);
+							
+							if (level.Vec3Diff(to, plr.pos).Length() > MoCue.SpawnRangeMax)
+							{	TryZ.Delete(rng);	continue;	}
+							
+							MoCue.SetZ(to.Z);
+							MoCue.FindFloorCeiling();
+							MoCue.UpdateWaterLevel(false);
+							
+							if (MoCue.WaterLevel < 3 || !MoCue.CanDrown())
+								TryGood = MoCue.TryMove(to.XY, true);
+							
+							// Found a good spot. Prepare it for activation.
+							if (TryGood)	break;
+							
+							// Not a good spot so delete the attempt.
+							TryZ.Delete(rng);
+						}
 					}
 					
 				}

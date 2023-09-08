@@ -1,3 +1,6 @@
+
+
+
 //==============================================================================
 // Minecraft Event Handler
 //==============================================================================
@@ -15,10 +18,7 @@ Class TM_Handler : EventHandler
 		S_Max
 	};
 	
-	TM_AArray 	Monsters, 
-				Blocks,
-				Bridges;
-	private Array<Int> BannedSectors;
+	TM_AArray 	Monsters, Blocks,	Bridges;
 	private int MobCount, EndermanCount, BlockCount, FireCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
@@ -45,7 +45,6 @@ Class TM_Handler : EventHandler
 			if (!res)			Console.Printf("Peaceful Mode On");
 			else				Console.Printf("Peaceful Mode Off");
 		}
-		
 		else if (e.Name == 'TM_ToggleSpawning')
 		{
 			Cvar p = Cvar.GetCvar("TMV_Spawning");
@@ -56,7 +55,6 @@ Class TM_Handler : EventHandler
 			else				Console.Printf("Spawning Off");
 			return;
 		}
-		
 		else if (e.Name == 'TM_Launch')
 		{
 			let it = ThinkerIterator.Create('TM_Monster', Thinker.STAT_DEFAULT);
@@ -69,7 +67,6 @@ Class TM_Handler : EventHandler
 			}
 			return;
 		}
-		
 		else if (e.Name == 'TM_NextMode' || e.Name == 'TM_NextSub')
 		{
 			let it = TM_Item(plr.InvSel);
@@ -144,8 +141,12 @@ Class TM_Handler : EventHandler
 		CreateSpawnList();
 		Timer[S_Spawn] = Second;
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
-		
+	}
+	
+	override void OnRegister()
+	{
 		SetupServices();
+		SetupBans();
 	}
 		
 	override void WorldThingSpawned(WorldEvent e)
@@ -155,10 +156,9 @@ Class TM_Handler : EventHandler
 			return;
 		
 		
-			
-		let mon = TM_Monster(e.Thing);
-		if (mon)	
+		if (mo is 'TM_Monster')	
 		{
+			let mon = TM_Monster(e.Thing);
 			mon.Event = self;
 			Monsters.Push(mon);
 			MobCount++;
@@ -167,9 +167,9 @@ Class TM_Handler : EventHandler
 				EndermanCount++;
 			return;
 		}
-		let bl = TM_Block(e.Thing);
-		if (bl)
+		else if (mo is 'TM_Block')
 		{
+			let bl = TM_Block(e.Thing);
 			bl.Event = self;
 			Blocks.Push(bl);
 			BlockCount++;
@@ -177,119 +177,12 @@ Class TM_Handler : EventHandler
 				FireCount++;
 			return;
 		}
-		
-		let sk = SkyViewpoint(e.Thing);
-		if (sk)	
+		else if (mo is 'SkyViewpoint')	
 		{
-			BanConnectedSectors(sk.CurSector);
-			return;
+			BanConnectedSectors(mo.CurSector);
 		}
-		
-	}
-		
-	//==========================================================================
-	// Sector Banning
-	//
-	// Used to stop monsters from spawning in map areas with a SkyViewpoint
-	//==========================================================================
-	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
-	// 2. Iterate through all lines that have a front or back sector connecting
-	// to it, and ban them too.
-	
-	private bool BanSector(Sector s)
-	{
-		if (!s || IsSectorBanned(s.Index()))
-			return false;
-			
-		BannedSectors.Push(s.Index());
-		return true;
 	}
 	
-	private bool IsSectorBanned(int index)
-	{
-		return (index < 1 || BannedSectors.Find(index) < BannedSectors.Size());
-	}
-	
-	private void BanConnectedSectors(Sector s)
-	{
-		if (!s || IsSectorBanned(s.Index()))	return;
-		
-		Array<Int> Process; 
-		Process.Clear();
-		Process.Push(s.Index()); // Store the sector to ban for iteration.
-		
-		Array<Actor> plrs;
-		Array<Int> temp; temp.Copy(BannedSectors);
-		for (int i = 0; i < MAXPLAYERS; i++)
-		{
-			if (!playeringame[i])	continue;
-			let plr = players[i].mo;
-			if (!plr)	continue;
-			
-			plrs.Push(plr);
-		}
-		
-		int Failsafe = 2000;
-		while (Process.Size() > 0 && --Failsafe > 0)
-		{
-			// Get the last sector index for processing and remove it from the list.
-			int ind = Process.Size() - 1;
-			int id = Process[ind];
-			Process.Pop();
-			
-			// Now ban the sector. The ban will fail if it's already banned or
-			// the index is invalid, so skip it.
-			
-			Sector sec = level.Sectors[id];
-			if (!BanSector(sec))
-				continue;
-			
-			// If the ban succeeds, go through all its lines and add the indexes
-			// to the list of sectors to be banned if they aren't already.
-			for (int i = 0; i < sec.lines.Size(); i++)
-			{
-				int index[2] = {0,0};
-				Line l = sec.lines[i];
-				
-				if (!l)	continue;
-				
-				if (l.frontsector)		index[0] = l.frontsector.Index();
-				if (l.backsector)		index[1] = l.backsector.Index();
-				
-				// Make sure the spawned sector the player is in doesn't bleed
-				// into via the sky viewpoints. If it does, simply undo it by 
-				// moving the copied temp array back and abort.
-				int j = 0;
-				for (j = 0; j < plrs.Size(); j++)
-				{
-					if (plrs[j] && (
-						plrs[j].CurSector == l.frontsector ||
-						plrs[j].CurSector == l.backsector))
-					{
-						BannedSectors.Move(temp);
-						Console.Printf("Sky viewpoint is connected to the play world. Sectors unbanned.");
-						return;
-					}
-						
-				}
-				
-				for (j = 0; j < 2; j++)
-				{
-					if (!IsSectorBanned(index[j]) && 
-						Process.Find(index[j]) >= Process.Size())
-						Process.Push(index[j]);
-				} 
-			}
-		}
-		
-		if (Failsafe < 1)
-		{
-		//	Console.Printf("Triple M: Sector iteration broke the failsafe!");
-			BannedSectors.Move(temp);
-			return;
-		}
-	}
-		
 	override void WorldThingDied(WorldEvent e)
 	{
 		let mo = TM_Entity(e.Thing);
@@ -444,56 +337,7 @@ Class TM_Handler : EventHandler
 			
 			SetupAmmoService();
 		}
-		/*
-		if (MobCount > 0 && ++Timer[S_Despawn] >= DespawnTimer)
-		{
-			Timer[S_Despawn] = 0;
-			for (int i = 0; i < Monsters.Size(); i++)
-			{
-				let mo = TM_Monster(Monsters.Actors[i]);
-				if (!mo || (mo.Target && mo.Targetable(mo.Target)))	continue;
-				
-				double  dmin = mo.DespawnRangeMin ** 2,
-						dmax = mo.DespawnRangeMax ** 2;
-				
-			//	if (mo.A_CheckRange(mo.DespawnRangeMin, "Null", true))
-				if (mo.CheckRange(mo.DespawnRangeMin, true))
-				{
-					
-					double closest = dmax ** 2;
-					for (int i = 0; i < MAXPLAYERS; i++)
-					{
-						if (!playeringame[i])	continue;
-						let plr = players[i].mo;	
-						if (!plr)	continue;
-						
-						closest = min(mo.Distance2DSquared(plr), closest);
-					}
-					
-					if (closest <= dmin)
-						continue;
-					else if (closest >= dmax)
-					{
-						if (TMV_Debug == 16)
-							Console.Printf("%s despawned by range");
-						mo.Destroy();
-					}
-					else
-					{
-						double scalar = TM_Global.GetFalloff(dmin, dmax, closest);
-						int chance = int(round(1000.0 * scalar));
-						if (irandom(1, 1000) <= chance)
-						{
-							if (TMV_Debug == 16)
-								Console.Printf("%s removed by chance", mo.GetClassName());
-							mo.Destroy();
-						}
-					}
-					
-				}
-			}
-		}
-		*/
+		
 		// If there's enderman around, check player LOS and trigger them if
 		// staring at their heads.
 		if (EndermanCount > 0 || FireCount > 0)

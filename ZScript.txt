@@ -1,12 +1,14 @@
 //
 //...
-version "4.9"
+version "4.10"
 
 #include "ZMinecraft/Libraries/Include.txt"
 
 #include "ZMinecraft/Constants.txt"
 #include "ZMinecraft/Base.txt"
 #include "ZMinecraft/Event.txt"
+#include "ZMinecraft/Bans.txt"
+#include "ZMinecraft/MapCompat.txt"
 #include "ZMinecraft/Debug.txt"
 #include "ZMinecraft/Drops.txt"
 #include "ZMinecraft/Mixins.txt"

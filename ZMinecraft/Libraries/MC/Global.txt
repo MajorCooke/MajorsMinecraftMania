@@ -203,7 +203,12 @@ Class TM_Global play
 		lo = temp;
 	}
 	
-	
+	//==========================================================================
+	// Snapping functions
+	//
+	// Snaps a double/vector to a grid with an offset.
+	// Uniform versions include the offsets as part of the calculation instead of
+	// simply restoring the old position.
 	static double SnapDouble(double v, double gridsize, double offset = 0)
 	{
 		v = (round((v - offset) / gridsize) * gridsize) + offset;

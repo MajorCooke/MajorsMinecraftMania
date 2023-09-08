@@ -229,6 +229,69 @@ Class TM_XFloor play
 	}
 }
 
+Class TM_Rect
+{
+	bool ThreeD;
+	Vector3 LoV, HiV;
+	
+	static TM_Rect Create(Vector2 lo, Vector2 hi)
+	{
+		let cc = new('TM_Rect');
+		cc.Set(lo, hi);
+		return cc;
+	}
+	
+	static TM_Rect Create3D(Vector3 lo, Vector3 hi)
+	{
+		let cc = new('TM_Rect');
+		cc.Set3D(lo, hi);
+		return cc;
+	}
+	
+	void Set(Vector2 lo, Vector2 hi)
+	{
+		LoV.X = min(lo.X, hi.X);
+		HiV.X = max(lo.X, hi.X);
+		LoV.Y = min(lo.Y, hi.Y);
+		HiV.Y = max(lo.Y, hi.Y);
+		LoV.Z = 0;
+		HiV.Z = 0;
+		ThreeD = false;
+	}
+	
+	void Set3D(Vector3 lo, Vector3 hi)
+	{
+		LoV.X = min(lo.X, hi.X);
+		HiV.X = max(lo.X, hi.X);
+		LoV.Y = min(lo.Y, hi.Y);
+		HiV.Y = max(lo.Y, hi.Y);
+		LoV.Z = min(lo.Z, hi.Z);
+		HiV.Z = max(lo.Z, hi.Z);
+		ThreeD = true;
+		
+	}
+	
+	bool InRange(Vector2 p)
+	{
+		return	(
+			p.x >= LoV.x &&
+			p.x <= HiV.x &&
+			p.y >= LoV.y &&
+			p.y <= HiV.y);
+	}
+	
+	bool InRange3D(Vector3 p)
+	{
+		return (
+			p.x >= LoV.x &&
+			p.x <= HiV.x &&
+			p.y >= LoV.y &&
+			p.y <= HiV.y &&
+			p.z >= LoV.Z &&
+			p.z <= HiV.Z);
+	}
+}
+
 
 
 /*

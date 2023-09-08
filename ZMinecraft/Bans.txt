@@ -1,0 +1,156 @@
+extend class TM_Handler
+{
+	private Name			Checksum;
+	private bool 			MapEntry;
+	private Array<Int> 		BannedSectors;
+	private Array<TM_Rect>	BannedRegions;
+		
+	//==========================================================================
+	// Sector Banning
+	//
+	// Used to stop monsters from spawning in map areas with a SkyViewpoint
+	//==========================================================================
+	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
+	// 2. Iterate through all lines that have a front or back sector connecting
+	// to it, and ban them too.
+	
+	private void BanRegion3D(double lox, double loy, double loz, double hix, double hiy, double hiz)
+	{
+		BanRegionVec3D((lox,loy,loz),(hix,hiy,hiz));
+	}
+	
+	private void BanRegionVec3D(Vector3 lo, Vector3 hi)
+	{
+		let rec = TM_Rect.Create3D(lo, hi);
+		BannedRegions.Push(rec);
+	}
+	
+	private void BanRegion(double lox, double loy, double hix, double hiy)
+	{
+		BanRegionVec((lox,loy),(hix,hiy));
+	}
+	
+	private void BanRegionVec(Vector2 lo, Vector2 hi)
+	{
+		let rec = TM_Rect.Create(lo, hi);
+		BannedRegions.Push(rec);
+	}
+	
+	private void BanSecNum(int i)
+	{
+		if (i < 1 || i >= level.Sectors.Size())
+		{
+			Console.Printf("BanSecNum: Index out of bounds!");
+			return;
+		}
+		Sector s = level.Sectors[i];
+		BanSector(s);
+	}
+	
+	private bool BanSector(Sector s)
+	{
+		if (!s || IsSectorBanned(s.Index()))
+			return false;
+			
+		BannedSectors.Push(s.Index());
+		return true;
+	}
+	
+	bool IsSectorBanned(int index)
+	{
+		return (index < 1 || BannedSectors.Find(index) < BannedSectors.Size());
+	}
+	
+	bool IsPosBanned(Vector3 pos)
+	{
+		foreach(rec : BannedRegions)
+		{
+			if (!rec) continue;
+			
+			if ((rec.ThreeD && rec.InRange3D(pos)) ||
+				(!rec.ThreeD && rec.InRange(pos.XY)))
+				return true;
+		}
+		return false;
+	}
+	
+	private void BanConnectedSectors(Sector s)
+	{
+		if (!s || IsSectorBanned(s.Index()) || checksum != '')	return;
+		
+		Array<Int> Process; 
+		Process.Clear();
+		Process.Push(s.Index()); // Store the sector to ban for iteration.
+		
+		Array<Actor> plrs;
+		Array<Int> temp; temp.Copy(BannedSectors);
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i])	continue;
+			let plr = players[i].mo;
+			if (!plr)	continue;
+			
+			plrs.Push(plr);
+		}
+		
+		int Failsafe = 6000;
+		while (Process.Size() > 0 && --Failsafe > 0)
+		{
+			// Get the last sector index for processing and remove it from the list.
+			int ind = Process.Size() - 1;
+			int id = Process[ind];
+			Process.Pop();
+			
+			// Now ban the sector. The ban will fail if it's already banned or
+			// the index is invalid, so skip it.
+			
+			Sector sec = level.Sectors[id];
+			if (!BanSector(sec))
+				continue;
+			
+			// If the ban succeeds, go through all its lines and add the indexes
+			// to the list of sectors to be banned if they aren't already.
+			for (int i = 0; i < sec.lines.Size(); i++)
+			{
+				int index[2] = {0,0};
+				Line l = sec.lines[i];
+				
+				if (!l)	continue;
+				
+				if (l.frontsector)		index[0] = l.frontsector.Index();
+				if (l.backsector)		index[1] = l.backsector.Index();
+				
+				// Make sure the spawned sector the player is in doesn't bleed
+				// into via the sky viewpoints. If it does, simply undo it by 
+				// moving the copied temp array back and abort.
+				int j = 0;
+				for (j = 0; j < plrs.Size(); j++)
+				{
+					if (plrs[j] && (
+						plrs[j].CurSector == l.frontsector ||
+						plrs[j].CurSector == l.backsector))
+					{
+						BannedSectors.Copy(temp);
+						Console.Printf("Sky viewpoint is connected to the play world. Sectors unbanned.");
+						return;
+					}
+						
+				}
+				
+				for (j = 0; j < 2; j++)
+				{
+					if (!IsSectorBanned(index[j]) && 
+						Process.Find(index[j]) >= Process.Size())
+						Process.Push(index[j]);
+				} 
+			}
+		}
+		
+		if (Failsafe < 1)
+		{
+		//	Console.Printf("Triple M: Sector iteration broke the failsafe!");
+			BannedSectors.Move(temp);
+			return;
+		}
+	}
+}
