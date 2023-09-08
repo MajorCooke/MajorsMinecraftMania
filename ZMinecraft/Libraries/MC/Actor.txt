@@ -328,8 +328,10 @@ extend Class TM_Global
 				{
 					newthrust *= thrs;
 				}
-				
-				newthrust = (newthrust * tfall) * 0.5 / double(mo.mass);
+				newthrust = (newthrust * tfall) * 0.5;
+				if (mo.mass > 0)
+					newthrust /= double(mo.mass);
+					
 				if (newthrust >= 0.01)
 				{
 					Vector3 bpos = bomb.pos;
