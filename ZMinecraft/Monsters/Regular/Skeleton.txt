@@ -413,7 +413,7 @@ Class TM_SkeletonWither : TM_Skeleton
 	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
-		InitDrops();
+	//	InitDrops();
 		for (int i = 0; i < 4; i++)
 			if (irandom(0,2) == 0)
 				Drops.Add('TM_PearlAmmo', irandom(1,5));
@@ -491,7 +491,7 @@ Class TM_SkeletonWither : TM_Skeleton
 
 Class TM_SkeletonArm : TM_BodyPartArm
 {
-	const BowYaw = 20.0;
+	const BowYaw = -20.0;
 	Default
 	{
 		TM_BodyPart.Gib 'TM_SkeletonArmGib';

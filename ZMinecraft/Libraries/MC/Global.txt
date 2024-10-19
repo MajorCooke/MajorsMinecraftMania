@@ -2,6 +2,29 @@
 
 Class TM_Global play
 {
+	clearscope static int BinarySearch(Array<int> arr, int item, bool exact = false)
+	{
+		int Count = arr.Size();
+		
+		if(Count == 0) return 0;
+		if(Count == 1) return (item < arr[0]) ? 0 : 1;
+
+		int lo = 0;
+		int hi = Count - 1;
+
+		while(lo <= hi)
+		{
+			int mid = lo + ((hi - lo) / 2);
+
+			if(arr[mid] < item)			lo = mid + 1;
+			else if(item < arr[mid])	hi = mid - 1;
+			else						return mid;
+			
+		}
+		
+		return ((exact) ? Count : ((lo == Count || (item < arr[lo])) ? lo : lo + 1));
+	}
+
 	//==========================================================================
 	// Damage Functions
 	//==========================================================================
@@ -64,7 +87,7 @@ Class TM_Global play
 	
 	static TerrainDef, TerrainDef GetTerrainDef(Sector s)
 	{
-		if (!s)	return null;
+		if (!s)	return null, null;
 		
 		let terf = s.GetFloorTerrain(Sector.floor);
 		let terc = s.GetFloorTerrain(Sector.ceiling);

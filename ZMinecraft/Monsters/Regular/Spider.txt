@@ -181,8 +181,8 @@ Class TM_Spider : TM_Arthropod
 		{
 		//	Limb[i  ].SetRelOffsets((0, -.8, 1.9));
 		//	Limb[i+4].SetRelOffsets((0, 0.8, 1.9));
-			Limb[i  ].SetPersistantAPROffset(( 30 + (t * 30), 35, 0));
-			Limb[i+4].SetPersistantAPROffset((-30 - (t * 30), 35, 0));
+			Limb[i+4].SetPersistantAPROffset(( 30 + (t * 30), 35, 0));
+			Limb[i  ].SetPersistantAPROffset((-30 - (t * 30), 35, 0));
 			t++;
 		}
 		

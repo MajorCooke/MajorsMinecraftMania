@@ -33,13 +33,13 @@ zombie were to melee them. This is not a bug - it's a feature. =P
 --------------------------------------------------------------------------------
 ***** Monsters *****
 === Zombies ===
+Type: Undead
 = Regular =
 This cumbersome beast is slow moving, yet hits quite hard if his grabby hands
 get around your limbs. As they're undead, they're rather tough with stamina but
 are also bumbling and, well, quite brain dead.
 
-Type: Undead
-
+* Undead
 - Natural armor: 8% damage reduction
 - Chance to call other zombies to help from all around when damaged
 + Slow
@@ -86,6 +86,7 @@ Nether, and given swords as more powerful foes which makes them dangerous up clo
 
 
 === Creeper ===
+Type: None
 A failed pig-monster with camoflauge green skin and an explosive temper (quite 
 physically), these walking PTSD trigger creatures make like a dog's fart upon 
 arrival: silent, and deadly, save for the soft hiss...
@@ -99,6 +100,7 @@ But you're Doomguy! You can outright kill ANYTHING! Right? ...Right?
 + Explosions deal extra damage to non-minecraft enemies (player is immune to this)
 
 === Enderman ===
+Type: None
 An alien creature that naturally isn't hostile to anything, unless attacked or
 looked at the head. When angered, staring at their head will make them hold still.
 
@@ -108,15 +110,18 @@ looked at the head. When angered, staring at their head will make them hold stil
 
 
 === Spider ===
-An abnormally large arachnopod that triggers arachnophobia, by leaping at enemies
+Type: Arthropod
+An abnormally large arachnopod that triggers arachnophobia, by leaping at enemies.
 
 - Leaps at enemies
 - Moves through obstacles
 - Smaller in height
-+ Bigger in radius, more vulnerable to explosions
+- Can spawn with Strength, Speed, Regeneration and/or Invisibility. (Hard mode)
++ Bigger in radius, vulnerable to explosions & Bane of Arthropods
 + Can fall off cliffs and kill itself.
 
 === Ghast ===
+Type: None
 A big floating monster that moves in a sporadic manner and shoots fireballs from
 long distances.
 
@@ -128,6 +133,7 @@ long distances.
 
 
 === Blaze ===
+Type: None
 Floating fire elemental that shoots fire charges which ignites anything they hit,
 including setting the ground on fire. This is the result of a soul combined with
 the Nether flame.
@@ -135,12 +141,48 @@ the Nether flame.
 - Immune to fire, slime and damage sectors
 + Vulnerable to water sectors (if they don't deal sector damage themselves)
 
+=== Piglin ===
+Greedy pig-like anthropomorphs who like to hunt and hoard gold. They hunt in 
+packs and support each other, never infighting with their own. Comes in melee
+and crossbow variants.
+
+* Neutral until personal space is invaded or attacked
++ Flees from Ziglins and packs of Hoglins
++ Flees from players who kill one of them briefly
+- Can wear armor and weapons
+- May come with Piglin Brutes
+- Last Piglin may evolve into a Piglin Brute
+
 === Ziglin ===
 Zombified Piglins (AKA Ziglins) are repentant souls of Piglins that have given up
 their greed. But they won't hesitate to go all out and gang up on anyone that
-attacks them as a whole mob.
+attacks them as a whole mob. Piglins are no exception.
 
+* Undead
 + Neutral until attacked
 - Immune to fire, slime, damage sectors
 - Pulls other ziglins in to fight with it (if they have line of sight) when 
 	attacked
+
+================================================================================
+	MINIBOSSES
+	
+Come loaded for bear. Have a rocket launcher with plenty of booms or several TNT
+blocks at the least, because these guys will destroy you.
+================================================================================
+=== Zoglin ===
+Rage burns within upon seeing the last of its fellow Hoglin fall, becomes a 
+living ball of rage and insane strength, belching flamees out of gaping wounds.
+
+* Undead
++ Attacks everything it sees except Hoglins
+- Tosses enemies into the air, disrupting aim
+- Charges enemies and knocks them back
+- Massive fiery death explosion
+
+=== Piglin Brute ===
+Powerful Piglin that can spawn or evolve from a Piglin. Both are rare events.
+Extremely violent monster that deals a lot of damage with its axe.
+
+- Always spawns with an axe
++ Hates all mobs that aren't piglins, especially undead.

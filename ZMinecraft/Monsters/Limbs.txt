@@ -425,7 +425,7 @@ Class TM_BodyPart : TM_Entity
 		+NOTRIGGER
 		+NOTONAUTOMAP
 		+SEEINVISIBLE
-		+INVISIBLE
+	//	+NOSECTOR
 	}
 	
 	override void Activate(Actor activator)
@@ -438,12 +438,14 @@ Class TM_BodyPart : TM_Entity
 		NextAng.X = Activator.Angle;
 		UpdateAngles(NextAng + MainAng);
 		ClearInterpolation();
-		bINVISIBLE = false;
+	//	bINVISIBLE = false;
 		bDONTINTERPOLATE = false;
 		bDORMANT = false;
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Activate(self);
 		SetState(ResolveState("Active"));
+		// This is changed a tick after in the state to ensure there's no interpolation.
+		A_ChangeLinkFlags(FLAG_NO_CHANGE, false); 
 	}
 	
 	override void Deactivate(Actor activator)
@@ -454,10 +456,10 @@ Class TM_BodyPart : TM_Entity
 		
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Deactivate(activator);
-		bINVISIBLE = true;
 		bDONTINTERPOLATE = true;
 		bDORMANT = true;
 		SetState(ResolveState("Inactive"));
+		A_ChangeLinkFlags(FLAG_NO_CHANGE, true);
 	}
 	
 	override void Tick()
@@ -687,18 +689,32 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		_Ang = (CurAng + AngOff);
 		
 		double _p = ((start) ? 0 : who.pitch);
+		
+		Quat base = Quat.FromAngles(who.angle, _p, who.roll);
+		origin = who.pos;
+		Vector3 ret = base * PosOff;
+		NPos = ret + who.WorldOffset;
+		
+		if (!(RelOff ~== (0,0,0)))
+		{	
+			Quat ans = Quat.FromAngles(_Ang.X, _Ang.Y, _Ang.Z);
+			ret = ans * RelOff;
+			NPos += ret;
+		//	NPos += (RelOff.X * ans.X + RelOff.Y * ans.Y + RelOff.Z * ans.Z);
+		}
+		
+		/*
 		[px, py, pz] = TM_CoordUtil.GetAxes(_p, who.angle, who.roll);
-		origin = who.pos; // + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz)
+		origin = who.pos; 
 		NPos = who.WorldOffset + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz);
 		
 		if (!(RelOff ~== (0,0,0)))
 		{
 			[px, py, pz] = TM_CoordUtil.GetAxes(_Ang.Y, _Ang.X, _Ang.Z);
-		//	origin += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
 			NPos += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
 		}
+		*/
 		
-	//	origin += AbsOff;
 		NPos += AbsOff;
 		if (origin != pos)
 			SetOrigin(origin, interp);
@@ -733,12 +749,6 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		
 		if (!NoResize)
 			A_SetSize(Default.Radius * Scale.X, Default.Height * Scale.Y);
-		
-		
-	//	for (int i = 0; i < Limb.Size(); i++)
-	//		if (Limb[i])	Limb[i].UpdateScales(OverScale, Scale);
-		
-		
 	}
 	
 	virtual void UpdateAngles(Vector3 Next, int turnflags = 0)
@@ -757,9 +767,6 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		A_SetAngle(Next.X, turnflags);
 		A_SetPitch(Next.Y, turnflags);
 		A_SetRoll(Next.Z, turnflags);
-		
-	//	for (int i = 0; i < Limb.Size(); i++)
-	//		if (Limb[i])	Limb[i].UpdateAngles(Next, turnflags);
 	}
 	
 	virtual void SetNextAngles(Vector3 Next)	{	NextAng = Next;	}
@@ -1006,8 +1013,6 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		return found, ret;
 	}
 	
-	
-	
 	void DestroyArmor()
 	{
 		Array<TM_BodyPart> temp; temp.Clear();
@@ -1028,7 +1033,11 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		Stop;
 	Active:
 		TNT1 A 1;
-		TNT1 A 0 { return ResolveState("Spawn");	}
+		TNT1 A 0 
+		{
+		//	A_ChangeLinkFlags(FLAG_NO_CHANGE, true);
+			return ResolveState("Spawn");	
+		}
 	Spawn:
 		ASDF A -1;
 		Stop;
@@ -1408,7 +1417,6 @@ Class TM_BodyPartGib : TM_Entity abstract
 		if (bKILLED)	return;
 		
 		double dist = vel.Length() + 1;
-	//	Vector3 center = level.Vec3Offset(pos, (0,0,height*0.5));
 		Vector3 center = level.Vec3Offset(pos, (0,0,1));
 		if (dist <= 2.0 && pos.z - floorz <= 2.0)
 		{
@@ -1420,7 +1428,7 @@ Class TM_BodyPartGib : TM_Entity abstract
 			return;
 		}
 		
-		double grav = GibGrav(false);
+		double grav = GibGrav(true);
 		
 		let t = new('TM_BounceTracer');
 		int HitType = TRACE_HitNone;
@@ -1458,7 +1466,6 @@ Class TM_BodyPartGib : TM_Entity abstract
 			{	//For older versions of GZDoom that don't have the trace fix.
 				if (end ~== center) 
 				{
-					// why the fuck
 					end = level.Vec3Offset(center,vel);
 					normal *= 0;
 				}
@@ -1481,9 +1488,6 @@ Class TM_BodyPartGib : TM_Entity abstract
 		
 		
 		vel.Z -= grav;
-		
-	//	TM_Global.SetPos(self, end, true);
-	//	SetOrigin(end, true);
 	}
 	
 	private double GibGrav(bool water = true)
@@ -1494,7 +1498,6 @@ Class TM_BodyPartGib : TM_Entity abstract
 			!bNOGRAVITY && Gravity > 0.0))
 		{
 			double t = Gravity;
-			Gravity = 0;
 			
 			if (!water || WaterLevel < 1)		return t;
 			else								return -(t * 0.3);
@@ -1506,62 +1509,21 @@ Class TM_BodyPartGib : TM_Entity abstract
 	{
 		if (IsFrozen())	return;
 		
-		/*
-		// Old code
-		if (!bNOINTERACTION)
-		{
-			bDONTSPLASH = (Vel.Z >= -3.0);
-			
-			// Counteract gravity when underwater.
-			if (WaterLevel > 0 || 
-				((TMV_NoSectorGravity & TM_NSG_GIBMISLS) && 
-				!bNOGRAVITY && Gravity > 0.0))
-			{
-				double t = Gravity;
-				Gravity = 0;
-				
-				if (WaterLevel < 1)		Vel.Z -= t;
-				else					Vel.Z += (t * 0.3);
-				
-				Super.Tick();
-				Gravity = t;
-				
-				if (bNOINTERACTION && pos.Z < floorz)
-				{
-					Vel = (0,0,0);
-					SetOrigin((pos.x, pos.y, floorz), false);
-				}
-			}
-			else	
-			{
-				if (bNOINTERACTION && pos.Z < floorz)
-				{
-					Vel = (0,0,0);
-					SetOrigin((pos.x, pos.y, floorz), false);
-				}
-				Super.Tick();
-			}
-			
-		}
-		*/
 		if (!bKILLED)
-		{	/*
-			if (!(vel ~== (0,0,0)))
-			{
-				_vv = vel;
-				vel = (0,0,0);
-			}
-			*/
+		{	
 			oldFloorZ = FloorZ;
 			TraceNextPos();
 			bDONTSPLASH = (vel.Z >= -3.0);
-			
 		}
-	//	vel = _vv;
+		
 		Super.Tick();
+		
+		if (!(vel ~== (0,0,0)))
+			UpdateWaterLevel(true);
+		
 		if (pos.z < floorz)	
 			SetOrigin((pos.x, pos.y, floorz), true);
-	//	vel = (0,0,0);
+			
 		if ((bKILLED && ShortLife) || --LifeTime < 1)
 			A_FadeOut(FadeTime);
 	}

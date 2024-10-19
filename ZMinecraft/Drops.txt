@@ -41,9 +41,8 @@ Class TM_DropTimer : Thinker
 	}
 }
 
-Class TM_ItemDrops play
+Struct TM_ItemDrops
 {
-	mixin TM_Event;
 	Array<Class<Inventory> > ID;
 	Array<Int> Amount;
 	private int Index;
@@ -53,14 +52,14 @@ Class TM_ItemDrops play
 	
 	void ResetIndex()
 	{	Index = 0;	}
-	
+	/*
 	static TM_ItemDrops Create()
 	{
 		let drop = new('TM_ItemDrops');
 		drop.Init();
 		return drop;
 	}
-	
+	*/
 	void Init()
 	{
 		ID.Clear();
@@ -260,11 +259,17 @@ Class TM_PearlHealth : TM_FlyingItem
 
 	override bool GiveItems(Actor mo)
 	{
-		if (!mo.bKILLED && (bALWAYSPICKUP || mo.Health < mo.GetMaxHealth(true)))
+		int mx = (SEvent) ? SEvent.GetMaxHealth() : mo.GetMaxHealth(true);
+		if (!mo.bKILLED && (bALWAYSPICKUP || mo.Health < mx))
 		{
-			// TO DO: Record maximum health the player's ever received and allow that
-			// to be the maximum (such as > 200)
-			return mo.GiveBody(Amount, Max(200, mo.GetMaxHealth(true))) || bALWAYSPICKUP;
+			if (mo.Health < mx)
+			{
+				mo.A_SetHealth(min(mo.Health + Amount, mx));
+				if (mo.Health > mx)
+					mo.A_SetHealth(mx);
+				return true;
+			}
+			return bALWAYSPICKUP;
 		}
 		return false;
 	}
@@ -287,24 +292,19 @@ Class TM_PearlArmor : TM_FlyingItem
 		{
 			let armor = BasicArmor(mo.FindInventory('BasicArmor', true));
 			
-			if (!armor || armor.Amount < 1)
+			if (!armor)// || armor.Amount < 1)
 			{
 				mo.A_GiveInventory('BlueArmor', 1);
 				let armor = BasicArmor(mo.FindInventory('BasicArmor', true));
-				if (armor)	
-				{
-					armor.Amount = Amount;
-				}
-				return (armor != null);
 			}
 			if (armor)
 			{
 				bool good = bALWAYSPICKUP;
-				
-				armor.MaxAmount = Max(200, armor.MaxAmount);
-				if (armor.Amount < armor.MaxAmount)
+				int mx = (SEvent) ? SEvent.GetMaxArmor() : armor.MaxAmount;
+			//	armor.MaxAmount = mx;
+				if (armor.Amount < mx)
 				{
-					armor.Amount = min(armor.Amount + Amount, armor.MaxAmount);
+					armor.Amount = min(armor.Amount + Amount, mx);
 					good = true;
 				}
 				Switch (armor.ArmorType)

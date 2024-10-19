@@ -105,10 +105,14 @@ extend Class TM_Global
 		// Aim from the base of the bomb to the victim's middle.
 		Vector3 bpos = bomb.pos,
 				vpos = victim.pos + (0,0,victim.height * 0.5);
+				
 		
 		// GZDoom's OLDRADIUSDMG basically.
 		if (_2d)	vpos.z = bpos.z;
 		else if (centerz) bpos.z += bomb.height * 0.5;
+		
+		if (bpos ~== vpos) 
+			return 1.0;
 		
 		Vector3 APR = level.Vec3Diff(bpos, vpos);
 		

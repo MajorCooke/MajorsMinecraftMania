@@ -1,77 +1,388 @@
+// See MapCompat.txt for all current maps listed so far.
+
 extend class TM_Handler
 {
 	private Name			Checksum;
-	private bool 			MapEntry;
-	private Array<Int> 		BannedSectors;
-	private Array<TM_Rect>	BannedRegions;
+	private bool 			MapEntry, VoidCheck, Whitelist, Blacklist;
+	private Array<Int> 		BannedSectors, SpawnSectors;
+	private Array<TM_Rect>	BannedRegions, SpawnRegions;
+	private Array<TM_Poly>	BannedPolys, SpawnPolys;
+	private TM_Rect			SpawnBox;
+	private TM_Poly			CurPoly;
+	private int				PolyCount; // easier tracking
+	
+	
+	enum ETMPoly
+	{
+		TMPOLY_SPAWN = 1,
+		TMPOLY_BAN = 0,
 		
-	//==========================================================================
-	// Sector Banning
-	//
-	// Used to stop monsters from spawning in map areas with a SkyViewpoint
-	//==========================================================================
-	// 1. Get the sector right off the bat where the SkyViewpoint is and ban it.
-	// 2. Iterate through all lines that have a front or back sector connecting
-	// to it, and ban them too.
+		TMF_WHITE = TMPOLY_SPAWN,	// Can spawn in these areas
+		TMF_BLACK = TMPOLY_BAN,		// Cannot spawn
+		TMF_GREY = 	2				// Conditional spawning (Z height checks)
+	};
+	
+	private void PolyError(int type)
+	{
+		String err = "ERROR: ";
+		Switch(type)
+		{
+			Case 1:	err = err.."Must call FinishPoly() first!"; break;
+			Case 2:	err = err.."Must call MakePoly() first!"; break;
+			Case 3:	err = err.."FinishPoly must have an ETMPoly constant!"; break;
+		}
+		Console.Printf("(%d) %s", PolyCount, err);
+	}
+	
+	// Polygon creation
+	private void MakePoly()
+	{
+		if (CurPoly) {	PolyError(1);	return;	}
+		CurPoly = TM_Poly.Create();
+	}
+	
+	private void AddVert(int id)
+	{
+		if (!CurPoly) {	PolyError(2); return;	}
+		CurPoly.AddVert(id);
+	}
+	
+	private void FinishPoly(out Array<TM_Poly> arr)
+	{
+		if (!CurPoly)
+		{	PolyError(1); return;	}
+		arr.Push(CurPoly);
+		CurPoly = null;
+		PolyCount++;
+	}
+	
+	// Whitelisting limits where things can spawn and are checked first. Further
+	// restrictions can be added with Blacklisting to save time.
+	private void SetSector(out Array<Int> arr, Sector s)
+	{	if (s) SetSecNum(arr, s.Index());	}
+	
+	private void SetSecNum(out Array<Int> arr, int i)
+	{
+		int index = TM_Global.BinarySearch(arr, i, true);
+		
+		if (index >= arr.Size())
+			arr.Push(i);
+		else if (arr[index] != i)
+			arr.Insert(index, i);
+	}
+	
+	private void SetSecAABB(out Array<TM_Rect> arr, Sector s)
+	{
+		if (!s)	return;
+		Vector2 lo, hi;
+		foreach(lin : s.Lines)
+		{
+			lo.X = min(lo.X, lin.v1.p.X, lin.v2.p.X);
+			lo.Y = min(lo.Y, lin.v1.p.Y, lin.v2.p.Y);
+			hi.X = max(hi.X, lin.v1.p.X, lin.v2.p.X);
+			hi.Y = max(hi.Y, lin.v1.p.Y, lin.v2.p.Y);
+		}
+		SetRegion(arr, lo.x, lo.y, hi.x, hi.y);
+	}
+	
+	private void SetRegion(out Array<TM_Rect> arr, double lox, double loy, double hix, double hiy)
+	{	SetRegionVec(arr, (lox, loy, 0), (hix, hiy, 0));	}
+	
+	private void SetRegionVec(out Array<TM_Rect> arr, Vector3 lo, Vector3 hi, bool _3d = false)
+	{
+		let rec = TM_Rect.Create(lo, hi, _3d);
+		arr.Push(rec);
+	}
+	
+	//--------------------------------------------------------------------------
+	// Helper functions
+	//--------------------------------------------------------------------------
+	// Blacklisting functions prevent monsters from spawning inside of them. These
+	// are checked after the Whitelisted areas. Combine the two together to ensure
+	// checks are as minimal as possible.
 	
 	private void BanRegion3D(double lox, double loy, double loz, double hix, double hiy, double hiz)
-	{
-		BanRegionVec3D((lox,loy,loz),(hix,hiy,hiz));
-	}
-	
-	private void BanRegionVec3D(Vector3 lo, Vector3 hi)
-	{
-		let rec = TM_Rect.Create3D(lo, hi);
-		BannedRegions.Push(rec);
-	}
+	{	SetRegionVec(BannedRegions, (lox,loy,loz),(hix,hiy,hiz), true);	}
 	
 	private void BanRegion(double lox, double loy, double hix, double hiy)
+	{	SetRegionVec(BannedRegions, (lox,loy,0),(hix,hiy,0));	}
+	
+	private void BanRegionVec(Vector3 lo, Vector3 hi, bool _3d = false)
+	{	SetRegionVec(BannedRegions, lo, hi, _3d);	}
+	
+	private void BanSecTag(int id)
 	{
-		BanRegionVec((lox,loy),(hix,hiy));
+		let it = level.CreateSectorTagIterator(id);
+		int num = 0;
+		while ((num = it.Next()) > -1)
+			BanSecNum(num);
 	}
 	
-	private void BanRegionVec(Vector2 lo, Vector2 hi)
+	private void BanNumAABB(int index)
 	{
-		let rec = TM_Rect.Create(lo, hi);
-		BannedRegions.Push(rec);
+		let sec = level.Sectors[index];
+		BanSecAABB(sec);
 	}
 	
-	private void BanSecNum(int i)
+	private void BanSecAABB(Sector s)
 	{
-		if (i < 1 || i >= level.Sectors.Size())
+		if (!s)	return;
+		Vector2 lo, hi;
+		foreach(lin : s.Lines)
 		{
-			Console.Printf("BanSecNum: Index out of bounds!");
-			return;
+			lo.X = min(lo.X, lin.v1.p.X, lin.v2.p.X);
+			lo.Y = min(lo.Y, lin.v1.p.Y, lin.v2.p.Y);
+			hi.X = max(hi.X, lin.v1.p.X, lin.v2.p.X);
+			hi.Y = max(hi.Y, lin.v1.p.Y, lin.v2.p.Y);
 		}
-		Sector s = level.Sectors[i];
-		BanSector(s);
+		BanRegion(lo.x, lo.y, hi.x, hi.y);
 	}
 	
 	private bool BanSector(Sector s)
 	{
-		if (!s || IsSectorBanned(s.Index()))
-			return false;
-			
-		BannedSectors.Push(s.Index());
+		if (!s)		return false;
+		return BanSecNum(s.Index());
+	}
+	
+	private bool BanSecNum(int i)
+	{
+		if (IsSectorBanned(i))	return false;
+		Sector s = level.Sectors[i];
+		SetSecNum(BannedSectors, i);
 		return true;
 	}
 	
-	bool IsSectorBanned(int index)
+	// The opposite, sets up whitelisted areas.
+	private void SpawnRegion3D(double lox, double loy, double loz, double hix, double hiy, double hiz)
+	{	SetRegionVec(SpawnRegions, (lox,loy,loz),(hix,hiy,hiz), true);	}
+	
+	private void SpawnRegion(double lox, double loy, double hix, double hiy)
+	{	SetRegionVec(SpawnRegions, (lox,loy,0),(hix,hiy,0));	}
+	
+	private void SpawnRegionVec(Vector3 lo, Vector3 hi, bool _3d = false)
+	{	SetRegionVec(SpawnRegions, lo, hi, _3d);	}
+	
+	//==========================================================================
+	// Getters
+	//==========================================================================
+	
+	clearscope bool CheckZ(Array<Double> Spots, Vector3 pos, Sector sec = null)
 	{
-		return (index < 1 || BannedSectors.Find(index) < BannedSectors.Size());
+		if (!sec) sec = level.PointInSector(pos.XY);
+		Spots.Clear();
+		double fz = sec.floorplane.ZAtPoint(pos.XY);
+		double cz = sec.ceilingplane.ZAtPoint(pos.XY);
+		
+		if (Blacklist)
+			foreach(reg : BannedRegions)
+				if (reg && !reg.InRange(pos))
+					return false;
+		
+		if (Whitelist)
+		{
+			foreach(reg : SpawnRegions)
+			{
+				if (reg && reg.InRange(pos))
+					return true;
+			}
+			return false;
+		}
+		return true;
 	}
 	
-	bool IsPosBanned(Vector3 pos)
-	{
-		foreach(rec : BannedRegions)
+	//==========================================================================
+	// Checkers
+	//==========================================================================
+	
+	clearscope bool CheckSector(int index)
+	{	
+		if (BannedSectors.Size() > 0 && IsSectorBanned(index))
+			return false;
+		if (SpawnSectors.Size() > 0)
 		{
-			if (!rec) continue;
 			
-			if ((rec.ThreeD && rec.InRange3D(pos)) ||
-				(!rec.ThreeD && rec.InRange(pos.XY)))
-				return true;
+			return IsSectorAllowed(index, true);
+		}
+		return true;
+	//	return (!IsSectorBanned(index) && IsSectorAllowed(index, true)); 
+	}
+	
+	clearscope bool IsSectorAllowed(int index, bool sizecheck = false) const
+	{	return ((sizecheck && SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) != SpawnSectors.Size()));	}
+	
+	clearscope bool IsSectorBanned(int index) const
+	{
+		return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) != BannedSectors.Size());
+	//	return (index < 0 || BannedSectors.Find(index) < BannedSectors.Size());		
+	}
+	
+	clearscope bool IsRegionBanned(Vector3 pos)
+	{
+		if (BannedRegions.Size() > 0)
+			foreach (reg : BannedRegions)
+				if (reg && !reg.ThreeD && reg.InRange(pos))
+					return true;
+		if (SpawnRegions.Size() > 0)
+		{
+			foreach (reg : SpawnRegions)
+			{
+				if (reg && !reg.ThreeD && reg.InRange(pos))
+					return false;
+			}
+			return true;
 		}
 		return false;
+	}
+	
+	clearscope int CheckRegions(Vector3 pos, bool force3d = false) const
+	{
+		if (BannedRegions.Size() > 0)
+		{
+			foreach(reg : BannedRegions)
+			{
+				if (reg && reg.InRange(pos, force3d)) 
+					return TMF_BLACK;
+			}
+		}
+		if (SpawnRegions.Size() > 0)
+		{
+			if (SpawnBox && !SpawnBox.InRange(pos))
+				return TMF_BLACK; // Outside whitelist, banned
+			
+			foreach(reg : SpawnRegions)
+			{
+				if (reg && reg.InRange(pos, force3d))
+					return TMF_WHITE;
+			}
+		}
+		return TMF_GREY;
+	}
+	
+	
+	clearscope int CheckPoly(Vector3 pos) const
+	{
+		int bsize = BannedPolys.Size(),
+			ssize = SpawnPolys.Size();
+		if (bsize < 1 && ssize < 1)	return 0;
+		
+		int ret = 0;
+		foreach (sp : SpawnPolys)
+			if (sp && sp.InRange(pos)) 
+				{	ret = 1; break;	}
+				
+		foreach (bp : BannedPolys)
+			if (bp && bp.InRange(pos))
+				return -1;
+			
+		
+		return ret;
+	}
+	
+	// The overarching function, does all the checks needed.
+	int, TM_RectCon CheckPos(Vector3 pos, double h, double r, Sector sec = null, bool touching = false) const
+	{
+		// Check if there's a whitelist first.
+		// 
+		bool inWhite = !Whitelist;
+		if (Whitelist)
+		{
+			if (SpawnSectors.Size() > 0)
+			{
+				int ind = sec.Index();
+				if (sec && IsSectorAllowed(ind))
+					inWhite = true;
+			}
+			if (!inWhite && SpawnRegions.Size() > 0)
+			{
+				
+			}
+		}
+		if (Blacklist)
+		{
+		}
+		/*
+		if (sec)
+		{
+			int ind = sec.Index();
+			if (Whitelist)
+			{
+				if (IsSectorAllowed(ind) && !IsSectorBanned(ind))
+					return false;
+				
+				if (SpawnRegions.Size() < 1 && SpawnPolys.Size() < 1)
+					return true;
+			}
+			else
+			{
+				if (IsSectorBanned(ind))
+					return true;
+				else if (IsSectorAllowed(ind))
+					return false;
+			}
+		}
+	
+		// Check Whitelisted areas. If outside, it's banned.
+		if (SpawnBox)
+		{
+			if (!SpawnBox.InRange(pos))
+				return true;
+			
+			// Check the spawn area.
+			if (SpawnRegions.Size() > 0)
+			{
+				bool good = false;
+				foreach (rec : SpawnRegions)
+				{
+					if (rec && rec.InRange(pos))
+					{
+						good = true;
+						break;
+					}
+				}
+				if (!good) return true;
+			}
+		}
+		
+		// Either inside or no Whitelist, now check bans.
+		foreach(rec : BannedRegions)
+		{
+			if (rec && rec.InRange(pos))
+				return true;
+		}
+		if (touching)
+		{
+			let it = BlockLinesIterator.CreateFromPos(pos, h, r, sec);
+			while (it.Next())
+			{
+				let ln = it.CurLine;
+				if (!ln || (!ln.frontsector && !ln.backsector))	continue;
+				
+				if ((ln.frontsector && IsSectorBanned(ln.frontsector.Index())) ||
+					(ln.backsector && IsSectorBanned(ln.backsector.Index())))
+					return true;
+			}
+		}
+		*/
+		return TMF_WHITE, null;
+		
+	}
+	
+	private void Ban3DFloorModels()
+	{
+		foreach (sec : level.Sectors)
+		{
+			if (!sec) continue;
+			int c = sec.Get3DFloorCount();
+			if (!sec || sec.CountTags() < 1 || c < 1) continue;
+			
+			
+			for (int i = 0; i < c; i++)
+			{
+				let xf = sec.Get3DFloor(i);
+				if (!xf)	continue;
+				BanSector(xf.model);
+			}
+		}
 	}
 	
 	private void BanConnectedSectors(Sector s)
@@ -93,7 +404,7 @@ extend class TM_Handler
 			plrs.Push(plr);
 		}
 		
-		int Failsafe = 6000;
+		int Failsafe = 3000;
 		while (Process.Size() > 0 && --Failsafe > 0)
 		{
 			// Get the last sector index for processing and remove it from the list.
@@ -145,12 +456,52 @@ extend class TM_Handler
 				} 
 			}
 		}
-		
-		if (Failsafe < 1)
-		{
-		//	Console.Printf("Triple M: Sector iteration broke the failsafe!");
-			BannedSectors.Move(temp);
-			return;
-		}
 	}
+	
+	private void PostSectorSetup()
+	{
+		Whitelist = (
+					SpawnSectors.Size() > 0 ||
+					SpawnRegions.Size() > 0 ||
+					SpawnPolys.Size() > 0);
+		Blacklist = (
+					BannedSectors.Size() > 0 ||
+					BannedRegions.Size() > 0 ||
+					BannedPolys.Size() > 0);
+					
+	//	Ban3DFloorModels();
+		if (Checksum != '')
+			SetupSpawnBox();
+	}
+	
+	// The spawn box is simply for fast XY checking inside of a whitelist.
+	private void SetupSpawnBox()
+	{
+		if (!CanSpawnBox()) return;
+		
+		Vector3 lr, hr;
+		TM_Rect Box = null;
+		foreach (r : SpawnRegions)
+		{
+			if (!r)		continue;
+			[lr, hr] = r.GetAABB();
+			if (!Box)	Box = TM_Rect.Create(lr, hr);
+			else 		Box.Expand(lr, hr);
+			
+		}
+		
+		foreach (p : SpawnPolys)
+		{
+			if (!p)		continue;
+			if (!Box)	Box = TM_Rect.Create(lr, hr);
+			else 
+			{
+				[lr, hr] = p.GetAABB();
+				Box.Expand(lr, hr);
+			}
+		}
+		SpawnBox = Box;
+	}
+	private bool CanSpawnBox()
+	{	return (!SpawnBox && (SpawnRegions.Size() > 0 || SpawnPolys.Size() > 0));	}
 }

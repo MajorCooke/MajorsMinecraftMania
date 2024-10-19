@@ -118,8 +118,8 @@ extend class TM_Monster
 	double GetHealthMul()
 	{	return Max(1.0, HealthMul);	}
 	
-	protected void InitDrops(bool force = false)
-	{	if (!Drops || force) Drops = TM_ItemDrops.Create();	}
+//	protected void InitDrops(bool force = false)
+//	{	if (!Drops || force) Drops = TM_ItemDrops.Create();	}
 
 	private int HPBonus, AmmoBonus;
 	
@@ -139,7 +139,7 @@ extend class TM_Monster
 		
 		if (good)
 		{
-			if (!Drops)	Drops = TM_ItemDrops.Create();
+		//	if (!Drops)	Drops = TM_ItemDrops.Create();
 			if (ArmorInv)
 			{
 				[HPBonus, AmmoBonus] = ArmorInv.GetScore();

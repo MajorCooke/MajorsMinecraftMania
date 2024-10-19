@@ -6,10 +6,17 @@ extend class TM_Monster
 		M_Undead,
 		M_Arthropod,
 	};
+	enum EMobTiers
+	{
+		T_Normal = 0,
+		T_MiniBoss,
+		T_Boss
+	};
 	const AttackDelayMax = 35;
 	const DefaultDrownTimer = 35 * 30;
 	meta bool CanArmor;
 	protected bool OnGround;
+	private double PrevSpeed;
 	private Vector3 PrevVel;
 	private int SectorDamageTimer, LastDamage, AccumulatedDamage,
 				DrownTimer, DrownTimerStart, DrownDamage, CurrentTranslation, 
@@ -38,6 +45,7 @@ extend class TM_Monster
 	
 	meta bool PeacefulDespawn;
 	meta int MobType;
+	meta int MobTier;
 	Sound StepSound;
 	int StepSoundDelay;
 	
@@ -56,6 +64,7 @@ extend class TM_Monster
 	Property DrownTimer: 	DrownTimerStart;
 	Property PeacefulDespawn: PeacefulDespawn;
 	Property MobType: 		MobType;
+	Property MobTier:		MobTier;
 	Property Passive: 		Passive;
 	Property SoundPitch:	SoundPitch;
 	Property OverScale:		OverScale;
@@ -77,6 +86,7 @@ extend class TM_Monster
 		TM_Monster.DrownTimer DefaultDrownTimer;
 		TM_Monster.PeacefulDespawn true;
 		TM_Monster.MobType M_Normal;
+		TM_Monster.MobTier T_Normal;
 		TM_Monster.MaxSightRange 768;
 		TM_Monster.MaxChaseRange 2048;
 		MaxTargetRange 768;

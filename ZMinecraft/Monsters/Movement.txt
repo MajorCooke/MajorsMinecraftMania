@@ -27,6 +27,7 @@ extend class TM_Monster
 	
 	private int StepTics;
 	private double LockSpeed, LockAng, LockStepHeight;
+	private double SpeedSq;
 	void Chase(statelabel melee = "Melee", statelabel missile = "Missile", 
 		int flags = 0, double maxturn = 30.0, bool _3dmelee = false, 
 		double range = 0, Vector3 SolidCheckPos = (0,0,-1))
@@ -76,7 +77,7 @@ extend class TM_Monster
 		}
 		else
 		{
-			if ( _3dmelee && !bJUSTATTACKED && Targetable(Target))
+			if ( _3dmelee && !bJUSTATTACKED && Targetable(Target) && CheckTouchingZ(Target))
 			{
 				let s = ResolveState(melee);
 				if (s && CheckTrace(Target, MeleeRange))

@@ -177,6 +177,7 @@ Class TM_PlayerProtection : PowerProtection
 	{
 		Super.InitEffect();
 		InvulTimer = 0;
+		if (Owner) Health = Owner.Health;
 	}
 	
 	override void DoEffect()
@@ -184,6 +185,11 @@ Class TM_PlayerProtection : PowerProtection
 		processed = false;
 		Super.DoEffect();
 		EffectTics = 1000;
+		if (Owner)
+		{
+			
+			Health = Owner.Health;
+		}
 		if (InvulTimer > 0)		InvulTimer--;
 	}
 	

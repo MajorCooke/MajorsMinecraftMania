@@ -1,8 +1,54 @@
+/*==============================================================================
+Triple M Static Event Handler
 
+Responsible for tracking certain things across maps.
+==============================================================================*/
+
+Class TM_EventStatic : StaticEventHandler
+{
+	private int MaxHealth, MaxArmor;
+	
+	static TM_EventStatic Fetch()
+	{	return TM_EventStatic(Find('TM_EventStatic'));	}	
+	
+	override void NewGame()
+	{	MaxHealth = MaxArmor = 200;	}
+	
+	clearscope int GetMaxHealth() const { return Max(200, MaxHealth); }
+	clearscope int GetMaxArmor() const { return Max(200, MaxArmor); }
+	
+	private BasicArmor Armors[MAXPLAYERS];
+	override void WorldTick()
+	{
+		for (int i = 0; i < MAXPLAYERS; i++)
+		{
+			if (!playeringame[i] || !players[i].mo)	continue;
+			let p = players[i];
+			if (!p)	continue;
+			let plr = players[i].mo;
+			
+			if (!plr.alternative)
+			{
+				if (TMV_Debug == 25)
+				{
+					if (plr.health > MaxHealth)
+						Console.Printf("Updated health: %d -> %d", MaxHealth, plr.health);
+				}
+				MaxHealth = Max(200, MaxHealth, plr.health);
+			}
+			if (!Armors[i]) 
+				Armors[i] = BasicArmor(plr.FindInventory('BasicArmor'));
+			else
+				MaxArmor = Max(MaxArmor, Armors[i].Amount);
+		}
+	}
+
+	
+}
 
 
 //==============================================================================
-// Minecraft Event Handler
+// Triple M Event Handler
 //==============================================================================
 
 Class TM_Handler : EventHandler
@@ -19,6 +65,7 @@ Class TM_Handler : EventHandler
 	};
 	
 	TM_AArray 	Monsters, Blocks,	Bridges;
+	private TM_EventStatic SEvent;
 	private int MobCount, EndermanCount, BlockCount, FireCount;
 	private double DespawnDist;
 	private int Timer[S_Max];
@@ -44,6 +91,11 @@ Class TM_Handler : EventHandler
 			
 			if (!res)			Console.Printf("Peaceful Mode On");
 			else				Console.Printf("Peaceful Mode Off");
+		}
+		else if (e.Name == 'TM_ResetBans')
+		{
+			Console.Printf("Resetting Sector Restrictions");
+			SetupBans();
 		}
 		else if (e.Name == 'TM_ToggleSpawning')
 		{
@@ -130,10 +182,12 @@ Class TM_Handler : EventHandler
 	
 	override void WorldLoaded(WorldEvent e)
 	{
+		SEvent = TM_EventStatic.Fetch();
 		if (e.IsReopen)	
 			return;
-			
-		BannedSectors.Clear();
+		
+		SetupServices();
+		SetupBans();
 		MountList.Clear();
 		Monsters = TM_AArray.Create();
 		Blocks = TM_AArray.Create();
@@ -141,12 +195,6 @@ Class TM_Handler : EventHandler
 		CreateSpawnList();
 		Timer[S_Spawn] = Second;
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
-	}
-	
-	override void OnRegister()
-	{
-		SetupServices();
-		SetupBans();
 	}
 		
 	override void WorldThingSpawned(WorldEvent e)
@@ -160,6 +208,7 @@ Class TM_Handler : EventHandler
 		{
 			let mon = TM_Monster(e.Thing);
 			mon.Event = self;
+			mon.SEvent = SEvent;
 			Monsters.Push(mon);
 			MobCount++;
 			
@@ -171,6 +220,7 @@ Class TM_Handler : EventHandler
 		{
 			let bl = TM_Block(e.Thing);
 			bl.Event = self;
+			bl.SEvent = SEvent;
 			Blocks.Push(bl);
 			BlockCount++;
 			if (bl is 'TM_Block_Fire')
@@ -179,7 +229,15 @@ Class TM_Handler : EventHandler
 		}
 		else if (mo is 'SkyViewpoint')	
 		{
-			BanConnectedSectors(mo.CurSector);
+			let s = level.PointInSector(mo.pos.XY);
+			BanConnectedSectors(s);
+			BanSector(s); // In the event a map is manually controlled via MapCompat.txt
+		}
+		else if (mo is 'TM_FlyingItem')
+		{
+			let fl = TM_FlyingItem(mo);
+			fl.Event = self;
+			fl.SEvent = SEvent;
 		}
 	}
 	
@@ -316,12 +374,16 @@ Class TM_Handler : EventHandler
 	private bool once;
 	override void WorldTick()
 	{
-		if (level.LevelName == 'TitleMap' || level.MapName == 'TitleMap' || level.IsFrozen())
+		if (gamestate == GS_TITLELEVEL || 
+			level.LevelName == 'TitleMap' || // in case someone goes "map titlemap" in console
+			level.MapName == 'TitleMap' || 
+			level.IsFrozen())
 			return;
 		
 		if (!once)
 		{
 			once = true;
+			SEvent = TM_EventStatic.Fetch();
 			for (int i = 0; i < MAXPLAYERS; i++)
 			{
 				if (playeringame[i] && players[i].mo)
@@ -337,6 +399,11 @@ Class TM_Handler : EventHandler
 			
 			SetupAmmoService();
 		}
+		
+		if (SEvent)
+			SEvent.WorldTick();
+		else
+			SEvent = TM_EventStatic.Fetch();
 		
 		// If there's enderman around, check player LOS and trigger them if
 		// staring at their heads.

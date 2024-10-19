@@ -1,0 +1,20 @@
+/*==============================================================================
+
+	Triple M JSON
+	
+Can be used to modify certain aspects for monsters.
+==============================================================================*/
+{
+	// Don't include this in your mod, or it'll crash. Needed for identity purposes.
+	"isBase": 1,
+	
+	// Globally defines what special effects these damagetypes do, and how much to change
+	// the damage. Can be overridden within the "Monsters" block.
+	"DamageTypes":
+	{
+		"ChainsawPinata|Crucible":
+		{
+			"AddFlags": "DMG_NO_PROTECT|DMG_NO_ARMOR"
+		}
+	}
+}

@@ -1,5 +1,3 @@
-
-
 /*==============================================================================
 
 Ammo Service Class
@@ -58,8 +56,15 @@ Class TM_DamageTypeService : Service
 		{
 			// D4D Chainsaw ignores armor.
 			Case 'ChainsawPinata': 
-			Case 'ChainsawKill': 	i |= DMG_NO_ARMOR|DMG_NO_PROTECT;	break;
-			Default: 				return -1; //Means don't change anything.
+			Case 'ChainsawKill':
+			{
+				int oldi = i;
+				i |= DMG_NO_ARMOR|DMG_NO_PROTECT|DMG_NO_FACTOR;	
+				
+				if (TMV_Debug == 26)
+					Console.Printf("Found: %s | %d, %d", dmgType, oldi, i);
+				break;
+			}
 		}
 		return i;
 	}
@@ -80,12 +85,15 @@ extend class TM_Handler
 	private Array<Service> DmgServ;
 	private void SetupServices()
 	{
+		DmgServ.Clear();
 		let it = ServiceIterator.Find("TM_DamageTypeService");
 		Service s;
 		while (s = it.Next())
 		{
 			if (s)	DmgServ.Push(s);
 		}
+		if (TMV_Debug == 26)
+			Console.Printf("Services: %d", DmgServ.Size());
 	}
 	
 	// Passes in the current flags for modification by external mods. 
@@ -96,19 +104,13 @@ extend class TM_Handler
 		for (int i = 0; i < DmgServ.Size(); i++)
 		{
 			if (DmgServ[i])
-				check = DmgServ[i].GetInt("", dmgType, newflags);
+				check = DmgServ[i].GetInt("", dmgType, flags);
 				
-			if (check > 0)	newflags = check;
+			if (check > -1)	newflags = check;
 		}
 		return newflags;
 	}
 }
-
-/*==============================================================================
-
-Banned Sectors Service Class
-
-==============================================================================*/
 
 /*==============================================================================
 

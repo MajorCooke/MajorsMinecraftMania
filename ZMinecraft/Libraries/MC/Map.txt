@@ -228,67 +228,171 @@ Class TM_XFloor play
 		return xp;
 	}
 }
-
+Class TM_RectCon
+{
+	Array<TM_Rect> Recs;
+	
+	clearscope int Size() const
+	{	return Recs.Size();	}
+	
+	clearscope bool Check(TM_Rect r) const
+	{	return (r && Recs.Find(r) < Recs.Size());	}
+	
+	void Push(TM_Rect r)
+	{	if (r) Recs.Push(r);	}
+}
 Class TM_Rect
 {
 	bool ThreeD;
 	Vector3 LoV, HiV;
 	
-	static TM_Rect Create(Vector2 lo, Vector2 hi)
+	static TM_Rect Create(Vector3 lo, Vector3 hi, bool _3d = false)
 	{
 		let cc = new('TM_Rect');
 		cc.Set(lo, hi);
+		cc.ThreeD = _3d;
 		return cc;
 	}
 	
-	static TM_Rect Create3D(Vector3 lo, Vector3 hi)
+	void Expand(Vector3 lo, Vector3 hi)
 	{
-		let cc = new('TM_Rect');
-		cc.Set3D(lo, hi);
-		return cc;
+		LoV.X = min(LoV.X, lo.X, hi.X);
+		LoV.Y = min(LoV.Y, lo.Y, hi.Y);
+		HiV.X = max(HiV.X, lo.X, hi.X);
+		HiV.Y = max(HiV.Y, lo.Y, hi.Y);
+		if (ThreeD)
+		{
+			LoV.Z = min(LoV.Z, lo.Z, hi.Z);
+			HiV.Z = max(HiV.Z, lo.Z, hi.Z);
+		}
 	}
 	
-	void Set(Vector2 lo, Vector2 hi)
+	void Set(Vector3 lo, Vector3 hi)
 	{
 		LoV.X = min(lo.X, hi.X);
 		HiV.X = max(lo.X, hi.X);
 		LoV.Y = min(lo.Y, hi.Y);
 		HiV.Y = max(lo.Y, hi.Y);
-		LoV.Z = 0;
-		HiV.Z = 0;
-		ThreeD = false;
+		if (ThreeD)
+		{			
+			LoV.Z = min(lo.Z, hi.Z);
+			HiV.Z = max(lo.Z, hi.Z);
+		}
+		else
+		{
+			LoV.Z = 0;
+			HiV.Z = 0;
+		}
 	}
 	
-	void Set3D(Vector3 lo, Vector3 hi)
+	clearscope bool, bool, bool, double, double InRange(Vector3 p, bool force3d = false) const
 	{
-		LoV.X = min(lo.X, hi.X);
-		HiV.X = max(lo.X, hi.X);
-		LoV.Y = min(lo.Y, hi.Y);
-		HiV.Y = max(lo.Y, hi.Y);
-		LoV.Z = min(lo.Z, hi.Z);
-		HiV.Z = max(lo.Z, hi.Z);
-		ThreeD = true;
-		
+		bool xy = InXY(p.XY);
+		bool z = InZ(p.Z, force3d);
+		bool tres = (xy && z);
+		return tres, InXY(p.XY), InZ(p.Z, force3d), LoV.Z, HiV.Z;
 	}
 	
-	bool InRange(Vector2 p)
+	clearscope bool InXY(Vector2 p) const
 	{
-		return	(
+		return (
 			p.x >= LoV.x &&
 			p.x <= HiV.x &&
 			p.y >= LoV.y &&
 			p.y <= HiV.y);
 	}
 	
-	bool InRange3D(Vector3 p)
+	clearscope int InZ(double z, bool force3d = false) const
 	{
-		return (
-			p.x >= LoV.x &&
-			p.x <= HiV.x &&
-			p.y >= LoV.y &&
-			p.y <= HiV.y &&
-			p.z >= LoV.Z &&
-			p.z <= HiV.Z);
+		if (!ThreeD && !force3d)	return -1;
+		return (z >= LoV.Z && z <= HiV.Z);
+	}
+	
+	clearscope Vector3, Vector3 GetAABB() const
+	{	return LoV, HiV;	}
+}
+
+Class TM_Sect
+{
+	bool _3D;
+	Sector s;
+	Array<double> Pairs;
+	
+	
+}
+
+// Polygons are always 2D, at least for now.
+Class TM_Poly
+{
+	private Array<Vertex> Verts;
+	private TM_Rect Box;
+	
+	static TM_Poly Create()
+	{
+		let p = new('TM_Poly');
+		p.Init();
+		return p;
+	}
+	
+	protected void Init()
+	{
+		Verts.Clear();
+		Box = null;
+	}
+	
+	Vector3, Vector3 GetAABB()
+	{	
+		Vector3 v1, v2;
+		[v1, v2] = Box.GetAABB();
+		return v1, v2;	
+	}
+	
+	void AddVert(int id)
+	{
+		let v = level.Vertexes[id]; // ...Why it's not called Vertices, idk.
+		int size = Verts.Size();
+		if (Verts.Find(v) != size)
+			Verts.Push(v);
+		
+		Vector3 p = (v.p, 0);
+		if (!Box)	Box = TM_Rect.Create(p, p);
+		else 		Box.Expand(p, p);
+	}
+	
+	bool InRange(Vector3 pos)
+	{
+		int size = Verts.Size();
+		if (size < 3)
+		{
+			Console.Printf("ERROR: Polygon check has < 3 vertices!");
+			return false;
+		}
+		
+		// First do a simple AABB test.
+		if (!Box.InRange(pos))
+			return false;
+		
+		// Now do the actual check.
+		bool res = false;
+		Vector2 p = pos.XY;
+		int j = size - 1;
+		let w = Verts[j].p;
+		for (int i = 0; i < size; i++)
+		{
+			let vi = Verts[i].p;
+			let vj = Verts[j].p;
+			if ((vi.y < p.y && vi.y >= p.y) ||
+				(vj.y < p.y && vj.y >= p.y))
+			{
+				if ((vi.x + (p.y - vi.y) /
+					(vj.y - vi.y) *
+					(vj.x - vi.x)) < p.x)
+					
+					res = !res;
+			}
+			j = i;
+		}
+		return res;
 	}
 }
 

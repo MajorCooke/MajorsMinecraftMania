@@ -112,20 +112,21 @@ Class TM_Armor : TM_BodyPart abstract
 	Property CountArmorInv: CountArmorInv;
 	Default
 	{
-		TM_Armor.CountArmorInv true;
+		TM_Armor.CountArmorInv false;
 		TM_Armor.Factor 0.0;
 		TM_BodyPart.IsStill true;
 	}
+	
+	// Yo dawg! No, none of that here, infinite loops are bad. =P
 	override bool, TM_Armor SetArmor(int slot, int type)
-	{
-		return false, null;
-	}
+	{	return false, null;	}
 	
 	virtual double AdjustFactor(double fac, bool score = false)
 	{
 	//	if (score && fac <= 0.0 && Factor > 0.0 && CountArmorInv)	fac = 1.0;
-		
-		fac += factor + (factor * min(4, double(frame)));
+		double rfac = factor;
+		if (score)	rfac = abs(rfac);
+		fac += rfac + (rfac * min(4, double(frame)));
 		return fac;
 	}
 	
@@ -142,6 +143,10 @@ Class TM_Tool : TM_Armor abstract
 {
 	meta bool Ranged;
 	Property Ranged: Ranged;
+	Default
+	{
+		TM_Armor.CountArmorInv true;
+	}
 }
 Class TM_ToolRanged : TM_Tool abstract
 {
@@ -178,7 +183,7 @@ Class TM_Bow : TM_ToolRanged
 	
 	Default
 	{
-		TM_Tool.Ranged true;
+		TM_Armor.CountArmorInv false;
 	}
 	
 	
@@ -200,17 +205,18 @@ Class TM_Crossbow : TM_ToolRanged
 // Armors
 //==============================================================================
 
-Class TM_ArmorHead : TM_Armor {	Default {	TM_Armor.Factor -0.03;	}	}
-Class TM_ArmorArmL : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
-Class TM_ArmorArmR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
-Class TM_ArmorChest : TM_Armor {	Default {	TM_Armor.Factor -0.1;	}	}
-Class TM_ArmorPants : TM_Armor {	Default {	TM_Armor.Factor -0.04;	}	}
-Class TM_ArmorLegL : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
-Class TM_ArmorLegR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	}	}
-Class TM_ArmorBootL : TM_Armor {	Default {	TM_Armor.Factor -0.02;			/*TM_BodyPart.Offsets 0, 0, -1.9;*/ 	}}
-Class TM_ArmorBootR : TM_Armor {	Default {	TM_Armor.CountArmorInv false;	/*TM_BodyPart.Offsets 0, 0, -1.9;*/	}}
+// Factor counts as % damage reduction, starting with the lowest tier.
+Class TM_ArmorHead : TM_Armor	{	Default {	TM_Armor.Factor -0.03;	TM_Armor.CountArmorInv true; 	}	}
+Class TM_ArmorChest : TM_Armor	{	Default {	TM_Armor.Factor -0.1;	TM_Armor.CountArmorInv true; 	}	}
+Class TM_ArmorPants : TM_Armor	{	Default {	TM_Armor.Factor -0.04;	TM_Armor.CountArmorInv true; 	}	}
+Class TM_ArmorBootL : TM_Armor	{	Default {	TM_Armor.Factor -0.02;	TM_Armor.CountArmorInv true;	}	}
 
-
+// Visual only pieces, solely for moving with the different limbs.
+Class TM_ArmorArmL : TM_Armor {}
+Class TM_ArmorArmR : TM_Armor {}
+Class TM_ArmorLegL : TM_Armor {}
+Class TM_ArmorLegR : TM_Armor {}
+Class TM_ArmorBootR : TM_Armor {}
 
 Class TM_AttachGib : TM_BodyPartGib abstract
 {

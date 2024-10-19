@@ -1,0 +1,241 @@
+[en us]
+
+//==============================================================================
+// Items/Drops
+//==============================================================================
+TM_CODEX_RESTORE_PEARLS =
+"Restoration pearls drop from various minecraft enemies in one of several forms:\n"
+"Health: Restores health to highest player health recorded (200+)\n"
+"Armor: Same as health.\n"
+"Ammo: Restores a percentage of ammo to a random weapon's non-full ammo pool.\n"
+"The greater the amount can be held, the higher the chance to be chosen.\n"
+"I.e. Cells has the highest capacity, thus the highest chance if not full.\n"
+"\n"
+"???: Special pearls that deliver custom items based on other mod specifications.\n"
+"\n"
+"\n"
+"\n"
+"";
+
+//==============================================================================
+// Species
+//==============================================================================
+TM_CODEX_SPECIES_DESC_UNDEAD =
+"Undead monsters are resurrecting entities brought forth by darkness to attack\n"
+"the living. Held together by unholy magic, they rise and swarm together but\n"
+"working together is quite clumsy. Their strength should not be underestimated\n"
+"however, as they can overwhelm in surprising ways.\n"
+"";
+
+TM_CODEX_SPECIES_STAT_UNDEAD =
+"Immune to:\n"
+"* Drowning\n"
+"* Poison\n"
+"Inverts Insta-Damage & Regeneration effects\n"
+"Vulnerable to: \n"
+"* Stakes\n"
+"* Holy damage\n"  
+"* Smite enchantments\n"
+"Burns in the daylight (Overworld only)";
+
+//------------------------------------------------------------------------------
+TM_CODEX_SPECIES_DESC_ARTHROPODS =
+"Otherwise known as insects, the arachnid family belong in here. The spiders\n"
+"have mutated somehow and grown in size, being much bigger than normal.\n"
+"";
+
+TM_CODEX_SPECIES_STAT_ARTHROPODS =
+"(Hard Only) May spawn with one of the following status effects:\n"
+"Speed, Strength, Regeneration, Invisibility\n"
+"Docile in bright areas (Overworld Only)\n"
+"Vulnerable to Bane of Arthropods\n"
+"";
+
+//==============================================================================
+// Monsters
+//==============================================================================
+
+TM_CODEX_MONSTER_ARMOR =
+"Some enemies are capable of wearing various bits of armor that add overall\n"
+"damage reduction based on the tier and type. From least to most effective\n"
+"without enchantments are as follows:\n"
+"*Types*\n"
+"Boots (2%), Helmet (3%), Leggings (4%), Chestplate (10%)\n"
+"*Tiers*\n"
+"Gold, Chainmail, Iron, Diamond, Netherite\n"
+"\n"
+"Damage reduction is type * added tiers; Gold boots give 2%, netherite 10%.\n"
+"-----\n"
+"Melee weapons amplify melee damage, relabeling chainmail to stone.\n"
+"*Types*\n"
+"Axes (20%), Swords (30%)\n"
+"-----\n"
+"Armored enemies will add HP/Armor pearl drops.\n"
+"Armed enemies will add ammo pearl drops."
+"";
+
+TM_CODEX_GENERAL_TIP =
+"TM monsters walk directly to their targets if possible, allowing for easy\n"
+"corralling by circling around them. Use this to stir up infighting or \n"
+"luring them into a trap and detonating them.";
+
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_CREEPER =
+"The Creeper is a notorious monster known for it's explosive personality and\n"
+"silent stalking. Borne as a result of the Nether's experimentation on Pigs,\n"
+"Piglins, and Hoglins, these dangerous foes have been implanted with a sac they\n"
+"can ignite which causes a hissing sound, and squeezing the walls of the sac with\n"
+"violent vibrations and sparking a fire similar to a match on a tinder box.\n"
+"\n"
+"When stalking prey, they have suicidal tendencies and will likely drop off of\n"
+"edges just to kill their enemies.";
+
+TM_CODEX_INFO_CREEPER =
+"Creepers only emit sounds when taking damage, dying or hissing.\n"
+"Always check corners and kill them from afar to minimize chances of exploding\n"
+"and taking them with you. They also tend to walk right off cliffs in an attempt\n"
+"to air bomb, exploding the moment they make impact. They have poor vision, \n"
+"allowing for sniping from far away without detection until the first shot lands.";
+
+TM_CODEX_STAT_CREEPER =
+"Difficulty: Increased movement speed while hissing\n"
+"Species: Creeper\n"
+"Armor: No\n"
+"Health: 100\n"
+"Weapon: Explosion\n"
+"Damage: 100 (players) | 200 (TM) | 1000 (non-TM)\n"
+"Drops TNT"
+"";
+
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_ZOMBIE =
+"Deceased humans were not part of the invading nether armies. Only when the\n"
+"Wither was subjugated did a terrible curse of darkness grip the Overworld,\n"
+"and the dead begin rising from the graves, targeting the living. Strangely,\n"
+"they have no eyes for animals. Their ire is always towards people, especially\n"
+"Villagers. Their ranks are seemingly endless, even though they often burn\n"
+"under direct sunlight. This only happens on the Overworld due to stronger UV\n"
+"output from their sun.";
+
+TM_CODEX_INFO_ZOMBIE =
+"Zombies tend to amble in a straight line towards their target, allowing for\n"
+"coraling of large groups and blowing them up. When damaged, they can call to\n"
+"other zombies for aid. They prioritize other foes who attack them above humans,\n"
+"allowing to pick off a few for some free resources.";
+
+TM_CODEX_STAT_ZOMBIE =
+"Difficulty: Increased movement speed\n"
+"Species: Undead\n"
+"Armor: Yes (Chance)\n"
+"Weapon: Swords (Chance)\n"
+"Health: 100\n"
+"Damage: 10-20\n"
+"Drops health & armor pearls\n"
+"Strengths:\n"
+"*Natural armor (8% damage reduction)\n"
+"*Baby zombie variants\n"
+"*Ally Rallier\n"
+"Weaknesses:\n"
+"*Burns in sunlight without solid helmet (Overworld Only)";
+
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_SKELETON =
+"Skeletons didn't take part in the first invasion. Only when the Wither was\n"
+"defeated did a terrible curse grip Overworld and bring the undead to bear at\n" 
+"night. The curse somehow manages to reanimate skeletons with no flesh to\n"
+"rise up, held together by pure magic. They don't share a bond with their\n"
+"brethren undead, other than as mutual allies.\n"
+"";
+TM_CODEX_INFO_SKELETON =
+"Skeletons wield bows, conjuring rapid arrows to knock back their enemies.\n"
+"They're surprisingly smart, often backing away whenever attackers get too close.\n"
+"When a foe gets too far away though, they will pursue so they can continue\n"
+"firing. If their arrows hit another target, they'll attack it instead if it.\n"
+"were to draw them unwanted attention";
+
+TM_CODEX_STAT_SKELETON =
+"Difficulty: Increased attack speed\n"
+"Species: Undead\n"
+"Armor: Yes (Chance)\n"
+"Weapon: Bow (Always)\n"
+"Health: 100\n"
+"Damage: 10-20\n"
+"Drops 1-3 Ammo pearls\n"
+"Strengths:\n"
+"*Smarter than most mobs\n"
+"Weaknesses:\n"
+"*Susceptible to infighting via arrows\n"
+"*Burns in sunlight without solid helmet (Overworld Only)";
+
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_SKELETON_WITHER =
+"These specialized skeletons have arisen from the direct powers of the Wither\n"
+"and are few and far between. Possessing enhanced strength, and a wicked curse,"
+"withering skeletons\n"
+"";
+
+TM_CODEX_INFO_SKELETON_WITHER =
+"\n"
+"";
+
+TM_CODEX_STAT_SKELETON_WITHER =
+"Difficulty: \n"
+"Species: Undead\n"
+"Armor: \n"
+"Weapon: \n"
+"Health: \n"
+"Damage: \n"
+"Drops \n"
+"Strengths:\n"
+"*\n"
+"Weaknesses:\n"
+"*"
+"*";
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_SPIDER =
+"\n"
+"";
+
+TM_CODEX_INFO_SPIDER =
+"\n"
+"";
+
+TM_CODEX_STAT_SPIDER =
+"Difficulty: \n"
+"Armor: \n"
+"Weapon: \n"
+"Health: \n"
+"Damage: \n"
+"Drops \n"
+"Strengths:\n"
+"*\n"
+"Weaknesses:\n"
+"*"
+"*";
+//------------------------------------------------------------------------------
+
+TM_CODEX_LORE_ =
+"\n"
+"";
+
+TM_CODEX_INFO_ =
+"\n"
+"";
+
+TM_CODEX_STAT_ =
+"Difficulty: \n"
+"Armor: \n"
+"Weapon: \n"
+"Health: \n"
+"Damage: \n"
+"Drops \n"
+"Strengths:\n"
+"*\n"
+"Weaknesses:\n"
+"*"
+"*";

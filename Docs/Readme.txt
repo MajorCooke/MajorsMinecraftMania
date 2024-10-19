@@ -86,14 +86,17 @@ Major Cooke
 	
 Kodi
 Phantombeta
+RaveYard
+RicardoLuis0
 	Coding Support
-	(Without these two awesome folks, the mod would be worse.)
 
 22i
 	Models - https://github.com/22i/minecraft-voxel-blender-models
 
 Mojang
 	Minecraft Sounds & Textures
+	
+
 
 ================================================================================
 * Copyright / Permissions *

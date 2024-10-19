@@ -1,8 +1,8 @@
 
 
-#include "ZMinecraft/Libraries/MC/Include.txt"
-#include "ZMinecraft/Libraries/Dodopod/Include.txt"
-#include "ZMinecraft/Libraries/MarisaKirisame/Include.txt"
-#include "ZMinecraft/Libraries/PhantomBeta/Include.txt"
-#include "ZMinecraft/Libraries/MC_Gutamatics/Include.txt"
-#include "ZMinecraft/Libraries/Kodi/Kodi.txt"
+#include "./MC/Include.txt"
+#include "./Dodopod/Include.txt"
+#include "./PhantomBeta/Include.txt"
+#include "./MC_Gutamatics/Include.txt"
+#include "./Kodi/Kodi.txt"
+#include "./ZJSON/Include.zs"

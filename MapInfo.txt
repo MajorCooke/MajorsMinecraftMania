@@ -1,4 +1,4 @@
 GameInfo
 {
-	AddEventHandlers = "TM_Handler"
+	AddEventHandlers = "TM_Handler", "TM_EventStatic"
 }

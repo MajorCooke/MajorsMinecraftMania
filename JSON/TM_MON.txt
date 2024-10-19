@@ -1,0 +1,71 @@
+/*==============================================================================
+
+	Triple M JSON
+	
+Can be used to modify certain aspects for monsters.
+==============================================================================*/
+
+{
+	// Don't include this in your mod, or it'll crash. Needed for identity purposes.
+	"isBase": 1,
+	
+	"PlayerArmor":
+	{
+		"Type":	"BlueArmor",
+		"Overrides":
+		[
+			"GreenArmor",
+			"BasicArmorBonus",
+			"ArmorBonus"
+		]
+	},
+	//--------------------------------------------------------------------------
+	// Monsters allows sub-blocks for specific monsters, so long as they are appended
+	// by TM_.
+	"Monsters":
+	{	
+		"Native": true, // Automatically applies 'TM_' behind the classname. Set to 0 for other things. Defaults to 0.
+		"Zombie":
+		{
+			"ArmorImprovesDrops": true,
+			
+			"AddDrops":
+			[
+				"Health":	{	"Min": 5,	"Max": 20	},
+				"Armor":	{	"Min": 5,	"Max": 20	}
+			]
+		},
+		"Skeleton":
+		{
+			"AddDrops":
+			[				// Amount min/max, Count min/max, drop chance % per count
+				"Ammo":		{	"AMin": 1,	"AMax": 5,	"CMin": 1,	"CMax": 3, "Chance": 33.0	}
+			]
+		},
+		"SkeletonWither":
+		{
+			"AddDrops":
+			[
+				
+			]
+		},
+		"Creeper":
+		{
+		},
+		"Spider":
+		{
+		},
+		"Ziglin":
+		{
+		},
+		"Endermen":
+		{
+		},
+		"Blaze":
+		{
+		},
+		"Ghast":
+		{
+		}
+	}
+}

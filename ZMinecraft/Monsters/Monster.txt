@@ -40,7 +40,7 @@ Class TM_Monster : TM_Entity abstract
 		SetOverScale(OverScale);
 		StepSoundDelay = Max(1, StepSoundDelay);
 		MaxSightRange = Min(MaxSightRange, MaxChaseRange);
-		InitDrops();
+	//	InitDrops();
 	}
 	
 	// Absolutely no morphing whatsoever, or it could risk breaking them.
@@ -80,7 +80,7 @@ Class TM_Monster : TM_Entity abstract
 		Super.Deactivate(activator);
 	}
 	
-	
+	private Array<Actor> Touched;
 	private Array<Actor> Intersect;
 	override bool CanCollideWith(Actor other, bool passive)
 	{
@@ -89,7 +89,9 @@ Class TM_Monster : TM_Entity abstract
 		
 		if (other.bKILLED) return false;
 		
-		// TO DO: Target enemies that intersect.
+		if (!Targetable(Target, true) && Touched.Find(other) != Touched.Size())
+			if (other.bISMONSTER || other.bSHOOTABLE || (other is 'PlayerPawn' && other.player))
+				Touched.Push(other);
 		
 		bool issolid = true;
 			
@@ -247,6 +249,14 @@ Class TM_Monster : TM_Entity abstract
 		}
 		else Super.Tick();
 		
+		if (Touched.Size() > 0)
+		{
+			foreach (mo : Touched)
+			{
+				
+			}
+			Touched.Clear();
+		}
 		
 		// Thrust other minecraft monsters that are intersecting, akin to minecraft.
 		{
@@ -352,6 +362,7 @@ Class TM_Monster : TM_Entity abstract
 		PrevPos = Pos;
 		PrevAlpha = Alpha;
 		PrevStyle = CurStyle;
+		PrevSpeed = Speed;
 	}
 	private int LightAdd;
 	
@@ -453,7 +464,6 @@ Class TM_Monster : TM_Entity abstract
 	
 	private void DoDropItems(Actor s, Actor i, Name MOD)
 	{
-		InitDrops();
 		DropItems(s, i, MOD);
 	}
 	
@@ -583,6 +593,8 @@ Class TM_Undead : TM_Monster
 		TM_Monster.MobType M_Undead;
 		DamageFactor "Poison", 0.0;
 	}
+	
+	
 }
 
 Class TM_Arthropod : TM_Monster
@@ -591,6 +603,16 @@ Class TM_Arthropod : TM_Monster
 	{
 		TM_Monster.MobType M_Arthropod;
 		DamageFactor "Poison", 0.0;
+	}
+}
+
+Class TM_MiniBoss : TM_Monster
+{
+	override bool CanDespawn() const
+	{	return false;	}
+	Default
+	{
+		TM_Monster.MobTier T_MiniBoss;
 	}
 }
 
@@ -607,7 +629,7 @@ Class TM_Boss : TM_Monster
 	{
 		+BOSS
 		+ALLOWPAIN
-		TM_Monster.MobType M_Normal;
+		TM_Monster.MobTier T_Boss;
 		
 		// Bosses are immune to all environmental damage.
 		DamageFactor "DamageSector", 0.0;
@@ -624,15 +646,13 @@ Class TM_Boss : TM_Monster
 		// Fires are not listed here since they should be vulnerable to mod weapons.
 		// It's simply Triple M fire they're immune to.
 	}
-	/*
+	
 	override int DamageMobj(Actor i, Actor s, int damage, Name mod, int flags, double angle)
 	{
 		int dmg = 0;
 		if (s is 'PlayerPawn')
-		{
 			dmg = damage;
-		}
 		return Super.DamageMobj(i, s, dmg, mod, flags, angle);
 	}
-	*/
+	
 }

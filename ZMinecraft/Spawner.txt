@@ -222,54 +222,45 @@ extend class TM_Handler
 				next.Z = MoCue.GetZAt(next.X, next.Y, ang, GZF_ABSOLUTEPOS|GZF_ABSOLUTEANG|GZF_NO3DFLOOR);
 				
 				// Check if in the void
-				if (!level.IsPointInLevel(next))
+				if (VoidCheck && !level.IsPointInLevel(next))
 				{
 					if (TMV_Debug == 24)	Console.Printf("-2");
 					continue;
 				}
 				
-				// Check if in a banned region.
-				if (IsPosBanned(next))
+				
+				Sector s = Level.PointInSector(next.XY);
+				if (!s || !CheckSector(s.Index()) || IsRegionBanned(next)) 
 					continue;
 				
 				// Don't spawn in sectors blocking player respawns.
 				// Don't allow spawning inside skyboxes.
-				Sector s = Level.PointInSector(next.XY);
-				if (!s || (s.Flags & Sector.SECF_NORESPAWN) || IsSectorBanned(s.Index()) ||
-					s.GetUDMFInt("user_nospawn") > 0)
-				{
-					if (TMV_Debug == 24)	
-					{
-						if (s.Flags & Sector.SECF_NORESPAWN)
-							Console.Printf("-3");
-						else if (IsSectorBanned(s.Index()))
-							Console.Printf("-4");
-						else if (s.GetUDMFInt("user_nospawn") > 0)
-							Console.Printf("-5");
-					}
+				if ((s.Flags & Sector.SECF_NORESPAWN) || s.GetUDMFInt("user_nospawn") > 0)
 					continue;
-				}
+				
 				
 				bool TryGood = false;
 				int xcount = s.Get3DFloorCount();
 				// 3D floors are present in this sector. Iterate through them and
-				// try to find good Z positions for trying.
+				// try to find good Z positions for spawning.
 				if (xcount > 0)
 				{
 					Array<double> TryZ; TryZ.Clear();
 					
-					double fz = s.LowestFloorAt(next.XY);
-					double tz = s.HighestCeilingAt(next.XY);
-					double cz = tz;
+					double	fz = s.floorplane.ZAtPoint(next.XY), //s.LowestFloorAt(next.XY),
+							tz = s.ceilingplane.ZAtPoint(next.XY), //s.HighestCeilingAt(next.XY);
+							cz = tz;
 					
 					
-					TryZ.Push(fz);
+					
 					
 					// Won't fit regardless of 3d floors, so skip it.
 					if (abs(tz - fz) < MoCue.Height)
 						continue;
+						
+					TryZ.Push(fz);
 					
-					// Record swimmable floors. Those that are immmune to drowning
+					// Record swimmable floors. Those that are immune to drowning
 					// can spawn here.
 					Array<TM_XFloor> XSwim; XSwim.Clear();
 					
@@ -284,23 +275,27 @@ extend class TM_Handler
 								let txf = TM_XFloor.NewXFloorPtr(xf, m);
 								
 								if (txf && txf.Swimmable)	
-								{
 									XSwim.Push(txf);
-								}
+								
 							}
 						}
 					}
 					
-					
+					double prevz;
 					bool liq = false;
 					do
 					{
-						
+						prevz = cz;						
 						Sector ss; F3DFloor xf;
-						[cz, ss, xf] = s.NextLowestFloorAt(next.X, next.Y, cz - 1, FFCF_3DRESTRICT);
+						[cz, ss, xf] = s.NextLowestFloorAt(next.X, next.Y, cz - double.equal_epsilon, 
+							FFCF_NOPORTALS|FFCF_3DRESTRICT);
+						
+						if (prevz ~== cz)	break;
+						
+						if (!CheckRegions((next.XY, cz)))
+							continue;
 						
 						if (xf)	ss = xf.model;
-												
 						
 						// This array only contains contents if the mob can take
 						// damage from drowning or sectors. Better than calling
@@ -314,8 +309,6 @@ extend class TM_Handler
 							double botz = ss.floorplane.ZAtPoint(next.XY);
 							// Damaging sector.
 							
-							//if (Top < botz || pos.Z > topz)
-							
 							if (cz + MoCue.Height < botz || cz > topz)
 								continue;
 							
@@ -324,13 +317,12 @@ extend class TM_Handler
 								liq = true;
 								break;
 							}
-							
 						}
 						
-						// Standing in a liquid sector that can harm it, so skip it.
-						if (liq)	break;
+						// Damaging sector can hurt it, so skip it.
+						if (liq)	continue;
 						
-						TryZ.Push(cz + 1);
+						TryZ.Push(cz + double.equal_epsilon);
 					} 
 					while(cz > fz)
 					
@@ -338,19 +330,18 @@ extend class TM_Handler
 					
 					// Go through and remove all Z positions that are outside
 					// the range of ZMin and ZMax.
-					if (s.GetUDMFInt("user_LimitZ") > 0)
+					if (s.GetUDMFInt("user_TMLimitZ") > 0)
 					{
-						int zmin = s.GetUDMFInt("user_ZMin");
-						int zmax = s.GetUDMFInt("user_ZMax");
+						int zmin = s.GetUDMFInt("user_TMZMin");
+						int zmax = s.GetUDMFInt("user_TMZMax");
 						
-						Array<double> temp; temp.Clear();
+						int j = 0;
 						for (int i = 0; i < TryZ.Size(); i++)
 						{
 							double try = TryZ[i];
 							if (try >= zmin && try <= zmax)
-								temp.Push(try);
+								TryZ[j++] = try;
 						}
-						TryZ.Move(temp);
 					}
 					
 					TM_Global.SetPos(MoCue, next, false);

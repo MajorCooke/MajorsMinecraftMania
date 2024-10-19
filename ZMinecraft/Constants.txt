@@ -3,6 +3,7 @@ const SineWavePerSecond = 360.0 / 35.0;
 const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
 enum EMinecraftConst
 {
+	CurDebugCount = 26,
 	BlockRadius = 16,
 	BlockHeight = 32,
 	
@@ -50,7 +51,8 @@ enum EMinecraftConst
 	Rel_Max,
 	
 	// Relationship aliases
-	Rel_Hated = Rel_Hate, Rel_Hostile = Rel_Hate,
+	Rel_Hated = Rel_Hate, 
+	Rel_Hostile = Rel_Hate,
 	Rel_Fear = Rel_Afraid,
 	
 	// Relationship Checker
@@ -86,6 +88,7 @@ enum EMinecraftConst
 	V_Y,
 	V_Z,
 	
+	// Damage override flags
 	TMO_Environment =	1,
 	TMO_Sector =		1 << 1,
 	TMO_Falling = 		1 << 2,

@@ -48,11 +48,13 @@ mixin Class TM_FastRNG
 
 mixin Class TM_Event
 {
+	TM_EventStatic SEvent;
 	TM_Handler Event;
 	
 	void GetEvent()
 	{
 		if (!Event) 	Event = TM_Handler.Fetch();
+		if (!SEvent)	SEvent = TM_EventStatic.Fetch();
 	}
 }
 
