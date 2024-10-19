@@ -34,17 +34,25 @@ Legs:			0.0		~.4		3.0
 
 */
 
-
+Class TM_EndermanDrop : RandomSpawner
+{
+	Default
+	{
+		DropItem "BlurSphere", 256, 1;
+		DropItem "Berserk", 256, 1;
+		DropItem "InvulnerabilitySphere", 256, 1;
+	}
+}
 Class TM_EndermanWeaponSpawner : RandomSpawner
 {
 	Default
 	{
-		DropItem 'Shotgun', 		255, 60;
+		DropItem 'Shotgun', 		255, 100;
 		DropItem 'SuperShotgun',	255, 50;
-		DropItem 'Chaingun', 		255, 40;
+		DropItem 'Chaingun', 		255, 70;
 		DropItem 'RocketLauncher',	255, 30;
-		DropItem 'PlasmaRifle',		255, 15;
-		DropItem 'BFG9000',			255, 1;
+		DropItem 'PlasmaRifle',		255, 25;
+		DropItem 'BFG9000',			255, 5;
 	}
 }
 
@@ -90,7 +98,7 @@ Class TM_Enderman : TM_Monster
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 		
-		A_DropItem('TM_EndermanWeaponSpawner',-1, 80);
+		A_DropItem('TM_EndermanWeaponSpawner',-1);
 		if (!A_DropItem('TM_EndermanDrop',-1, 32))
 			Event.DropItem(self, 'Backpack', -1, 64);
 		
@@ -173,16 +181,6 @@ Class TM_Enderman : TM_Monster
 	Melee:
 		TNT1 A 1 DoMelee(IRandom(20, 40));
 		Goto See;
-	}
-}
-
-Class TM_EndermanDrop : RandomSpawner
-{
-	Default
-	{
-		DropItem "BlurSphere", 256, 1;
-		DropItem "Berserk", 256, 1;
-		DropItem "InvulnerabilitySphere", 256, 1;
 	}
 }
 
@@ -560,8 +558,9 @@ extend Class TM_Enderman
 		}
 		else if (TMV_Debug == 10)
 			Console.Printf("Nothing");
-			
-		SetAngry(src);
+		
+		if (src)
+			SetAngry(src);
 		// if enemy damage is above the legs (5.4 * Scale.Y), give a chance to teleport
 		
 	}
