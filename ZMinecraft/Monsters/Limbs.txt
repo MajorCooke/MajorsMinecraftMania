@@ -61,12 +61,6 @@ Struct LimbSwing play
 	{
 		if (Scale ~== 0.0 || SwingAmp ~== 0.0)	return 0;
 		
-		// TO DO: Fix this. Make it so it looks more like a leg walking the 
-		// distanceit can go based on velocity/position offsets. It's currently 
-		// not moving correctly with the speed of enemy movements.
-		
-	//	VelAng = TM_kSpring.FancySpringAngles(CurAng, NextAng + MainAng, VelAng, 0.25, 0.1);
-		
 		VelSpring = TM_kSpring.DampedSpringDouble(CurSpring, VelPosLen, VelSpring, 0.25, 0.1);
 		CurSpring += VelSpring;
 		
@@ -80,8 +74,6 @@ Struct LimbSwing play
 		double ret = 0;
 		if (cosine)	ret = Cos(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
 		else		ret = Sin(VelTheta) * Clamp(CurSpring * 10, 0, AngleCap);
-		
-	//	Console.Printf("%.1f %.1f %.1f %.1f, %.1f", VelSpring, CurSpring, Len, Mag, Ret);
 		
 		return ret;
 	}
@@ -239,6 +231,13 @@ extend class TM_Monster
 	mixin TM_UpdateLimbs;
 	protected TM_ArmorInv ArmorInv;
 	
+	// This function determines what the armor/weapons will be upon spawning.
+	protected Array<Int> ArmorSlots, WeaponSlots;
+	protected virtual void PrepareArmory()
+	{
+		ArmorSlots.Clear();
+		WeaponSlots.Clear();
+	}
 	
 	void SetArmor(int slot, int type)
 	{
@@ -451,8 +450,6 @@ Class TM_BodyPart : TM_Entity
 	override void Deactivate(Actor activator)
 	{
 		if (bKILLED || Destroyed() || !Master)	return;
-	//	for (int i = 0; i < Attachment.Size(); i++)
-	//		if (Attachment[i])	Attachment[i].Deactivate(activator);
 		
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Deactivate(activator);
@@ -486,25 +483,6 @@ Class TM_BodyPart : TM_Entity
 		Super.Tick();
 		DoMotion();
 		UpdateLimbs((Angle, Pitch, Roll));
-		
-		/*
-		Translation = Owner.Translation;
-		if (!Default.bBRIGHT)	bBRIGHT = Owner.bBRIGHT;
-		
-		if (CopyInvis)
-			bINVISIBLE = (Master && Master.bINVISIBLE);
-		if (!bKILLED)
-		{
-			for (int i = 0; i < Limb.Size(); i++)
-			{
-				if (Limb[i])
-				{
-					Limb[i].bBRIGHT = bBRIGHT;
-					Limb[i].bINVISIBLE = bINVISIBLE;
-				}
-			}
-		}
-		*/
 	}
 	
 	override void BeginPlay()
@@ -602,9 +580,6 @@ Class TM_BodyPart : TM_Entity
 	}
 	bool Destroyed() const { return bDESTROYED || DestroyMe;	} 
 	
-	
-	
-	
 	void SetPosOffsets(Vector3 Off, bool interp = true, bool update = true)
 	{
 		if (Destroyed())	return;
@@ -640,40 +615,6 @@ Class TM_BodyPart : TM_Entity
 	
 	//--------------------------------------------------------------------------
 	// 
-	
-	/*
-virtual void UpdatePosition(Actor who, bool interp = true)
-{
-	if (!Owner || Destroyed())	return;
-	
-	if (!who)	
-	{
-		who = Master;
-		if (!who)	who = Owner;
-		if (!who)	return;
-	}
-	
-	Vector3 NP = TM_Map.GetWarpPos(level, Master.Pos, PosOff, CurAng.X);
-	NP.Z = Owner.Pos.Z + PosOff.Z;
-	Vector3 px, py, pz, origin;
-	[px, py, pz] = TM_CoordUtil.GetAxes(CurAng.Y,CurAng.X,CurAng.Z);
-	origin = NP + (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
-	
-	if (!(origin ~== pos))
-		SetOrigin(origin, interp);
-	
-	if (Attachment)
-	{
-		[px, py, pz] = TM_CoordUtil.GetAxes(
-			CurAng.Y + AngOff.Y, 
-			CurAng.X + AngOff.X, 
-			CurAng.Z + AngOff.Z);
-		origin = pos + AttachPos.X * px + AttachPos.Y * py + AttachPos.Z * pz;
-		if (!(origin ~== Attachment.Pos))
-			Attachment.SetOrigin(origin, interp);
-	}
-}
-	*/
 	virtual void UpdatePosition(Actor who, bool interp = true, bool start = true)
 	{
 		if (!Owner || Destroyed())	return;
@@ -685,8 +626,8 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 			if (!who)	return;
 		}
 		
-		Vector3 px, py, pz, origin, _Ang, NP, NPos;
-		_Ang = (CurAng + AngOff);
+		Vector3 origin, nang, NPos;
+		nang = (CurAng + AngOff);
 		
 		double _p = ((start) ? 0 : who.pitch);
 		
@@ -697,23 +638,10 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 		
 		if (!(RelOff ~== (0,0,0)))
 		{	
-			Quat ans = Quat.FromAngles(_Ang.X, _Ang.Y, _Ang.Z);
+			Quat ans = Quat.FromAngles(nang.X, nang.Y, nang.Z);
 			ret = ans * RelOff;
 			NPos += ret;
-		//	NPos += (RelOff.X * ans.X + RelOff.Y * ans.Y + RelOff.Z * ans.Z);
 		}
-		
-		/*
-		[px, py, pz] = TM_CoordUtil.GetAxes(_p, who.angle, who.roll);
-		origin = who.pos; 
-		NPos = who.WorldOffset + (PosOff.X * px + PosOff.Y * py + PosOff.Z * pz);
-		
-		if (!(RelOff ~== (0,0,0)))
-		{
-			[px, py, pz] = TM_CoordUtil.GetAxes(_Ang.Y, _Ang.X, _Ang.Z);
-			NPos += (RelOff.x * px + RelOff.Y * py + RelOff.Z * pz);
-		}
-		*/
 		
 		NPos += AbsOff;
 		if (origin != pos)
@@ -909,66 +837,7 @@ virtual void UpdatePosition(Actor who, bool interp = true)
 			roll = limb.roll;
 		}
 	}
-	/*
-	// Creates & inserts a limb into a specific index in the Limb array. If the
-	// index is < 0, will find a null spot first before attempting to push to
-	// the array.
-	TM_BodyPart InsertLimb(Class<TM_BodyPart> cls, int i = -1, Vector3 _pos = (0,0,0), bool still = false, bool replace = true)
-	{
-		if (!cls) return null;
-		
-		// Find a null spot first.
-		if (i < 0 || i >= Limb.Size())
-		{
-			bool good = false;
-			for (int j = 0; j < Limb.Size(); j++)
-			{
-				if (!Limb[j])
-				{
-					good = true;
-					i = j;
-					break;
-				}
-			}
-			
-			// No free space, so just perform AddLimb.
-			if (!good)	return AddLimb(cls, _pos, still); 
-		}
-		else if (Limb[i])
-		{
-			if (replace)	Limb[i].Destroy();	// Replace it.
-			else 			return null; 		// Taken slot.
-		}
-		Limb[i] = AddLimb(cls, _pos, still, false);
-		return Limb[i];
-	}
 	
-	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 _pos, bool still = false, bool push = true)
-	{
-		let mo = InitLimb(cls);
-		if (!mo)	return null;
-		
-		mo.IsStill = still;
-		if (_pos ~== (0,0,0))
-			_pos = (mo.OffX, mo.OffY, mo.OffZ);
-		mo.SetPosOffsets(_pos);
-		if (push)	Limb.Push(mo);
-		return mo;
-	}
-	
-	private TM_BodyPart InitLimb(Class<TM_BodyPart> cls)
-	{
-		if (!cls)	return null;
-		
-		let mo = TM_BodyPart(Spawn(cls, pos, ALLOW_REPLACE));
-		if (mo)
-		{
-			mo.Owner = Owner;
-			mo.Master = self;
-		}
-		return mo;
-	}
-	*/
 	virtual Class<TM_Armor> GetArmorClass(int slot)	{	return null;	}
 	
 	// Wrapper function for adding armor as a limb.

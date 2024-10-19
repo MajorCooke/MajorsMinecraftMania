@@ -54,6 +54,7 @@ enum EMinecraftConst
 	Rel_Hated = Rel_Hate, 
 	Rel_Hostile = Rel_Hate,
 	Rel_Fear = Rel_Afraid,
+	Rel_Feared = Rel_Fear,
 	
 	// Relationship Checker
 	Res_Both = 0,	// Both actors and classes

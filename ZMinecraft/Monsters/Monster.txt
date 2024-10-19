@@ -34,13 +34,11 @@ Class TM_Monster : TM_Entity abstract
 		PrevVel = Vel;
 		DrownTimer = DrownTimerStart;
 		FallDmgVel = -abs(FallDmgVel);
-	//	LightLevel = 5 * irandom(0, 51);
-	//	LightAdd = 5;
 		DmgInfo.Used = true;
 		SetOverScale(OverScale);
 		StepSoundDelay = Max(1, StepSoundDelay);
 		MaxSightRange = Min(MaxSightRange, MaxChaseRange);
-	//	InitDrops();
+		PrepareArmory();
 	}
 	
 	// Absolutely no morphing whatsoever, or it could risk breaking them.
@@ -251,13 +249,22 @@ Class TM_Monster : TM_Entity abstract
 		
 		if (Touched.Size() > 0)
 		{
-			foreach (mo : Touched)
+			if (!Targetable(Target))
 			{
-				
+				foreach (mo : Touched)
+				{
+					if (!Targetable(mo))
+						continue;
+					
+					int rel = CheckRelation(mo, mo.GetClass());
+					
+					if (rel == Rel_Hated || rel == Rel_Feared ||
+						(rel == Rel_None && mo is "PlayerPawn" && mo.player))
+					{	Target = mo; break; }					
+				}
 			}
 			Touched.Clear();
 		}
-		
 		// Thrust other minecraft monsters that are intersecting, akin to minecraft.
 		{
 			int size = Intersect.Size();
