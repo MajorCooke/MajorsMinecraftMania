@@ -130,9 +130,8 @@ Class TM_Spider : TM_Arthropod
 		*/
 	}
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
 		Init(LimbCount);
 		Limb[Head] = 	TM_BodyPart(Spawn('TM_SpiderHead', pos));
 		Limb[Back] = 	TM_BodyPart(Spawn('TM_SpiderBack', pos));
@@ -145,14 +144,15 @@ Class TM_Spider : TM_Arthropod
 		Limb[LegR2] =	TM_BodyPart(Spawn('TM_SpiderLeg', pos));
 		Limb[LegR3] =	TM_BodyPart(Spawn('TM_SpiderLeg', pos));
 		Limb[LegR4] =	TM_BodyPart(Spawn('TM_SpiderLeg', pos));
-		for (int i = 0; i < Limb.Size(); i++)
+		foreach (lim : Limb)
 		{
-			if (Limb[i])
+			if (lim)
 			{
-				Limb[i].Master = self;
-				Limb[i].Owner = self;
-				Limb[i].Scale = Scale;
-				Limb[i].Frame = Type;
+				lim.Master = self;
+				lim.Owner = self;
+				lim.Scale = Scale;
+				lim.Frame = Type;
+				lim.Activate(self);
 			}
 		}
 		
@@ -185,7 +185,7 @@ Class TM_Spider : TM_Arthropod
 			Limb[i  ].SetPersistantAPROffset((-30 - (t * 30), 35, 0));
 			t++;
 		}
-		
+		Super.SpawnLimbs();
 	}
 	
 	override bool CanCollideWith(Actor other, bool passive)

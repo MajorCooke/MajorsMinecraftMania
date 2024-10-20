@@ -121,9 +121,8 @@ Class TM_Ghast : TM_Monster
 		return true;
 	}
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
 		Init(LimbCount);
 		Limb[Head] = TM_BodyPart(Spawn('TM_GhastHead', pos));
 		Limb[Ten1] = TM_BodyPart(Spawn('TM_GhastTentacle', pos));
@@ -138,15 +137,7 @@ Class TM_Ghast : TM_Monster
 		
 		Limb[Head].Owner = self;
 		Limb[Head].Master = self;
-		
-		double SineStep = 360.0 / 9.0;
-		for (int i = Ten1; i < Limb.Size(); i++)
-		{
-			Limb[i].Owner = self;
-			Limb[i].Master = Limb[Head];
-			Limb[i].SetPitch(45);
-			Limb[i].SetSineOffset((0, SineStep * i, 0));
-		}
+		Limb[Head].Activate(self);
 		
 		Limb[Ten1].SetPosOffsets(( 1.0, 1.0, 0.0), false);
 		Limb[Ten2].SetPosOffsets(( 1.0, 0.2, 0.0), false);
@@ -158,6 +149,18 @@ Class TM_Ghast : TM_Monster
 		Limb[Ten8].SetPosOffsets((-1.0, 0.2, 0.0), false);
 		Limb[Ten9].SetPosOffsets((-1.0,-0.6, 0.0), false);
 		AP = (FFRandom(0,359), FFRandom(-90, 90));
+		
+		double SineStep = 360.0 / 9.0;
+		for (int i = Ten1; i < Limb.Size(); i++)
+		{
+			Limb[i].Owner = self;
+			Limb[i].Master = Limb[Head];
+			Limb[i].SetPitch(45);
+			Limb[i].SetSineOffset((0, SineStep * i, 0));
+			Limb[i].Activate(self);
+		}
+		
+		Super.SpawnLimbs();
 	}
 	private int VelTimer;
 	private Vector2 AP;

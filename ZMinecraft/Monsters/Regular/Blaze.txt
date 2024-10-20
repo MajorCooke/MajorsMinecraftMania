@@ -74,10 +74,8 @@ Class TM_Blaze : TM_Monster
 	
 	override bool CanWaterDamage() { return true; }
 	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		
+	override void SpawnLimbs()
+	{		
 		double 	Layer1Z = 4,
 				Layer2Z = 3.2,
 				Layer3Z = 1.6;
@@ -95,7 +93,7 @@ Class TM_Blaze : TM_Monster
 		InsertLimb('TM_BlazeRod', Rod10, (0, 0, Layer3Z), true);
 		InsertLimb('TM_BlazeRod', Rod11, (0, 0, Layer3Z), true);
 		InsertLimb('TM_BlazeRod', Rod12, (0, 0, Layer3Z), true);
-		
+		Super.SpawnLimbs();
 	}
 	
 	override void Die(Actor s, Actor i, int f, Name mod)

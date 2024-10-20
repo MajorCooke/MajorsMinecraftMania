@@ -82,10 +82,8 @@ Class TM_Zombie : TM_Undead
 		return Super.DropItems(src, inf, mod);
 	}
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
-		
 		Init(LimbCount);
 		if (Baby)	Limb[Head] = TM_BodyPart(Spawn('TM_ZombieHeadBaby', pos));
 		else		Limb[Head] = TM_BodyPart(Spawn('TM_ZombieHead', pos));
@@ -103,6 +101,7 @@ Class TM_Zombie : TM_Undead
 				else				Lim.Master = Limb[Body];
 				Lim.Owner = self;
 				Lim.Scale = Scale;
+				Lim.Activate(self);
 			}
 		}
 		
@@ -124,6 +123,7 @@ Class TM_Zombie : TM_Undead
 		
 		SpawnArmor();
 		SpawnWeapon();
+		Super.SpawnLimbs();
 	}
 	
 	

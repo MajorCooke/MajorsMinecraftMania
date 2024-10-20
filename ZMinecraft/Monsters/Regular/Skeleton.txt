@@ -108,9 +108,8 @@ Class TM_Skeleton : TM_Undead
 	
 	
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
 		Init(LimbCount);
 		// Spawn the parts.
 		Limb[Head] = TM_BodyPart(Spawn('TM_SkeletonHead', pos));
@@ -130,6 +129,7 @@ Class TM_Skeleton : TM_Undead
 				else			Lim.Master = Limb[Body];
 				Lim.Owner = self;
 				Lim.Scale = Scale;
+				Lim.Activate(self);
 				Lim.Frame = Type;
 			}
 		}
@@ -144,6 +144,7 @@ Class TM_Skeleton : TM_Undead
 		
 		SpawnWeapon();
 		SpawnArmor();
+		Super.SpawnLimbs();
 	}
 	private TM_Bow Bow;
 	override void SpawnWeapon()
@@ -404,9 +405,9 @@ Class TM_SkeletonWither : TM_Skeleton
 		Obituary "%o 's flesh withered away by a Wither Skeleton.";
 	}
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
+		Super.SpawnLimbs();
 		Limb[LegL].StepSound = "Minecraft/WitherSkeleton/Step";
 		Limb[LegR].StepSound = "Minecraft/WitherSkeleton/Step";
 	}
@@ -416,7 +417,7 @@ Class TM_SkeletonWither : TM_Skeleton
 	//	InitDrops();
 		for (int i = 0; i < 4; i++)
 			if (irandom(0,2) == 0)
-				Drops.Add('TM_PearlAmmo', irandom(1,5));
+				Drops.Add('TM_PearlAmmo', irandom(5,10));
 				
 		int amt = irandom(15, 25);
 		if (irandom(0,1) > 0)	Drops.Add('TM_PearlHealth', amt);

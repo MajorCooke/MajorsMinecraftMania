@@ -3,7 +3,7 @@ const SineWavePerSecond = 360.0 / 35.0;
 const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
 enum EMinecraftConst
 {
-	CurDebugCount = 26,
+	CurDebugCount = 27,
 	BlockRadius = 16,
 	BlockHeight = 32,
 	

@@ -89,10 +89,9 @@ Class TM_Creeper : TM_Monster
 		DropItem('TM_Item_TNT', IRandom(1,4), 10);
 		return Super.DropItems(src, inf, mod);
 	}
-
-	override void PostBeginPlay()
+	
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
 		Init(LimbCount);
 		Limb[Head] = TM_BodyPart(Spawn('TM_CreeperHead', pos));
 		Limb[Body] = TM_BodyPart(Spawn('TM_CreeperBody', pos));
@@ -116,6 +115,7 @@ Class TM_Creeper : TM_Monster
 				if (i <= Body)	Lim.Master = self;
 				else			Lim.Master = Limb[Body];
 				Lim.Owner = self;
+				Lim.Activate(self);
 			}
 			Lim = LimbX[i];
 			if (Lim)
@@ -126,6 +126,7 @@ Class TM_Creeper : TM_Monster
 				Lim.Owner = self;
 				Lim.bINVISIBLE = true;
 				Lim.A_FadeOut(1.0, 0);
+				Lim.Activate(self);
 			}
 		}
 		
@@ -150,9 +151,7 @@ Class TM_Creeper : TM_Monster
 		
 		LimbX[LegFL].SetSineOffset((180, 180, 180));
 		LimbX[LegBR].SetSineOffset((180, 180, 180));
-		
-		
-		
+		Super.SpawnLimbs();
 	}
 	
 	private int age;

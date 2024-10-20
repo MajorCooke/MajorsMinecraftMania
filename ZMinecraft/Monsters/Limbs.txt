@@ -99,7 +99,7 @@ mixin Class TM_UpdateLimbs
 	// Creates & inserts a limb into a specific index in the Limb array. If the
 	// index is < 0, will find a null spot first before attempting to push to
 	// the array.
-	TM_BodyPart InsertLimb(Class<TM_BodyPart> cls, int i = -1, Vector3 _pos = (0,0,0), bool still = false, bool replace = true)
+	TM_BodyPart InsertLimb(Class<TM_BodyPart> cls, int i = -1, Vector3 offs = (0,0,0), int still = -1, bool replace = true)
 	{
 		if (!cls) return null;
 		
@@ -118,27 +118,30 @@ mixin Class TM_UpdateLimbs
 			}
 			
 			// No free space, so just perform AddLimb.
-			if (!good)	return AddLimb(cls, _pos, still); 
+			if (!good)	return AddLimb(cls, offs, still); 
 		}
 		else if (Limb[i])
 		{
 			if (replace)	Limb[i].Destroy();	// Replace it.
 			else 			return null; 		// Taken slot.
 		}
-		Limb[i] = AddLimb(cls, _pos, still, false);
+		Limb[i] = AddLimb(cls, offs, still, false);
+		
 		return Limb[i];
 	}
 	
-	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 _pos, bool still = false, bool push = true)
+	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 offs, int still = -1, bool push = true)
 	{
 		let mo = InitLimb(cls);
 		if (!mo)	return null;
 		
-		mo.IsStill = still;
-		if (_pos ~== (0,0,0))
-			_pos = (mo.OffX, mo.OffY, mo.OffZ);
-		mo.SetPosOffsets(_pos);
+		if (still > -1)
+			mo.IsStill = (still > 0) ? true : false;
+		if (offs ~== (0,0,0))
+			offs = (mo.OffX, mo.OffY, mo.OffZ);
+		mo.SetPosOffsets(offs);
 		if (push)	Limb.Push(mo);
+		mo.Activate(self);
 		return mo;
 	}
 	
@@ -238,6 +241,9 @@ extend class TM_Monster
 		ArmorSlots.Clear();
 		WeaponSlots.Clear();
 	}
+	
+	protected virtual void SpawnLimbs()
+	{	}
 	
 	void SetArmor(int slot, int type)
 	{
@@ -353,7 +359,7 @@ Class TM_BodyPart : TM_Entity
 	
 	bool	CopyInvis,
 			IsStill;
-	int		CopyFrames;
+	int		CopyFrames, InvisTimer;
 	double	AbOX, AbOY, AbOZ,		// Absolute position offsets
 			OffX, OffY, OffZ,		// Primary offsets on the body
 			ROfX, ROfY, ROfZ,		// Relative offsets
@@ -424,27 +430,28 @@ Class TM_BodyPart : TM_Entity
 		+NOTRIGGER
 		+NOTONAUTOMAP
 		+SEEINVISIBLE
-	//	+NOSECTOR
+		+NOSECTOR
+		+DORMANT
 	}
 	
 	override void Activate(Actor activator)
 	{
-		if (bKILLED || Destroyed() || !Master || !bDORMANT)	return;
+		if (bKILLED || Destroyed() || !Master)	return;
 		
 		
 		doSpring = false;
-		UpdatePosition(Activator);
-		NextAng.X = Activator.Angle;
+		UpdatePosition(Master);
+		NextAng.X = Master.Angle;
 		UpdateAngles(NextAng + MainAng);
 		ClearInterpolation();
-	//	bINVISIBLE = false;
 		bDONTINTERPOLATE = false;
 		bDORMANT = false;
 		for (int i = 0; i < Limb.Size(); i++)
-			if (Limb[i])	Limb[i].Activate(self);
-		SetState(ResolveState("Active"));
+			if (Limb[i])	Limb[i].Activate(Master);
 		// This is changed a tick after in the state to ensure there's no interpolation.
-		A_ChangeLinkFlags(FLAG_NO_CHANGE, false); 
+		InvisTimer = 2;
+		A_ChangeLinkFlags(FLAG_NO_CHANGE, 1);
+		bDORMANT = false;
 	}
 	
 	override void Deactivate(Actor activator)
@@ -452,16 +459,16 @@ Class TM_BodyPart : TM_Entity
 		if (bKILLED || Destroyed() || !Master)	return;
 		
 		for (int i = 0; i < Limb.Size(); i++)
-			if (Limb[i])	Limb[i].Deactivate(activator);
+			if (Limb[i])	Limb[i].Deactivate(Master);
 		bDONTINTERPOLATE = true;
 		bDORMANT = true;
-		SetState(ResolveState("Inactive"));
-		A_ChangeLinkFlags(FLAG_NO_CHANGE, true);
+		A_ChangeLinkFlags(FLAG_NO_CHANGE, 1);
+		bDORMANT = true;
 	}
 	
 	override void Tick()
 	{
-		if (!Master || IsFrozen() || bDESTROYED || bDORMANT || bKILLED)	
+		if (bDESTROYED || !Master || IsFrozen() || bDORMANT || bKILLED)	
 		{
 			Super.Tick();
 			return;
@@ -471,6 +478,19 @@ Class TM_BodyPart : TM_Entity
 		{
 			bINVISIBLE = true;
 			Destroy();
+			return;
+		}
+		
+		if (InvisTimer > 0)
+		{
+			Prev = Pos;
+			if (!bDORMANT && --InvisTimer < 1)
+			{
+				if (TMV_Debug == 27)
+					Console.Printf("Linking into sector");
+				A_ChangeLinkFlags(FLAG_NO_CHANGE, 0);
+			}
+			Super.Tick();
 			return;
 		}
 		
@@ -505,16 +525,6 @@ Class TM_BodyPart : TM_Entity
 		
 		if (Master)
 			bINVISIBLE = Master.bINVISIBLE;			
-	}
-	
-	override void OnDestroy()
-	{
-		for (int i = 0; i < Limb.Size(); i++)
-		{
-			if (Limb[i])
-				Limb[i].Destroy();
-		}
-		Super.OnDestroy();
 	}
 	
 	//--------------------------------------------------------------------------
@@ -852,7 +862,7 @@ Class TM_BodyPart : TM_Entity
 		{	
 			if (Limb[i].GetClass() == cls)
 			{
-				if (type == AT_None)
+				if (type == AT_None) // Remove the armor since it's not wanted.
 				{
 					Limb[i].Destroy();
 					found = true;
@@ -893,6 +903,13 @@ Class TM_BodyPart : TM_Entity
 		}
 		
 		Limb.Move(temp);
+	}
+	
+	override void OnDestroy()
+	{
+		foreach (lm : Limb)
+			if (lm)	lm.Destroy();
+		Super.OnDestroy();
 	}
 	
 	States
@@ -1093,22 +1110,18 @@ Class TM_BodyPartArm : TM_BodyPart
 		{
 			Case AR_Body:	
 			{
-				if (SideID == TMS_Left)
-					return 'TM_ArmorArmL';
-				if (SideID == TMS_Right)
-					return 'TM_ArmorArmR';
+				if (SideID == TMS_Left)		return 'TM_ArmorArmL';
+				if (SideID == TMS_Right)	return 'TM_ArmorArmR';
 				break;
 			}
 			Case WR_ArmL:
 			{
-				if (SideID == TMS_Left)
-					return 'TM_Sword';
+				if (SideID == TMS_Left)		return 'TM_Sword';
 				break;
 			}
 			Case WR_ArmR:
 			{
-				if (SideID == TMS_Right)
-					return 'TM_Sword';
+				if (SideID == TMS_Right)	return 'TM_Sword';
 				break;
 			}
 		}

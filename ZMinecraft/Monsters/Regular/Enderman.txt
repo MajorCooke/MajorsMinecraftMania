@@ -70,7 +70,6 @@ Class TM_Enderman : TM_Monster
 	const AngerSpeed = 7.0;
 	
 	mixin NormalLimbCount;
-	private Array<TM_CVector3> LimbVec;
 	
 	Default
 	{
@@ -109,6 +108,10 @@ Class TM_Enderman : TM_Monster
 	{
 		Super.PostBeginPlay();
 		AttackDamagers = false;
+	}
+	
+	override void SpawnLimbs()
+	{
 		Init(LimbCount);
 		Limb[Head] = TM_BodyPart(Spawn('TM_EndermanHead', pos));
 		Limb[Body] = TM_BodyPart(Spawn('TM_EndermanBody', pos));
@@ -116,6 +119,12 @@ Class TM_Enderman : TM_Monster
 		Limb[ArmL] = TM_BodyPart(Spawn('TM_EndermanArmLeft', pos));
 		Limb[LegR] = TM_BodyPart(Spawn('TM_EndermanLegRight', pos));
 		Limb[LegL] = TM_BodyPart(Spawn('TM_EndermanLegLeft', pos));
+		Limb[Head].SetPosOffsets((0.0, 0.0, 7.8));
+		Limb[Body].SetPosOffsets((0.0, 0.0, 6.6));
+		Limb[ArmR].SetPosOffsets((0.0, 1.0, 7.6));
+		Limb[ArmL].SetPosOffsets((0.0,-1.0, 7.6));
+		Limb[LegR].SetPosOffsets((0.0, 0.4, 5.8));
+		Limb[LegL].SetPosOffsets((0.0,-0.4, 5.8));
 		for (int i = 0; i < Limb.Size(); i++)
 		{
 			let lim = Limb[i];
@@ -125,37 +134,10 @@ Class TM_Enderman : TM_Monster
 				else				Lim.Master = Limb[Body];
 				Lim.Owner = self;
 				Lim.Scale = Scale;
+				Lim.Activate(self);
 			}
 		}
-		/*
-		Limb[Head].SetPosOffsets((0.0, 0.0, 7.8));
-		Limb[Body].SetPosOffsets((0.0, 0.0, 6.6));
-		Limb[ArmR].SetPosOffsets((0.0, 1.0, 7.6));
-		Limb[ArmL].SetPosOffsets((0.0,-1.0, 7.6));
-		Limb[LegR].SetPosOffsets((0.0, 0.4, 5.8));
-		Limb[LegL].SetPosOffsets((0.0,-0.4, 5.8));
-		*/
-		LimbVec.Clear();
-		LimbVec.Reserve(Limb.Size());
-		for (int i = 0; i < Limb.Size(); i++)
-		{
-			let vec = TM_CVector3.Create((0,0,0));
-			LimbVec[i] = vec;
-		}
-		
-		LimbVec[Head].v = (0.0,	 0.0, 7.8);
-		LimbVec[Body].v = (0.0,  0.0, 6.6);
-		LimbVec[ArmR].v = (0.0,  1.0, 7.6);
-		LimbVec[ArmL].v = (0.0, -1.0, 7.6);
-		LimbVec[LegR].v = (0.0,  0.4, 5.8);
-		LimbVec[LegL].v = (0.0, -0.4, 5.8);
-		
-		
-		for (int i = 0; i < Limb.Size(); i++)
-			if (Limb[i])	Limb[i].SetPosOffsets(LimbVec[i].v);
-		
-		
-		
+		Super.SpawnLimbs();
 	}
 	override void EnterIdle() 
 	{	

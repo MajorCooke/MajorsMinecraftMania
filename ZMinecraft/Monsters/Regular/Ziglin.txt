@@ -67,11 +67,30 @@ Class TM_Ziglin : TM_Undead
 		return Super.DropItems(src, inf, mod);
 	}
 	
-	override void PostBeginPlay()
+	override void SpawnLimbs()
 	{
-		Super.PostBeginPlay();
 		Init(LimbCount);
+		InsertLimb('TM_PiglinHead', Head, (0.0,	 0.0, 4.8),1);
+		InsertLimb('TM_PiglinBody', Body, (0.0,  0.0, 3.6),1);
+		InsertLimb('TM_PiglinArmR', ArmR, (0.0,  1.2, 4.4));
+		InsertLimb('TM_PiglinArmL', ArmL, (0.0, -1.2, 4.4));
+		InsertLimb('TM_PiglinLegR', LegR, (0.0,  0.4, 2.4));
+		InsertLimb('TM_PiglinLegL', LegL, (0.0, -0.4, 2.4));
 		
+		for (int i = 0; i < Limb.Size(); i++)
+		{
+			let Lim = Limb[i];
+			if (Lim)
+			{
+				if (i <= Body)		Lim.Master = self;
+				else				Lim.Master = Limb[Body];
+				Lim.Owner = self;
+				Lim.Scale = Scale;
+				Lim.Frame = Fr_B;
+			}
+		}
+		
+		/*
 		Limb[Head] = TM_BodyPart(Spawn('TM_PiglinHead', pos));
 		Limb[Body] = TM_BodyPart(Spawn('TM_PiglinBody', pos));
 		Limb[ArmR] = TM_BodyPart(Spawn('TM_PiglinArmR', pos));
@@ -97,11 +116,11 @@ Class TM_Ziglin : TM_Undead
 		Limb[ArmL].SetPosOffsets((0.0, -1.2, 4.4));
 		Limb[LegR].SetPosOffsets((0.0,  0.4, 2.4));
 		Limb[LegL].SetPosOffsets((0.0, -0.4, 2.4));
-		
+		*/
 		let head = Limb[Head];
 		if (head)
 		{
-			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1));
+			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1), 0);
 			if (ear)	
 			{
 				ear.SetYaw(-90);
@@ -113,10 +132,15 @@ Class TM_Ziglin : TM_Undead
 		Limb[ArmR].SetPitch(-90);
 		Limb[ArmL].SetPitch(-90);
 		
-		if (!CanArmor)	return;
+		if (!CanArmor)
+		{
+			Super.SpawnLimbs();
+			return;
+		}
 		
 		SpawnArmor();
 		SpawnWeapon();
+		Super.SpawnLimbs();
 	}
 	
 	override void SpawnWeapon()
@@ -125,14 +149,15 @@ Class TM_Ziglin : TM_Undead
 		bool skip = true;
 		for (int i = WR_ArmL; i <= WR_ArmR; i++)
 		{
-			chances[i] = irandom(0,200);
-			if (skip && chances[i] > 100)
+			SetArmor(i, 0);
+			chances[i] = irandom(0,400);
+			if (skip && chances[i] > 200)
 			{
 				skip = false;
 				continue;
 			}
 			int 						frm = WP_Gold;
-				 if (chances[i] <= 20)	frm = WP_Netherite;
+				 if (chances[i] <= 25)	frm = WP_Netherite;
 			else if (chances[i] <= 50)	frm = WP_Diamond;
 			else if (Chances[i] <= 100)	frm = WP_Iron;
 			
