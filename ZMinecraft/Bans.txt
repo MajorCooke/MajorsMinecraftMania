@@ -61,14 +61,14 @@ extend class TM_Handler
 	private void SetSector(out Array<Int> arr, Sector s)
 	{	if (s) SetSecNum(arr, s.Index());	}
 	
-	private void SetSecNum(out Array<Int> arr, int i)
+	private void SetSecNum(out Array<Int> arr, int id)
 	{
-		int index = TM_Global.BinarySearch(arr, i, true);
+		int index = TM_Global.BinarySearch(arr, id, true);
 		
 		if (index >= arr.Size())
-			arr.Push(i);
-		else if (arr[index] != i)
-			arr.Insert(index, i);
+			arr.Push(id);
+		else if (arr[index] != id)
+			arr.Insert(index, id);
 	}
 	
 	private void SetSecAABB(out Array<TM_Rect> arr, Sector s)
