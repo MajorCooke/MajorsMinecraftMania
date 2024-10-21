@@ -70,8 +70,9 @@ Class TM_Ziglin : TM_Undead
 	override void SpawnLimbs()
 	{
 		Init(LimbCount);
-		InsertLimb('TM_PiglinHead', Head, (0.0,	 0.0, 4.8),1);
-		InsertLimb('TM_PiglinBody', Body, (0.0,  0.0, 3.6),1);
+		
+		InsertLimb('TM_PiglinHead', Head, (0.0,	 0.0, 4.8));
+		InsertLimb('TM_PiglinBody', Body, (0.0,  0.0, 3.6));
 		InsertLimb('TM_PiglinArmR', ArmR, (0.0,  1.2, 4.4));
 		InsertLimb('TM_PiglinArmL', ArmL, (0.0, -1.2, 4.4));
 		InsertLimb('TM_PiglinLegR', LegR, (0.0,  0.4, 2.4));
@@ -89,6 +90,7 @@ Class TM_Ziglin : TM_Undead
 				Lim.Frame = Fr_B;
 			}
 		}
+		
 		
 		/*
 		Limb[Head] = TM_BodyPart(Spawn('TM_PiglinHead', pos));
@@ -120,10 +122,10 @@ Class TM_Ziglin : TM_Undead
 		let head = Limb[Head];
 		if (head)
 		{
-			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1), 0);
+			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1));
 			if (ear)	
 			{
-				ear.SetYaw(-90);
+				ear.SetYaw(90);
 				ear.SetPitch(-30);
 				ear.Frame = Fr_B;
 			}

@@ -217,6 +217,7 @@ mixin Class TM_UpdateLimbs
 					
 				}
 				Limb[i].bBRIGHT = bBRIGHT;
+				
 				if (!start || (invis && !bINVISIBLE))
 				{
 					bool inter = interp;
