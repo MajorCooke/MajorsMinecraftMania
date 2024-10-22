@@ -75,10 +75,6 @@ server bool TMV_DropItems = true;
 // Timer in minutes to wait before despawning items spawned by monsters.
 server int TMV_ItemTimer = 2;
 
-// If enabled, attempts to simply multiply how much the item is worth on pickup.
-// This won't work for items that are spawned via randomspawner.
-server bool TMV_CombineItems = false;
-
 // Gibs start fading out the moment they stop moving if enabled.
 server bool TMV_ShortGibLives = false;
 

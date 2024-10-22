@@ -96,7 +96,6 @@ OptionMenu "TripleMMonsterTweaks"
 	TripleMOption "$TMM_NOSECGRAV_TEXT",	"$TMM_NOSECGRAV_SUB",		TMV_NoSectorGravity,	"NoSecGrav"
 	TripleMOption "$TMM_SHORTGIBS_TEXT",	"$TMM_SHORTGIBS_SUB",		TMV_ShortGibLives,		"OnOff"
 	TripleMOption "$TMM_DROPITEMS_TEXT",	"$TMM_DROPITEMS_SUB",		TMV_DropItems,			"OnOff"
-	TripleMOption "$TMM_COMBINEITEMS_TEXT", "$TMM_COMBINEITEMS_SUB",	TMV_CombineItems,		"OnOff"
 }
 
 OptionValue "NoSecGrav"
