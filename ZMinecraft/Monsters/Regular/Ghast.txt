@@ -36,7 +36,7 @@ Class TM_GhastDrop : RandomSpawner
 {
 	Default
 	{
-		DropItem "GreenArmor", 256, 20;
+		DropItem "Backpack", 256, 30;
 		DropItem "BlueArmor", 256, 15;
 		DropItem "Soulsphere", 256, 10;
 		DropItem "Megasphere", 256, 5;
@@ -112,10 +112,9 @@ Class TM_Ghast : TM_Monster
 		if (!Super.DropItems(src, inf, mod))
 			return false;
 			
-		if (!A_DropItem('MegaSphere', -1, 5))
+		if (!A_DropItem('Megasphere', -1, 5))
 		if (!A_DropItem('SoulSphere', -1, 10))
-		if (!Event.DropItem(self, 'BlueArmor', -1, 15))
-		if (!Event.DropItem(self, 'GreenArmor', -1, 20))
+		if (!A_DropItem('BlueArmor', -1, 15))
 			Event.DropItem(self, 'Backpack');
 		
 		return true;
