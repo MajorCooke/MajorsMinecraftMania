@@ -32,18 +32,20 @@ Class TM_StatusEffect : Powerup abstract
 	protected bool Processed;
 	meta int Type, Cap;
 	protected int Potency;
-	bool Particles;
+	bool Particles, StartTrigger;
 	
 	Property Ailment: Ailment;
 	Property Clearable: Clearable;
 	Property Type: Type;
 	Property Cap: Cap;
 	Property Particles: Particles;
+	Property StartTrigger: StartTrigger;
 	
 	Default
 	{
 		TM_StatusEffect.Particles true;
 		TM_StatusEffect.Cap 5;
+		TM_StatusEffect.StartTrigger true;
 		Inventory.ForbiddenTo "TM_Boss";
 	}
 	
@@ -113,23 +115,28 @@ Class TM_StatusEffectInterval : TM_StatusEffect
 	int GetTimer() { return Timer; }
 	int GetDelay() { return Delay; }
 	
-	void SetDelay(int time, bool trig = false)
+	protected bool ShouldStartTrigger(int trig)
+	{
+		return (trig > 0 || (trig == -1 && StartTrigger));
+	}
+	
+	void SetDelay(int time, int trig = -1)
 	{
 		Delay = Max(1, time);
-		if (trig)	Trigger();
+		if (ShouldStartTrigger(trig))	Trigger();
 	}
 	
-	void SetTimer(int time, bool trig = false)
+	void SetTimer(int time, int trig = -1)
 	{
 		Timer = Max(1, Time);
-		if (trig)	Trigger();
+		if (ShouldStartTrigger(trig))	Trigger();
 	}
 	
-	void SetTimeDelay(int time, int del, bool trig = false)
+	void SetTimeDelay(int time, int del, int trig = -1)
 	{
 		Timer = Max(1, time);
 		Delay = Max(1, del);
-		if (trig)	Trigger();
+		if (ShouldStartTrigger(trig))	Trigger();
 	}
 	
 	override void DoEffect()
@@ -386,6 +393,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 		TM_StatusEffect.Ailment true;
 		TM_StatusEffect.Clearable false; // Not treated as an actual status effect.
 		TM_StatusEffect.Particles false;
+		TM_StatusEffect.StartTrigger true;
 		DamageType "Fire";
 	}
 	
@@ -444,7 +452,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 			}
 		}
 		if (GetTimer() > 18)
-			SetTimer(18, true);
+			SetTimer(18, StartTrigger);
 	}
 	
 	
@@ -460,10 +468,13 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 		
 		if (bDESTROYED)	return;
 		
-		if (!Owner || Owner.bKILLED || TM_Global.IsImmune(Owner, DamageType))
+		if (!Owner || Owner.bKILLED || !TM_Global.Flammable(Owner, DamageType))
 		{	Destroy();	return;	}
 		
 		if (Owner.WaterLevel > 0 && (Potency == FIRE_Normal || Potency == FIRE_Soul))
+		{	Destroy();	return;	}
+		
+		if (Owner.pos.z <= Owner.floorz && Owner.GetFloorTerrain().isLiquid)
 		{	Destroy();	return;	}
 		
 		if (Owner.IsFrozen())	return;
@@ -537,7 +548,11 @@ extend Class TM_Handler
 			{
 				if (timer > -1)	inter.SetTimer(timer);
 				if (delay > -1)	inter.SetDelay(delay);
-				if (trigger)	inter.Trigger();
+				if (trigger)	
+				{
+					inter.startTrigger = false;
+					inter.Trigger();
+				}
 			}
 		}
 		return true;

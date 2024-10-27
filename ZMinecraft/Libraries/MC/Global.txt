@@ -1,7 +1,8 @@
 // Global functions that anyone can make use of. Credit if used, please!
+// - Major Cooke
 
 Class TM_Global play
-{
+{	// Code by RicardoLuis0
 	clearscope static int BinarySearch(Array<int> arr, int item, bool exact = false)
 	{
 		int Count = arr.Size();
@@ -31,7 +32,11 @@ Class TM_Global play
 	
 	static bool Flammable(Actor mo, Name DmgType)
 	{
-		if (!mo || !(mo.bSHOOTABLE || mo.bVULNERABLE) || IsImmune(mo, DmgType))
+		if (!mo || (!mo.bSHOOTABLE && !mo.bVULNERABLE) || 
+			mo.bINVULNERABLE || mo.bNODAMAGE || IsImmune(mo, DmgType))
+			return false;
+			
+		if (mo.player && (mo.player.cheats & (CF_GODMODE|CF_GODMODE2)))
 			return false;
 		
 		return true;

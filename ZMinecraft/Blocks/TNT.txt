@@ -11,6 +11,7 @@ Class TM_Block_TNT : TM_Block
 		-STOPRAILS
 		Tag "TNT";
 		DeathSound "Minecraft/Grass";
+		
 	}
 	
 	override int TakeSpecialDamage(Actor i, Actor s, int damage, Name mod)
@@ -396,6 +397,7 @@ Class TM_Ent_TNT : TM_Entity
 		+MBFBOUNCER
 		+DROPOFF
 		-FLOORCLIP
+		+EXPLODEONWATER
 		Mass 200;
 		Species "TM_Ent_TNT";
 		+THRUSPECIES

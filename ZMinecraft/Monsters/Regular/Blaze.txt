@@ -430,7 +430,7 @@ Class TM_FireCharge : TM_Projectile
 			{
 				if (Tracer is 'TM_Block')
 					Tracer.DamageMobj(self, Target, 10, DamageType);
-				else if (Event) Event.GiveStatus(Tracer, Target, 'TM_OnFireEffect', 35 * 3);
+				else if (Event) Event.GiveStatus(Tracer, Target, 'TM_OnFireEffect', 35 * 3, trigger: true);
 			}
 			else
 			{
