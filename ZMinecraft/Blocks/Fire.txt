@@ -403,12 +403,13 @@ Class TM_Block_Fire : TM_Block
 	override bool Used(Actor user)
 	{
 		if (!bKILLED && user && !user.bKILLED)
-		{
-			if (type == FIRE_Hell)
+		{	
+			if (type == FIRE_Hell) // Don't try and put these out. You'll only die trying unless you're invulnerable.
 			{
 				bEXTREMEDEATH = true;
 				UseKill = true;
 				user.DamageMobj(self, self, clamp(user.health, 2000, TELEFRAG_DAMAGE - 1), DamageType, DMG_NO_ARMOR|DMG_FOILINVUL|DMG_FOILBUDDHA|DMG_THRUSTLESS);
+				return true;
 			}
 			DamageMobj(user, user, health, 'Use', DMG_FORCED);
 			return true;

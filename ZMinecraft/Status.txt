@@ -346,9 +346,13 @@ Class TM_ResistanceEffect : TM_StatusEffectDmg
 // Immunity to fire and slime damage.
 Class TM_FireResistanceEffect : TM_StatusEffectDmg
 {
+	const HFDamage = 5;
 	override void ModifyDamage(int damage, Name mod, out int newdamage, bool passive, Actor i, Actor s, int flags)
 	{
 		if (!passive)	return;
+		
+		if (!Owner || !Owner.CurSector || (Owner.CurSector.Flags & Sector.SECF_ENDLEVEL))
+			return;
 		
 		Switch (mod)
 		{
@@ -356,7 +360,8 @@ Class TM_FireResistanceEffect : TM_StatusEffectDmg
 			Case 'Lava':
 			Case 'Slime':
 			Case 'Hellslime':
-			{	newdamage = -1;
+			{	
+				newdamage = -1;
 				return;
 			}
 			Case 'SoulFire':
@@ -372,9 +377,9 @@ Class TM_FireResistanceEffect : TM_StatusEffectDmg
 			{
 				if (Potency > 2)
 				{
-					if (damage > 10)
+					if (damage > HFDamage)
 					{
-						newdamage = 10;
+						newdamage = HFDamage;
 						return;
 					}	
 				}
@@ -395,6 +400,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 		TM_StatusEffect.Particles false;
 		TM_StatusEffect.StartTrigger true;
 		DamageType "Fire";
+		DeathType "Normal";
 	}
 	
 	private Actor Flame;
@@ -415,10 +421,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 			}
 		}
 	}
-	
-	
-	
-	// Does not include Hellfire. That's practically instant death.
+	// Does not include Hellfire. That's instant death without invulnerability.
 	private int PrevPot;
 	override void Modified()
 	{
@@ -450,6 +453,12 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 				if (Flame) Flame.SetState(Flame.ResolveState("Soul"));
 				SetDelay(18); break;
 			}
+			Case FIRE_Hell: // Deals no damage, it's just the block that does so.
+			{
+				Dmg = 0;
+				EffectTics = 2;
+				break;
+			}
 		}
 		if (GetTimer() > 18)
 			SetTimer(18, StartTrigger);
@@ -463,21 +472,53 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 		Super.OnDestroy();
 	}
 	
+	private void Extinguish()
+	{
+		if (bDESTROYED) return;
+		if (Owner) Owner.A_StartSound("Minecraft/Fizz", 12345, CHANF_OVERLAP);
+		Destroy();
+	}
+	
+	private bool InLiquid, WasLiquid;
 	override void DoEffect()
 	{
-		
 		if (bDESTROYED)	return;
 		
 		if (!Owner || Owner.bKILLED || !TM_Global.Flammable(Owner, DamageType))
 		{	Destroy();	return;	}
-		
-		if (Owner.WaterLevel > 0 && (Potency == FIRE_Normal || Potency == FIRE_Soul))
-		{	Destroy();	return;	}
-		
-		if (Owner.pos.z <= Owner.floorz && Owner.GetFloorTerrain().isLiquid)
-		{	Destroy();	return;	}
-		
-		if (Owner.IsFrozen())	return;
+
+		// TO DO: Make Minecraft Lava ignite and not extinguish.
+		if (Potency != FIRE_Hell)
+		{
+			WasLiquid = InLiquid;
+			InLiquid = ((Owner.pos.z <= Owner.floorz && Owner.GetFloorTerrain().isLiquid) ||
+						(Owner.Waterlevel > 0));
+						
+			Switch (Potency)
+			{
+				Case FIRE_Normal:		
+				{	
+					if (InLiquid)
+					{	Extinguish(); return; }
+					break;
+				}
+				Case FIRE_Soul:
+				{
+					if (InLiquid && --EffectTics < 1)  
+					{
+						Extinguish(); 
+						return;
+					}
+					break;
+				}
+				Case FIRE_Void:
+				{
+					if (InLiquid) EffectTics++;
+					break;
+				}
+			}
+			if (Owner.IsFrozen())	return;
+		}
 		
 		Super.DoEffect();
 		
@@ -495,11 +536,12 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 	
 	override void Trigger()
 	{
-		if (Owner)
+		if (Owner && Potency != FIRE_Hell)
 		{
-			// TO DO: Make void fire deal double damage in water and slow twice
-			// as fast.
-			Owner.DamageMobj(self, source, Dmg, DamageType, DMG_THRUSTLESS);
+			int DD = Dmg;
+			if (InLiquid && Potency == FIRE_Void)
+				DD *= 2;
+			Owner.DamageMobj(self, source, DD, DamageType, DMG_THRUSTLESS);
 		}
 	}
 }

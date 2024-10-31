@@ -525,10 +525,10 @@ extend class TM_Monster
 	//--------------------------------------------------------------------------
 	// Convenience functions for relationships.
 	int CheckClassRelation(Class<Actor> mo) const
-	{	return (!mo || !Relations) ? 0 : Relations.FindClassRelation(mo);	}
+	{	return (!mo || !Relations) ? Rel_None : Relations.FindClassRelation(mo);	}
 	
 	int CheckActorRelation(Actor mo) const
-	{	return (!mo || !Relations) ? 0 : Relations.FindActorRelation(mo);	}
+	{	return (!mo || !Relations) ? Rel_None : Relations.FindActorRelation(mo);	}
 	
 	int CheckRelation(Actor mo, Class<Actor> cls = null) const
 	{
@@ -598,33 +598,30 @@ extend class TM_Monster
 		if (Relations && Relations.Size() > 0)
 		{
 			int ret = CheckRelation(mo);
-			
 			Switch(ret)
 			{
 				// Afraid of the other
 				Case Rel_Afraid:
 				// Hates the actor, will pursue
-				Case Rel_Hate:		return true;
+				Case Rel_Hate:		
+					return true;
 				// Akin to having NEVERTARGET.
-				Case Rel_Ignored:	return false;
-				// 
-				Case Rel_Neutral:
-					return (dmgers ? CheckActorDamager(mo) : false);
+				Case Rel_Ignored:
+				Case Rel_Leader:
+				Case Rel_Follower:
+				Case Rel_Ally:
+					return false;
 				Case Rel_None:
-				{
-					if (IsTeamMate(mo))
-						return false;
-					
+				{	
 					if (Target == Tracer)
 						return true;
-					
 					if (bFRIENDLY)
-						return (!mo.bFRIENDLY);
+						return (!mo.IsTeamMate(mo));
 					else if (mo is 'PlayerPawn')	
-						return true;	
-					
+						return true;
 				}
-				Default:
+				Default: // If they damaged them, become hostile towards them.
+				Case Rel_Neutral:
 					return (dmgers ? CheckActorDamager(mo) : false);
 			}
 			return false;

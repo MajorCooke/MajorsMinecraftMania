@@ -294,7 +294,7 @@ extend class TM_Monster
 	{
 		// Keep the old target around just in case.
 		if (!other || other.bKILLED)	return false;
-		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other));
+		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other, false));
 		if (ret)	OOSTimer = 0;
 		return ret;
 	}

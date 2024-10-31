@@ -90,6 +90,13 @@ Class TM_Global play
 		return ret;
 	}
 	
+	//==========================================================================
+	// 3D Floor Helper Functions
+	// 
+	// These help get 3D floors and determine if they deal damage or not, used
+	// primarily to damage players and enemies when inside of certain areas,
+	// including regular doom damaging sectors.
+	//==========================================================================
 	static TerrainDef, TerrainDef GetTerrainDef(Sector s)
 	{
 		if (!s)	return null, null;

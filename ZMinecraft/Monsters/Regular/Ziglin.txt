@@ -192,7 +192,7 @@ Class TM_Ziglin : TM_Undead
 	{
 		if (bKILLED || dmg < 1 || src is GetClass())	
 			return;
-			
+		
 		Super.DamageReact(inf, src, damage, dmg, mod, flags, angle);
 		
 		if (src && !src.bKILLED && Targetable(src))
@@ -242,15 +242,8 @@ Class TM_Ziglin : TM_Undead
 			Speed = Default.Speed * ((Target && Target.Player) ? 2 : 3);
 			if (--AngerDelay < 1)
 			{
-				/*
-				if (!ValidateTarget(true))
-				{
-					SetAngry(false);
-					return;
-				}
-				*/
 				AngerDelay = irandom(Second * 1, Second * 3);
-				A_StartSound("Minecraft/Ziglin/Angry", CHAN_VOICE, CHANF_OVERLAP, pitch: ffrandom(1.5, 2.25));
+				A_StartSound("Minecraft/Ziglin/Angry", CHAN_VOICE, CHANF_OVERLAP, pitch: ffrandom(1.75, 2.25));
 				if (TMV_AIDifficulty > Dif_Medium)
 					DoAlertMonsters(Target);
 			}
