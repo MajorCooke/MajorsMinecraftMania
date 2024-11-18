@@ -1,6 +1,33 @@
 //==============================================================================
 const SineWavePerSecond = 360.0 / 35.0;
 const BlockSize = 32.0; // In minecraft it's 16 but Doom appears to do things at double size.
+
+// Relations to targets/classes
+enum ETMRelStatus
+{
+	Rel_None =	0,	// Treated as regular Doom entity (searched for if player)
+	Rel_Neutral,	// Peaceful until attacked
+	Rel_Hate, 		// Will attack on sight
+	Rel_Ignored,	// Never retaliates
+	Rel_Afraid, 	// Flees from
+	Rel_Follower,	// Follows as its master
+	Rel_Leader,		// Makes followers its children
+	Rel_Ally,		// They don't attack each other and come to the aid of those attacked
+	Rel_Max,
+	
+	// Relationship aliases
+	Rel_Hated = Rel_Hate, 
+	Rel_Hostile = Rel_Hate,
+	Rel_Fear = Rel_Afraid,
+	Rel_Feared = Rel_Fear
+}
+enum ETMRelType
+{
+	// Relationship Checker
+	Res_Both = 0,	// Both actors and classes
+	Res_Actors,		// Self explanatory.
+	Res_Classes
+};
 enum EMinecraftConst
 {
 	CurDebugCount = 27,
@@ -38,28 +65,6 @@ enum EMinecraftConst
 	// Actions
 	E_Sway =	1 << 1,
 	E_Swing =	1 << 2,
-	
-	// Relations to targets/classes
-	Rel_None =	0,	// Treated as regular Doom entity (searched for if player)
-	Rel_Neutral,	// Peaceful until attacked
-	Rel_Hate, 		// Will attack on sight
-	Rel_Ignored,	// Never retaliates
-	Rel_Afraid, 	// Flees from
-	Rel_Follower,	// Follows as its master
-	Rel_Leader,		// Makes followers its children
-	Rel_Ally,		// They don't attack each other and come to the aid of those attacked
-	Rel_Max,
-	
-	// Relationship aliases
-	Rel_Hated = Rel_Hate, 
-	Rel_Hostile = Rel_Hate,
-	Rel_Fear = Rel_Afraid,
-	Rel_Feared = Rel_Fear,
-	
-	// Relationship Checker
-	Res_Both = 0,	// Both actors and classes
-	Res_Actors,		// Self explanatory.
-	Res_Classes,
 	
 	TM_Group_Unsorted = 1 << 0,
 	

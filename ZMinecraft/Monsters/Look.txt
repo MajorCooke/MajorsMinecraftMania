@@ -220,26 +220,6 @@ extend class TM_Monster
 		
 		if (!(flags & VTF_TargetOnly) && !targetable)
 		{
-			// This array is broken in GZDoom currently.
-		//	Actor temp[3] = { LastEnemy, LastHeard, LastLookActor };
-			/*
-			Actor temp[3];
-			temp[0] = LastEnemy;
-			temp[1] = LastHeard;
-			temp[2] = LastLookActor;
-			
-			
-			for (int i = 0; i < temp.Size(); i++)
-			{
-				targetable = (Targetable(temp[i], relate));
-				if (targetable)
-				{
-					Target = temp[i];
-					break;
-				}
-			}
-			*/
-			
 			Actor mo = null;
 			while (mo = NextActorRelation(Rel_Hate))
 			{
@@ -294,7 +274,7 @@ extend class TM_Monster
 	{
 		// Keep the old target around just in case.
 		if (!other || other.bKILLED)	return false;
-		bool ret = (Super.OkayToSwitchTarget(other) && Targetable(other, false));
+		bool ret = (Targetable(other, false));
 		if (ret)	OOSTimer = 0;
 		return ret;
 	}

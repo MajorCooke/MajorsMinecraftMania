@@ -19,10 +19,11 @@ Actor
 Class TM_ClassRelation play
 {
 	Class<Actor> ClassType;
-	int Status, Priority;
+	ETMRelStatus Status; 
+	int Priority;
 	bool Parent;
 	
-	static TM_ClassRelation CreateRelation(Class<Actor> who, int status, bool parent = false, int priority = 0)
+	static TM_ClassRelation CreateRelation(Class<Actor> who, ETMRelStatus status, bool parent = false, int priority = 0)
 	{
 		if (!who)	return null;
 		
@@ -31,7 +32,7 @@ Class TM_ClassRelation play
 		return r;
 	}
 	
-	void Update(Class<Actor> who, int status, bool parent = false, int priority = 0)
+	void Update(Class<Actor> who, ETMRelStatus status, bool parent = false, int priority = 0)
 	{
 		if (!who)	return;
 		
@@ -45,7 +46,8 @@ Class TM_ClassRelation play
 Class TM_ActorRelation play
 {
 	Actor Mo;
-	int Status, Priority;
+	ETMRelStatus Status;
+	int Priority;
 	bool Parent;
 	
 	
@@ -126,7 +128,7 @@ Class TM_RelationManager play
 		Only used by Rel_Hate status. When searching for enemies to target, 
 		the higher priority targets will be searched for first.
 	--------------------------------------------------------------------------*/
-	void SetClassRelation(Class<Actor> who, int status, bool parent = false, int priority = 0)
+	void SetClassRelation(Class<Actor> who, ETMRelStatus status, bool parent = false, int priority = 0)
 	{
 		if (!who) return;
 		
@@ -209,7 +211,7 @@ Class TM_RelationManager play
 	// Actors take priority over classes.
 	//--------------------------------------------------------------------------
 	
-	void SetActorRelation(Actor who, int status, int priority = 0)
+	void SetActorRelation(Actor who, ETMRelStatus status, int priority = 0)
 	{
 		if (!who) return;
 		
@@ -278,7 +280,7 @@ Class TM_RelationManager play
 		return 0;
 	}
 		
-	Actor NextActorRelation(int type) const
+	Actor NextActorRelation(ETMRelStatus type) const
 	{
 		if (type <= Rel_None || Actors.Size() < 1)
 			return null;
@@ -319,7 +321,7 @@ Class TM_RelationManager play
 	//--------------------------------------------------------------------------
 	// Checks if any recorded actors/classes have the status type.
 	// At least one is needed to return true. Any at all.
-	bool CheckStatusType(int status) const
+	bool CheckStatusType(ETMRelStatus status) const
 	{
 		if (status <= Rel_None || status >= Rel_Max || 
 			(Classes.Size() < 1 && Actors.Size() < 1))
@@ -346,7 +348,7 @@ Class TM_RelationManager play
 	
 	//--------------------------------------------------------------------------
 	// Fills array 'act' with any actors that have the matching 'status' type.
-	void FindStatusActor(int status, out Array<TM_ActorRelation> act)
+	void FindStatusActor(ETMRelStatus status, out Array<TM_ActorRelation> act)
 	{
 		act.Clear();
 		
@@ -363,7 +365,7 @@ Class TM_RelationManager play
 	
 	//--------------------------------------------------------------------------
 	// Same as FindStatusActor but for classes.
-	void FindStatusClass(int status, out Array<TM_ClassRelation> cls)
+	void FindStatusClass(ETMRelStatus status, out Array<TM_ClassRelation> cls)
 	{
 		cls.Clear();
 		
@@ -378,7 +380,7 @@ Class TM_RelationManager play
 		}
 	}
 	
-	int Size(int whom = Res_Both) const
+	int Size(ETMRelType whom = Res_Both) const
 	{ 	
 		Switch(whom)
 		{
@@ -388,7 +390,7 @@ Class TM_RelationManager play
 		}
 		return 0;
 	}
-	void Clear(int whom = Res_Both)
+	void Clear(ETMRelType whom = Res_Both)
 	{
 		if (whom != Res_Classes)
 		{
@@ -542,26 +544,26 @@ extend class TM_Monster
 		return Relations.FindClassRelation(cls);
 	}
 	
-	void SetClassRelation(Class<Actor> mo, int status, bool parent = false, int priority = 0)
+	void SetClassRelation(Class<Actor> mo, ETMRelStatus status, bool parent = false, int priority = 0)
 	{
 		if (mo && Relations)
 			Relations.SetClassRelation(mo, status, parent, priority);
 	}
 	
-	void SetActorRelation(Actor mo, int status, int priority = 0)
+	void SetActorRelation(Actor mo, ETMRelStatus status, int priority = 0)
 	{
 		if (mo && Relations)
 			Relations.SetActorRelation(mo, status, priority);
 	}
 	
-	Actor NextActorRelation(int status)
+	Actor NextActorRelation(ETMRelStatus status)
 	{
 		if (status > Rel_None && Relations)
 			return Relations.NextActorRelation(status);
 		return null;
 	}
 	
-	void ClearRelations(int whom = Res_Both)
+	void ClearRelations(ETMRelType whom = Res_Both)
 	{
 		if (Relations) Relations.Clear(whom);
 	}
@@ -573,7 +575,7 @@ extend class TM_Monster
 		if (Relations) Relations.CleanActors();
 	}
 	
-	bool CheckStatusType(int status) const
+	bool CheckStatusType(ETMRelStatus status) const
 	{
 		if (!Relations || status <= Rel_None || status >= Rel_Max)
 			return false;
@@ -619,12 +621,13 @@ extend class TM_Monster
 						return (!mo.IsTeamMate(mo));
 					else if (mo is 'PlayerPawn')	
 						return true;
+					break;
 				}
 				Default: // If they damaged them, become hostile towards them.
 				Case Rel_Neutral:
 					return (dmgers ? CheckActorDamager(mo) : false);
 			}
-			return false;
+		//	return false;
 		}
 		return true;
 	}
@@ -638,7 +641,11 @@ extend class TM_Monster
 		}
 		return false;
 	}
-//	{	return mo && ((AttackDamagers && Damagers.Find(mo) < Damagers.Size()));	}
+	
+	protected bool ClearDamagers()
+	{
+		Damagers.Clear();
+	}
 	
 	protected void ClearTarget(Actor mo = null)
 	{

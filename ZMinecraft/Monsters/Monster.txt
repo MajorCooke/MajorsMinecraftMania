@@ -312,7 +312,6 @@ Class TM_Monster : TM_Entity abstract
 				
 			if (bKILLED)	return;
 			
-			// TO DO: FIX THIS SHIT
 			if (!DmgInfo.Used)
 			{
 				DmgInfo.used = true;
