@@ -642,7 +642,7 @@ extend class TM_Monster
 		return false;
 	}
 	
-	protected bool ClearDamagers()
+	protected void ClearDamagers()
 	{
 		Damagers.Clear();
 	}
