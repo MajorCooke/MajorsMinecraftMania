@@ -18,8 +18,6 @@ extend class TM_Monster
 		return b1, b2;
 	}
 	
-	
-	
 	Vector2 NextPos(double speed, double ang)
 	{
 		return Vec2Angle(speed, ang);
@@ -204,8 +202,8 @@ extend class TM_Monster
 		}
 		
 		if (!bFLOAT && OnGround && !(newflags & CHF_DONTMOVE) && Vel.Z ~== 0.0 && 
-			!(Vel.XY ~== (0, 0)) && Vel.XY.Length() < speed * 0.5)
-			Vel.XY = (0,0);
+			!(Vel.XY ~== (0.0, 0.0)) && Vel.XY.Length() <= speed)
+			Vel.XY = (0.0,0.0);
 		
 		// Check for solids in the way of the missile position.
 		/*
@@ -451,18 +449,51 @@ extend class TM_Monster
 	
 	protected bool DoTryMove(double _speed, double _ang)
 	{
-		if (Pos.Z > FloorZ && !Jumping)
+		if ((Pos.Z > FloorZ + MaxStepHeight) && !Jumping)
 			return false;
 	
 		ClearBlockingInfo();
 		FCheckPosition tm;
 		bool good = false;
 		Vector2 nmpos = Vec2Angle(_speed, _ang);
+		
+		// Special case: Handle slopes
+		/*
+		{
+			SecPlane flr = CurSector.floorplane;
+			if (CurSector.Get3DFloorCount() > 0)
+			{
+				double a; Sector b; F3DFloor c;
+				[a,b] = CurSector.NextLowestFloorAt(nmpos.x, nmpos.y, pos.z + height * 0.5);
+				
+				if (c) flr = c.top;
+			//	if (b && b.floorplane != flr) flr = b.ceilingplane;
+			}
+			if (flr.IsSlope())
+			{
+				CheckPosition(nmpos, false, tm);
+				if (abs(tm.floorz - pos.z) <= MaxStepHeight)
+				{
+					Vel.XY = (0,0);
+					SetZ(tm.floorz);
+				}
+				else return false;
+			}
+		}
+		*/
+		Vector3 ovel = vel;
+		double oz = pos.z, 
+			pz = CurSector.NextLowestFloorAt(nmpos.x, nmpos.y, pos.z + height * 0.5);
+		if (abs(pos.z - pz) <= MaxStepHeight)
+		{
+			Vel.XY = (0,0);
+			SetZ(pz);
+		}
 		if (TryMove(nmpos, bDROPOFF, false, tm))
 		{
 			good = true;
 			
-			if (!Jumping && max(floorz, pos.z) - min(floorz, pos.z) <= MaxStepHeight)
+			if (!Jumping && pos.z <= floorz + MaxStepHeight)
 				SetZ(floorz);
 				
 			UnsetJumping();
@@ -487,6 +518,12 @@ extend class TM_Monster
 			
 		}
 		else if (Jumping)	good = true;
+		
+		if (!good)
+		{
+			SetZ(oz);
+			vel = ovel;
+		}
 		
 		return good;
 	}
