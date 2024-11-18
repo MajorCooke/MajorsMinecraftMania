@@ -200,7 +200,7 @@ Class TM_Handler : EventHandler
 	override void WorldThingSpawned(WorldEvent e)
 	{
 		Actor mo = e.Thing;
-		if (!mo || mo.bDESTROYED || (mo.bNOINTERACTION && !(mo is 'TM_Block')))
+		if (!mo || mo.bDESTROYED || mo.bMISSILE || (mo.bNOINTERACTION && !(mo is 'TM_Block')))
 			return;
 		
 		
