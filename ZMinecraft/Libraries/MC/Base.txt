@@ -164,7 +164,20 @@ Class TM_AArray
 	// Cleans up an array by copying all non-nulls to a temp array and overriding
 	// the original. This is the most efficient way in ZScript so far, as it
 	// beats calling DynArray's Delete function over and over in performance.
-	int Clean()
+	
+	void Clean()
+	{
+		if (Actors.Size() < 1)
+			return;
+			
+		int j = 0;
+		foreach(mo : Actors)
+			if (mo) Actors[j++] = mo;
+		
+		Actors.Resize(j);
+	}
+	
+	int CleanB()
 	{
 		int size = Actors.Size();
 		// Array empty.
@@ -347,7 +360,20 @@ Class TM_CAArray
 	// Cleans up an array by copying all non-nulls to a temp array and overriding
 	// the original. This is the most efficient way in ZScript so far, as it
 	// beats calling DynArray's Delete function over and over in performance.
-	int Clean()
+	void Clean()
+	{
+		if (Classes.Size() < 1)
+			return;
+			
+		int j = 0;
+		foreach (cls : Classes)
+			if (cls)	Classes[j++] = cls;
+				
+		Classes.Resize(j);
+	}
+	
+	// old, don't use.
+	int CleanB()
 	{
 		int size = Classes.Size();
 		// Array empty.

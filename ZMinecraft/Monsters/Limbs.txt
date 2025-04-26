@@ -79,6 +79,12 @@ Struct LimbSwing play
 	}
 }
 
+/*------------------------------------------------------------------------------
+Limb Updater mixin
+
+This is given to both monsters and their limbs in order to allow for extra
+attachments. This allows for limbs to have limbs to have limbs, for example.
+------------------------------------------------------------------------------*/
 mixin Class TM_UpdateLimbs
 {
 	int CurStyle;
@@ -130,14 +136,15 @@ mixin Class TM_UpdateLimbs
 		return Limb[i];
 	}
 	
-	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 offs, int still = -1, bool push = true)
+	TM_BodyPart AddLimb(Class<TM_BodyPart> cls, Vector3 offs, int still = -1, 
+		bool push = true, bool forceofs = false)
 	{
 		let mo = InitLimb(cls);
 		if (!mo)	return null;
 		
 		if (still > -1)
 			mo.IsStill = (still > 0) ? true : false;
-		if (offs ~== (0,0,0))
+		if (!forceofs && offs ~== (0,0,0))
 			offs = (mo.OffX, mo.OffY, mo.OffZ);
 		mo.SetPosOffsets(offs);
 		if (push)	Limb.Push(mo);
@@ -342,7 +349,7 @@ Class TM_BodyPart : TM_Entity
 	protected int CurAction;
 	protected double OverScale;
 //	protected TM_BodyPartAttachment Attachment[2];
-	Vector3 // For the angles, X = Angle, Y = Pitch, Z = Roll
+	Vector3 // For the angles, X = Yaw, Y = Pitch, Z = Roll
 		AbsOff,		// Absolute Offsets
 		PosOff,		// Position Offsets to Master
 		RelOff,		// Relative position offsets to self
@@ -404,7 +411,7 @@ Class TM_BodyPart : TM_Entity
 	Property Offsets: 			OffX, OffY, OffZ;
 	Property RelOffsets: 		ROfX, ROfY, ROfZ;
 	Property AngleOffset: 		AOffX, AOffY, AOffZ;
-	Property VelSineOffset: VelSineOffset;
+	Property VelSineOffset: 	VelSineOffset;
 	// Used for adjusting the angle/pitch/roll of the limb. This is a scalar.
 	// X = Angle, Y = Pitch, Z = Roll.
 	Property SwingAngleDir: 	ADX, ADY, ADZ;
@@ -431,8 +438,8 @@ Class TM_BodyPart : TM_Entity
 		+NOTRIGGER
 		+NOTONAUTOMAP
 		+SEEINVISIBLE
-		+NOSECTOR
-		+DORMANT
+		-ACTIVATEPCROSS
+		-ACTIVATEMCROSS
 	}
 	
 	override void Activate(Actor activator)
@@ -450,9 +457,9 @@ Class TM_BodyPart : TM_Entity
 		for (int i = 0; i < Limb.Size(); i++)
 			if (Limb[i])	Limb[i].Activate(Master);
 		// This is changed a tick after in the state to ensure there's no interpolation.
-		InvisTimer = 2;
-		A_ChangeLinkFlags(FLAG_NO_CHANGE, 1);
-		bDORMANT = false;
+	//	InvisTimer = 2;
+	//	A_ChangeLinkFlags(FLAG_NO_CHANGE, 1);
+		A_ChangeLinkFlags(FLAG_NO_CHANGE, 0);
 	}
 	
 	override void Deactivate(Actor activator)
@@ -464,7 +471,6 @@ Class TM_BodyPart : TM_Entity
 		bDONTINTERPOLATE = true;
 		bDORMANT = true;
 		A_ChangeLinkFlags(FLAG_NO_CHANGE, 1);
-		bDORMANT = true;
 	}
 	
 	override void Tick()
@@ -563,7 +569,6 @@ Class TM_BodyPart : TM_Entity
 			Gib = gname;
 			
 			if (!Gib)	return;
-			
 		}
 		
 		let g = TM_BodyPartGib(Spawn(Gib, pos + WorldOffset, ALLOW_REPLACE));
@@ -587,7 +592,6 @@ Class TM_BodyPart : TM_Entity
 			g.Vel3DFromAngle(ffrandom(3.0,6.0), irandom(0,359), irandom(-90, 45));
 			if (Owner) g.Vel += Owner.Vel;
 		}
-		DestroyMe = true;
 	}
 	bool Destroyed() const { return bDESTROYED || DestroyMe;	} 
 	
@@ -644,13 +648,14 @@ Class TM_BodyPart : TM_Entity
 		
 		Quat base = Quat.FromAngles(who.angle, _p, who.roll);
 		origin = who.pos;
-		Vector3 ret = base * PosOff;
+	//	Vector3 PO = (PosOff.X, -PosOff.Y, PosOff.Z);
+		Vector3 ret = base * (PosOff.X, -PosOff.Y, PosOff.Z);
 		NPos = ret + who.WorldOffset;
 		
 		if (!(RelOff ~== (0,0,0)))
 		{	
 			Quat ans = Quat.FromAngles(nang.X, nang.Y, nang.Z);
-			ret = ans * RelOff;
+			ret = ans * (RelOff.X, -RelOff.Y, RelOff.Z);
 			NPos += ret;
 		}
 		

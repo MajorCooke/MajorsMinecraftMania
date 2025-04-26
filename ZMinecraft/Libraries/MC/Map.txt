@@ -320,11 +320,10 @@ Class TM_Sect
 	
 	
 }
-
 // Polygons are always 2D, at least for now.
 Class TM_Poly
 {
-	private Array<Vertex> Verts;
+	private Array<readonly<Vertex> > Verts;
 	private TM_Rect Box;
 	
 	static TM_Poly Create()
@@ -349,7 +348,7 @@ Class TM_Poly
 	
 	void AddVert(int id)
 	{
-		let v = level.Vertexes[id]; // ...Why it's not called Vertices, idk.
+		readonly<Vertex> v = level.Vertexes[id]; // ...Why it's not called Vertices, idk.
 		int size = Verts.Size();
 		if (Verts.Find(v) != size)
 			Verts.Push(v);

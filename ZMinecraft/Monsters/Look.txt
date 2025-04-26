@@ -21,7 +21,7 @@ extend class TM_Monster
 		while (it.Next())
 		{
 			mo = it.thing;
-			if (!mo || !Targetable(mo))
+			if (!mo || CheckRelation(mo, mo.GetClass()) != Rel_Hated || !Targetable(mo))
 				continue;
 			
 			if (sight && (!CheckSight(mo, CSFlags) ||

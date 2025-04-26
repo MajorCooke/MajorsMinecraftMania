@@ -5,4 +5,4 @@
 #include "./PhantomBeta/Include.txt"
 #include "./MC_Gutamatics/Include.txt"
 #include "./Kodi/Kodi.txt"
-#include "./ZJSON/Include.zs"
+#include "./ZJSON/Include.zsc"

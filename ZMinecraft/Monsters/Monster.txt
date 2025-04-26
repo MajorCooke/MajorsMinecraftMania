@@ -201,11 +201,11 @@ Class TM_Monster : TM_Entity abstract
 		return false;
 	}
 	
-	double GetRealGravity(bool function = true)
+	double GetRealGravity(bool func = true)
 	{
 		if (TMV_NoSectorGravity & TM_NSG_MONSTERS)
 		{
-			if (function)
+			if (func)
 				return GetGravity() - Gravity;
 			
 			return Gravity;
@@ -482,9 +482,10 @@ Class TM_Monster : TM_Entity abstract
 		}
 		// Boing!
 		if (MOD == 'Falling')
-		{
 			Vel.Z = abs(PrevVel.Z);
-		}
+		else if (MOD == 'CreeperBoo')
+			Vel.Z = Max(Vel.Z, 20);
+		
 		VelLen = Vel.Length();
 		Gib(VelLen);
 		SetOrigin(DeathPos, false);

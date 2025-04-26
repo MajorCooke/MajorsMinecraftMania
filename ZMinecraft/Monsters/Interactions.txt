@@ -15,7 +15,61 @@ Actor
 	they only attack those who attack them and don't attack anyone else.
 
 ==============================================================================*/
-
+/*
+Class TM_ClassPriority
+{
+	int Priority;
+	Array<TM_ClassRelation> Rel;
+	
+	clearscope int Size() const
+	{	return Rel.Size();	}
+	
+	void Push(TM_ClassRelation cls)
+	{	Rel.Push(cls);		}
+	
+	void Insert(uint index, TM_ClassRelation item)
+	{	Rel.Insert(index, item);	}
+	
+	void Delete(uint index, int count = 1)
+	{	Rel.Delete(index, count);	}
+	
+	void Pop()
+	{	Rel.Pop();	}
+	
+	void Clear()
+	{	Rel.Clear();	}
+	
+	void Resize(uint amount)
+	{	Rel.Resize(amount);	}
+	
+	void Copy(TM_ClassPriority other) // Takes ClassPriority, not Relation
+	{	Rel.Copy(other.Rel);	}
+	
+	void Move(TM_ClassPriority other) // Takes ClassPriority, not Relation
+	{	Rel.Move(other.Rel);	}
+	
+	clearscope int Find(TM_ClassRelation other) const
+	{	return Rel.Find(other);	}
+	
+	void ShrinkToFit()
+	{	Rel.ShrinkToFit();	}
+	
+	void Grow(uint amount)
+	{	Rel.Grow(amount);	}
+	
+	int Reserve(uint amount)
+	{	return Rel.Reserve(amount);	}
+	
+	clearscope int Max() const
+	{	return Rel.Max();	}
+	
+	void Append(TM_ClassRelation other)
+	{	Rel.Append(other.Rel);	}
+	
+	//--------------------------------------------------------------------------
+	
+}
+*/
 Class TM_ClassRelation play
 {
 	Class<Actor> ClassType;
@@ -118,8 +172,8 @@ Class TM_RelationManager play
 		-Rel_None: Normal relationship. Not an active target but can infight if
 			provoked. Will attack players by default unless friendly.
 		-Rel_Neutral: Like none, but won't attack players set with this.
-		-Rel_Hate: Attack on sight. Priority will take into account if this target
-			is a higher threat.
+		-Rel_Hate: Attack on sight. Looks for the highest priority enemies in
+			view first before lower.
 		-Rel_Ignored: Doesn't retaliate when attacked.
 		-Rel_Afraid: Runs away from this actor and doesn't attack anything else
 			until it's out of range.
@@ -157,6 +211,7 @@ Class TM_RelationManager play
 	
 	void RemoveClassRelation(Class<Actor> who)
 	{
+		if (!who)	return;
 		for (int i = 0; i < Classes.Size(); i++)
 		{
 			if (Classes[i] && Classes[i].ClassType == who)
@@ -508,11 +563,8 @@ extend class TM_Monster
 	// steps for setting up.
 	virtual protected void SetupRelations(bool create = false)
 	{	
-		if (create)
-		{
-			if (Relations)	Relations.Clear();
-			else Relations = TM_RelationManager.Create(self);
-		}
+		if (Relations)	Relations.Clear();
+		else if (create)  Relations = TM_RelationManager.Create(self);		
 	}
 	
 	protected void ClearBlockingInfo()
@@ -526,22 +578,37 @@ extend class TM_Monster
 	
 	//--------------------------------------------------------------------------
 	// Convenience functions for relationships.
-	int CheckClassRelation(Class<Actor> mo) const
+	ETMRelStatus CheckRelationName(Actor mo, Name cls = '') const
+	{	
+		return CheckRelation(mo, (Class<Actor>)(FindClass(cls,'Actor')));	
+	}
+	
+	ETMRelStatus CheckClassRelationName(Name cls) const
+	{	
+		return CheckClassRelation((Class<Actor>)(FindClass(cls,'Actor')));	
+	}
+	
+	ETMRelStatus CheckClassRelation(Class<Actor> mo) const
 	{	return (!mo || !Relations) ? Rel_None : Relations.FindClassRelation(mo);	}
 	
-	int CheckActorRelation(Actor mo) const
+	ETMRelStatus CheckActorRelation(Actor mo) const
 	{	return (!mo || !Relations) ? Rel_None : Relations.FindActorRelation(mo);	}
 	
-	int CheckRelation(Actor mo, Class<Actor> cls = null) const
+	ETMRelStatus CheckRelation(Actor mo, Class<Actor> cls = null) const
 	{
 		if (!Relations || (!mo && !cls))	return Rel_None;
 		
 		if (mo && !cls)	cls = mo.GetClass();
 		
-		int AR = Relations.FindActorRelation(mo);
+		ETMRelStatus AR = Relations.FindActorRelation(mo);
 		if (AR > Rel_None)	return AR;
 		
 		return Relations.FindClassRelation(cls);
+	}
+	void SetClassRelationName(Name cls, ETMRelStatus status, bool parent = false, int priority = 0)
+	{	
+		Class<Actor> check = cls;
+		SetClassRelation(check, status, parent, priority);	
 	}
 	
 	void SetClassRelation(Class<Actor> mo, ETMRelStatus status, bool parent = false, int priority = 0)

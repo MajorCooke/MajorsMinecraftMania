@@ -84,6 +84,13 @@ Class TM_Creeper : TM_Monster
 		Obituary "A creeper blasted %o sky high, Team Rocket style.";
 	}
 	
+	override void SetupRelations()
+	{
+		Super.SetupRelations(true);
+		SetClassRelationName('GFCreeper', Rel_Hate, true, 1);
+		SetClassRelation('PlayerPawn', Rel_Hate, true);
+	}
+	
 	override bool DropItems(Actor src, Actor inf, Name mod)
 	{
 		DropItem('TM_Item_TNT', IRandom(1,4), 10);

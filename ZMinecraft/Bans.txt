@@ -1,5 +1,4 @@
 // See MapCompat.txt for all current maps listed so far.
-
 extend class TM_Handler
 {
 	private Name			Checksum;
@@ -212,6 +211,7 @@ extend class TM_Handler
 	
 	clearscope bool IsSectorBanned(int index) const
 	{
+		
 		return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) != BannedSectors.Size());
 	//	return (index < 0 || BannedSectors.Find(index) < BannedSectors.Size());		
 	}
@@ -278,95 +278,6 @@ extend class TM_Handler
 		return ret;
 	}
 	
-	// The overarching function, does all the checks needed.
-	int, TM_RectCon CheckPos(Vector3 pos, double h, double r, Sector sec = null, bool touching = false) const
-	{
-		// Check if there's a whitelist first.
-		// 
-		bool inWhite = !Whitelist;
-		if (Whitelist)
-		{
-			if (SpawnSectors.Size() > 0)
-			{
-				int ind = sec.Index();
-				if (sec && IsSectorAllowed(ind))
-					inWhite = true;
-			}
-			if (!inWhite && SpawnRegions.Size() > 0)
-			{
-				
-			}
-		}
-		if (Blacklist)
-		{
-		}
-		/*
-		if (sec)
-		{
-			int ind = sec.Index();
-			if (Whitelist)
-			{
-				if (IsSectorAllowed(ind) && !IsSectorBanned(ind))
-					return false;
-				
-				if (SpawnRegions.Size() < 1 && SpawnPolys.Size() < 1)
-					return true;
-			}
-			else
-			{
-				if (IsSectorBanned(ind))
-					return true;
-				else if (IsSectorAllowed(ind))
-					return false;
-			}
-		}
-	
-		// Check Whitelisted areas. If outside, it's banned.
-		if (SpawnBox)
-		{
-			if (!SpawnBox.InRange(pos))
-				return true;
-			
-			// Check the spawn area.
-			if (SpawnRegions.Size() > 0)
-			{
-				bool good = false;
-				foreach (rec : SpawnRegions)
-				{
-					if (rec && rec.InRange(pos))
-					{
-						good = true;
-						break;
-					}
-				}
-				if (!good) return true;
-			}
-		}
-		
-		// Either inside or no Whitelist, now check bans.
-		foreach(rec : BannedRegions)
-		{
-			if (rec && rec.InRange(pos))
-				return true;
-		}
-		if (touching)
-		{
-			let it = BlockLinesIterator.CreateFromPos(pos, h, r, sec);
-			while (it.Next())
-			{
-				let ln = it.CurLine;
-				if (!ln || (!ln.frontsector && !ln.backsector))	continue;
-				
-				if ((ln.frontsector && IsSectorBanned(ln.frontsector.Index())) ||
-					(ln.backsector && IsSectorBanned(ln.backsector.Index())))
-					return true;
-			}
-		}
-		*/
-		return TMF_WHITE, null;
-		
-	}
-	
 	private void Ban3DFloorModels()
 	{
 		foreach (sec : level.Sectors)
@@ -423,7 +334,7 @@ extend class TM_Handler
 			// to the list of sectors to be banned if they aren't already.
 			for (int i = 0; i < sec.lines.Size(); i++)
 			{
-				int index[2] = {0,0};
+				int index[2] = {-1,-1};
 				Line l = sec.lines[i];
 				
 				if (!l)	continue;
@@ -434,12 +345,12 @@ extend class TM_Handler
 				// Make sure the spawned sector the player is in doesn't bleed
 				// into via the sky viewpoints. If it does, simply undo it by 
 				// moving the copied temp array back and abort.
-				int j = 0;
-				for (j = 0; j < plrs.Size(); j++)
+				
+				foreach (plr : plrs)
 				{
-					if (plrs[j] && (
-						plrs[j].CurSector == l.frontsector ||
-						plrs[j].CurSector == l.backsector))
+					if (plr && (
+						plr.CurSector == l.frontsector ||
+						plr.CurSector == l.backsector))
 					{
 						BannedSectors.Copy(temp);
 						Console.Printf("Sky viewpoint is connected to the play world. Sectors unbanned.");
@@ -448,7 +359,7 @@ extend class TM_Handler
 						
 				}
 				
-				for (j = 0; j < 2; j++)
+				for (int j = 0; j < 2; j++)
 				{
 					if (!IsSectorBanned(index[j]) && 
 						Process.Find(index[j]) >= Process.Size())
@@ -505,3 +416,60 @@ extend class TM_Handler
 	private bool CanSpawnBox()
 	{	return (!SpawnBox && (SpawnRegions.Size() > 0 || SpawnPolys.Size() > 0));	}
 }
+
+/*
+class TM_BanChecker play // for Triple M
+{	// Allow player save games to load without the ban checkers
+	transient Function<play bool, Object(Object, Vector3)> fn_posbanned;
+	transient Object ob_banchecker;
+	
+	bool callIsPosBanned(Vector3 pos)
+	{
+		Name clsName = 'MC_BanChecker';
+		class<Object> cls = clsName;
+		if (cls)
+		{	// We have a function already so simply use it.
+			if (fn_posbanned)
+			{
+				let [b, o] = fn_posbanned.Call(ob_banchecker, pos);
+				return b;
+			}
+			// No function so get one and return the results.
+			fn_posbanned = (function<play bool, Object(Object, Vector3)>)(FindFunction(cls, 'GIsPosBanned'));
+			if (fn_posbanned)	 
+			{
+				bool bl = false;
+				[bl, ob_banchecker] = fn_posbanned.Call(ob_banchecker, pos);
+				return bl;
+			}
+		}
+		return false;
+	}
+}
+
+// TO DO: Move this into a different PK3 and allow interfacing with it.
+Class MC_BanChecker play
+{
+	static MC_BanChecker Create()
+	{
+		let mc = new();
+		mc.Init();
+		return mc;
+	}
+	
+	protected void Init()
+	{
+	}
+	
+	// For function pointers.
+	static bool, Object GIsPosBanned(Object mc_o, Vector3 pos)
+	{
+		let mc = MC_BanChecker(mc_o);
+		if (!mc) mc = MC_BanChecker.Create();
+		return mc.IsPosBanned(pos), mc;
+	}
+	
+	bool IsPosBanned(Vector3 pos)
+	{	return false;	}
+}
+*/

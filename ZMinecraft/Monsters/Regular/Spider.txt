@@ -160,14 +160,14 @@ Class TM_Spider : TM_Arthropod
 		Limb[Back].SetPosOffsets((		-0.6,	 0.0, 2.0));
 		Limb[Thorax].SetPosOffsets((	 0.0,	 0.0, 2.0));
 		
-		Limb[LegL1].SetPosOffsets((		 0.0,	-0.8, 1.9));
-		Limb[LegL2].SetPosOffsets((		 0.0, 	-0.8, 1.9));
-		Limb[LegL3].SetPosOffsets((		 0.0,	-0.8, 1.9));
-		Limb[LegL4].SetPosOffsets((		 0.0,	-0.8, 1.9));
-		Limb[LegR1].SetPosOffsets((		 0.0,	 0.8, 1.9));
-		Limb[LegR2].SetPosOffsets((		 0.0,  	 0.8, 1.9));
-		Limb[LegR3].SetPosOffsets((		 0.0, 	 0.8, 1.9));
-		Limb[LegR4].SetPosOffsets((		 0.0, 	 0.8, 1.9));
+		Limb[LegL1].SetPosOffsets((		 0.0,	0.8, 1.9));
+		Limb[LegL2].SetPosOffsets((		 0.0, 	0.8, 1.9));
+		Limb[LegL3].SetPosOffsets((		 0.0,	0.8, 1.9));
+		Limb[LegL4].SetPosOffsets((		 0.0,	0.8, 1.9));
+		Limb[LegR1].SetPosOffsets((		 0.0,	-0.8, 1.9));
+		Limb[LegR2].SetPosOffsets((		 0.0,  	-0.8, 1.9));
+		Limb[LegR3].SetPosOffsets((		 0.0, 	-0.8, 1.9));
+		Limb[LegR4].SetPosOffsets((		 0.0, 	-0.8, 1.9));
 		
 		
 		Limb[LegL2].SetSineOffset((180,0,0));		

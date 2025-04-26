@@ -2,7 +2,7 @@
 
 extend class TM_Monster
 {
-	private uint TempTranslation;
+	private TranslationID TempTranslation;
 	private LastDamaged DmgInfo;
 	private int NoDmgTimer;
 	protected Array<Actor> Damagers;
@@ -227,7 +227,7 @@ extend class TM_Monster
 				}
 			}
 		}
-		return (bNODAMAGE) ? 0 : dmg;
+		return dmg;
 	}
 	/*
 	bool TryPain(Actor i, Actor s, int dmg, Name mod, int flags, double angle)

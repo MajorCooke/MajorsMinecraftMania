@@ -150,7 +150,8 @@ Class TM_Skeleton : TM_Undead
 	override void SpawnWeapon()
 	{
 		int pick = randompick(ArmR, ArmL);
-		Bow = TM_Bow(Limb[pick].AddLimb('TM_Bow', (0, 0, -1.6), true));
+		double ofs = (pick == ArmR) ? 0.1 : 0.0;
+		Bow = TM_Bow(Limb[pick].AddLimb('TM_Bow', (0, ofs, -1.6), true));
 	}
 	
 	void SetArmAnimation(StateLabel Next)
@@ -492,7 +493,7 @@ Class TM_SkeletonWither : TM_Skeleton
 
 Class TM_SkeletonArm : TM_BodyPartArm
 {
-	const BowYaw = -20.0;
+	const BowYaw = 20.0;
 	Default
 	{
 		TM_BodyPart.Gib 'TM_SkeletonArmGib';

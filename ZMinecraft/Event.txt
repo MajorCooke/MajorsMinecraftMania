@@ -7,7 +7,12 @@ Responsible for tracking certain things across maps.
 Class TM_EventStatic : StaticEventHandler
 {
 	private int MaxHealth, MaxArmor;
-	
+	/*
+	override void OnRegister()
+	{
+		ReadData();
+	}
+	*/
 	static TM_EventStatic Fetch()
 	{	return TM_EventStatic(Find('TM_EventStatic'));	}	
 	

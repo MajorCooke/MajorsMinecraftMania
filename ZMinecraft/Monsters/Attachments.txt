@@ -7,56 +7,6 @@
 //==============================================================================
 //==============================================================================
 
-/*
-Class TM_BodyPartAttachment : TM_BodyPart abstract
-{
-	private double AttX, AttY, AttZ;
-	Vector3 AttachPos;	// Attachment Position
-	
-	
-	Property Offset: AttX, AttY, AttZ;
-	Default
-	{
-		TM_BodyPart.Offset 0, 0, -1.6;
-	}
-	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		AttachPos = (AttX, AttY, AttZ);
-	}
-
-	// Since this is being handled by a limb, we do not want to process anything
-	// else. The limb will handle the positioning of both itself and this.
-	override void Tick()
-	{
-		Actor.Tick();
-	}
-	
-	override void DoPreMotion() {}
-	override void DoMotion() {}
-	override void UpdateScales(double OverScale, Vector2 Scale)
-	{
-		Super.UpdateScales(OverScale, Scale);
-		AttachPos.XY = (AttX, AttY) * Scale.X;
-		AttachPos.Z  = AttZ * Scale.Y;
-	}
-	override void SetAttachPos(Vector3 APR, bool snap, int i)
-	{
-		Super.SetAttachPos(APR, snap, i);
-		AttachPos.XY = APR.XY * Scale.X;
-		AttachPos.Z = APR.Z * Scale.Y;
-	}
-	
-	States
-	{
-	Spawn:
-		ASDF A -1;
-		Stop;
-	}
-}
-*/
-
 extend class TM_Monster
 {
 	virtual void SpawnWeapon()
@@ -185,10 +135,6 @@ Class TM_Bow : TM_ToolRanged
 	{
 		TM_Armor.CountArmorInv false;
 	}
-	
-	
-	
-//	override Class<Actor> GetMissileClass()	{	return 'TM_ArrowProjectile';	}
 	
 	States
 	{

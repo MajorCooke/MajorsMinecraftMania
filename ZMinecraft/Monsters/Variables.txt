@@ -33,7 +33,7 @@ extend class TM_Monster
 	protected Vector2 PrevScale;
 	protected Vector3 PrevAngs, PrevPos, AngVel, HoldAngs;
 	Vector3 Angs;
-	protected uint PrevTrans;
+	protected TranslationID PrevTrans;
 	protected int	PrevStyle, AttackDelay, SoundDelay, 
 					IdleTimer, ChaseCheckTimer, LookTimer, 
 					ActSoundMin, ActSoundMax;
@@ -79,7 +79,7 @@ extend class TM_Monster
 		TM_Monster.CanArmor false;
 		TM_Monster.SpawnRange 	1024, 3072;
 		TM_Monster.DespawnRange	3073, 5120;
-		TM_Monster.SightTimeOut Second * 5;
+		TM_Monster.SightTimeOut Second * 20;
 		TM_Monster.OverScale 1.0;
 		TM_Monster.SoundPitch 1.0;
 		TM_Monster.FallDmgVel 15.0;

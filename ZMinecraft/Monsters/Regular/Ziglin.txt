@@ -122,10 +122,10 @@ Class TM_Ziglin : TM_Undead
 		let head = Limb[Head];
 		if (head)
 		{
-			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1));
+			let ear = head.InsertLimb('TM_PiglinEar', -1, (0, 1, 1), 0);
 			if (ear)	
 			{
-				ear.SetYaw(90);
+				ear.SetYaw(-90);
 				ear.SetPitch(-30);
 				ear.Frame = Fr_B;
 			}
