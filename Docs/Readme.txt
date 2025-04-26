@@ -80,21 +80,7 @@ Info folder
 ================================================================================
 	***** Credits *****
 
-Major Cooke
-	Developer
-	Mapper
-	
-Kodi
-Phantombeta
-RaveYard
-RicardoLuis0
-	Coding Support
-
-22i
-	Models - https://github.com/22i/minecraft-voxel-blender-models
-
-Mojang
-	Minecraft Sounds & Textures
+See Credits.txt
 	
 
 

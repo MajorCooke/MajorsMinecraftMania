@@ -1,0 +1,16 @@
+Class TM_RelationData
+{
+	static TM_RelationData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_RelationData: Expected a TM_JsonElement, got null");
+		let obj = TM_JsonObject(elem);
+		if (!obj)	ThrowAbortException("TM_RelationData: Expected a TM_JsonObject, got "..elem.GetClassName());
+		return new('TM_RelationData').ProcessObject(obj);
+	}
+	
+	private TM_RelationData ProcessObject(TM_JsonObject obj)
+	{
+		
+		return self;
+	}
+}

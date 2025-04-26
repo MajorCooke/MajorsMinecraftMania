@@ -1,0 +1,22 @@
+Class TM_UpgradeData
+{
+	Map<Name, Int> Cost;		// Needs these items to purchase.
+	Map<Name, Int> Required;	// Like Cost but doesn't take items away.
+	Map<Name, Int> Restrictors; // Prevents certain selections under certain conditions.
+}
+
+extend Class TM_UpgradeData
+{
+	static TM_UpgradeData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)		ThrowAbortException("TM_UpgradeData: Expected a TM_JsonObject, got null");
+		let obj = TM_JsonObject(elem);
+		if (!obj)		ThrowAbortException("TM_UpgradeData: Expected a TM_JsonObject, got "..elem.GetClassName());
+		return new('TM_UpgradeData').ProcessObject(obj);
+	}
+	
+	private TM_UpgradeData ProcessObject(TM_JsonObject obj)
+	{
+		return self;
+	}
+}

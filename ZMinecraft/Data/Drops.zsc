@@ -1,0 +1,29 @@
+
+Class TM_DropData
+{
+	Name 	ID,		// Name of thing to spawn
+			Type;	// Damagetype needed to drop this thing
+	int Count[2], 	// drop quantity min/max
+		Amount[2]; 	// amount min/max of item (if applicable, i.e. ammo)
+		
+	void Init()
+	{
+		ID = Type = '';
+		for (int i = 0; i < 2; i++)
+		{	Count[i] = Amount[i] = 0;	}
+	}
+		
+	static TM_DropData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_DropData: element is null");
+		let obj = TM_JsonObject(elem);
+		if (!obj)	ThrowAbortException("TM_DropData: expected object, got "..elem.GetClassName());
+		return new('TM_DropData').ProcessObject(obj);
+	}
+	
+	private TM_DropData ProcessObject(TM_JsonObject obj)
+	{
+		Init();
+		return self;
+	}
+}

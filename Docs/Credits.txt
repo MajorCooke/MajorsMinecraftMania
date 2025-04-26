@@ -1,0 +1,38 @@
+Triple M (Major's Minecraft Mania)
+A mod that spawns in various Minecraft enemies into your DooM maps.
+
+*** THE TEAM ***
+
+Major Cooke
+	Developer
+	Mapper
+	
+*** CREDITS ***
+
+Kodi
+Phantombeta
+RaveYard
+	Coding Support
+	
+Jay
+	ZJSON - https://github.com/RicardoLuis0/ZJSON
+
+22i
+	Models - https://github.com/22i/minecraft-voxel-blender-models
+
+*** SPECIAL THANKS ***
+
+Notch & Mojang
+	For making Minecraft
+	
+All coders/contributers of (G)ZDoom & VKDoom
+	For an amazing source port
+	
+Without these, this mod couldn't exist.
+
+-----
+
+I hope you have fun with it, and remember to report bugs on Github!
+https://github.com/MajorCooke/MajorsMinecraftMania/issues
+
+- Major Cooke

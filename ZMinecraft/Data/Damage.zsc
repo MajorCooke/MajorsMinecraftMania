@@ -1,0 +1,53 @@
+
+
+Class TM_DamageTypeData
+{
+	Name Type;		// Damage type to affect
+	double Factor;
+	
+	static TM_DamageTypeData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_DamageTypeData: Expected TM_JsonElement, got null");
+		let obj = TM_JsonObject(elem)
+		if (!obj)	ThrowAbortException("TM_DamageTypeData: Expected TM_JsonElement, got "..elem.GetClassName());
+		return new('TM_DamageTypeData').ProcessObject(obj);
+	}
+	
+	private TM_DamageTypeData ProcessObject(TM_JsonObject obj)
+	{
+		return self;
+	}
+}
+
+// Used for specifying how much damage a particular ghoul can do to a particular
+// enemy, and how much others can do to it. Includes damage types as well.
+/*
+Class TM_DamageData
+{
+	Name Thing;		// The thing to affect the damage around.
+	Name Ghoul;		// Actor this affects
+	bool Source,	// If true, affects all attacks coming from this thing, otherwise is exclusive. Ignored if !giving.
+		Giving,		// If true, affects outgoing damage. Otherwise, affects incoming
+		Children,	// Applies to all classes inheriting from Thing.
+		Replacers,	// Applies to all classes replacing Thing.
+	double Factor;	// How much to multiply the damage by.
+	int Damage;		// if > -2, straight up replaces it.
+	
+	void Init()
+	{
+	}
+	
+	static TM_DamageData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_DamageData: Expected TM_JsonElement, got null");
+		let obj = TM_JsonObject(elem)
+		if (!obj)	ThrowAbortException("TM_DamageData: Expected TM_JsonElement, got "..elem.GetClassName());
+		return new('TM_DamageData').ProcessObject(obj);
+	}
+	
+	private TM_DamageData ProcessObject(TM_JsonObject obj)
+	{
+		return self;
+	}
+}
+*/

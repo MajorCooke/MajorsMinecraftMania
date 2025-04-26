@@ -1,0 +1,78 @@
+/* 
+Primary container for all data.
+The file structure is as such:
+
+* UpgradeData
+* GhoulData
+* --> DamageData (specific to a ghoul)
+* --> DropData
+* --> TraitData
+*/
+Class TM_Data
+{
+	Name ModID;
+	Map<Name, TM_UpgradeData>	UpgradeData;
+	Map<Name, TM_ActorData>		ActorData;
+	
+	static TM_Data Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)		ThrowAbortException("TM_Data: Expected a TM_JsonObject, got null");
+		
+		let obj = TM_JsonObject(elem);
+		if (!obj)		ThrowAbortException("TM_Data: Expected a TM_JsonObject, got "..elem.GetClassName());
+		
+		return new('TM_Data').ProcessObject(obj);
+	}
+	
+	private TM_Data ProcessObject(TM_JsonObject obj)
+	{
+		// First make sure there is a ModID present.
+		JsonElement eModID = obj.Get("mod_id");
+		if (!eModID)	ThrowAbortException("mod_id is missing. Add it with a unique name to fix.");
+		else
+		{
+			let tModID = TM_JsonString(eModID);
+			if (!tModID)	ThrowAbortException("mod_id: Expected a TM_JsonString, got "..eModID.getClassName());
+			ModID = tModID.s;
+		}
+		
+		// "Upgrades" array
+		
+		// "Actors" array
+		TM_JsonElement eActors = obj.Get("actors");
+		if (eActors)
+		{
+			let arr = TM_JsonArray(eActors);
+			if (!arr)	ThrowAbortException("actors: Expected TM_JsonArray, got "..eActors.getClassName());
+			
+			// Now iterating through each object defined.
+			for (uint i = 0; i < arr.Size(); i++)
+			{	// TM_ActorData will handle the rest of the processing.
+				TM_ActorData ad = TM_ActorData.Deserialize(arr.Get(i));
+				if (ad)				ActorData.Insert(ad.ID, ad);
+			}
+		}
+		return self;
+	}
+}
+
+Class TM_ActorData
+{
+	Map<Name, TM_DamageTypeData>	DamageTypeData;
+	Map<Name, TM_DropData>			DropData;
+	Map<Name, TM_RelationData>		RelationData;
+	
+	static TM_ActorData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_ActorData: Expected a TM_JsonElement, got null");
+		let obj = TM_JsonObject(elem);
+		if (!obj)	ThrowAbortException("TM_ActorData: Expected a TM_JsonObject, got "..elem.GetClassName());
+		return new('TM_ActorData').ProcessObject(obj);
+	}
+	
+	private TM_ActorData ProcessObject(TM_JsonObject obj)
+	{
+		TM_JsonElement elem = obj.Get
+		return self;
+	}
+}

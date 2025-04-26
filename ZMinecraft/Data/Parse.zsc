@@ -1,0 +1,78 @@
+// Parser File
+
+// This is where all the primary parsing takes place. This reads in and processes
+// all data, and then sends it off for other areas to handle them.
+
+extend Class TM_EventStatic
+{
+//	ExampleOptions example_data;
+	private TM_Data JData;
+	override void OnRegister() //ParseJSON()
+	{
+		if (JData)	JData.Destroy();
+		JData = null;
+		
+		String lname = "/TRIPLEM.json");
+		int lump = Wads.CheckNumForFullName(lname);
+		if (lump == -1)
+		{
+			Console.Printf("\cg%s not found! \ciUsing internal values instead.", lname);
+			return;
+		}
+		
+		uint errcount = 0;
+		
+		Array<TM_Data> datas;
+		while (lump > -1)
+		{
+			TM_JsonElementOrError data = TM_Json.Parse(Wads.ReadLump(lump++),false);
+			if (data is "TM_JsonError")
+			{
+				Console.Printf(lname..": "..TM_JsonError(data).what);
+				errcount++;
+			}
+			else if (errcount < 1 && data is "TM_JsonElement") 
+			{
+				let dat = TM_Data.Deserialize(TM_JsonElement(data));
+				if (dat)
+				{
+					if (dat.ModID == 'Triple M')
+					{
+						JData = dat;
+						datas.Insert(0, dat);
+					}
+					else datas.Push(dat);
+				}
+			}
+		}
+		
+		if (errcount)
+		{ 
+			ThrowAbortException(""..errcount.." errors while parsing "..lname);
+			return;
+		}
+		
+		if (datas.Size() < 1)
+		{	Console.Printf("Nothing added. Using internal values."); return;	}
+		
+		Array<Name> IDs;
+		foreach (data : datas)
+		{
+			if (data.ModID == '' || data.ModID == ' ' || data.ModID == 'None' ||				
+				IDs.Find(data.ModID) != IDs.Size())
+				ThrowAbortException(""..data.ModID..": mod_id must be present, unique and not conflicting with other mod_ids");
+			IDs.Push(data.ModID);
+			
+			if (JData && JData == data)
+				continue;
+				
+			HandleAddon(data);
+		}
+	}
+	
+	private void HandleAddon(TM_Data data)
+	{
+		if (!data)	return;
+		
+	}
+}
