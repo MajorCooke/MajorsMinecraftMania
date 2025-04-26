@@ -62,13 +62,25 @@ extend class TM_Handler
 	
 	private void SetSecNum(out Array<Int> arr, int id)
 	{
+		arr.Push(id);
+	}
+	/*
+	{
 		int index = TM_Global.BinarySearch(arr, id, true);
 		
 		if (index >= arr.Size())
+		{
+		//	Console.Printf("Pushed %d", id);
 			arr.Push(id);
-		else if (arr[index] != id)
+		}
+		
+		if (arr[index] != id)
+		{
+			Console.Printf("Inserted %d at %d", id, index);
 			arr.Insert(index, id);
+		}
 	}
+	*/
 	
 	private void SetSecAABB(out Array<TM_Rect> arr, Sector s)
 	{
@@ -165,10 +177,9 @@ extend class TM_Handler
 	// Getters
 	//==========================================================================
 	
-	clearscope bool CheckZ(Array<Double> Spots, Vector3 pos, Sector sec = null)
+	clearscope bool CheckZ(Vector3 pos, Sector sec = null)
 	{
 		if (!sec) sec = level.PointInSector(pos.XY);
-		Spots.Clear();
 		double fz = sec.floorplane.ZAtPoint(pos.XY);
 		double cz = sec.ceilingplane.ZAtPoint(pos.XY);
 		
@@ -199,34 +210,34 @@ extend class TM_Handler
 			return false;
 		if (SpawnSectors.Size() > 0)
 		{
-			
 			return IsSectorAllowed(index, true);
 		}
 		return true;
-	//	return (!IsSectorBanned(index) && IsSectorAllowed(index, true)); 
 	}
 	
-	clearscope bool IsSectorAllowed(int index, bool sizecheck = false) const
-	{	return ((sizecheck && SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) != SpawnSectors.Size()));	}
+	clearscope bool IsSectorAllowed(int index, bool sizecheck = true) const
+	{	return ((sizecheck && SpawnSectors.Size() < 1) || SpawnSectors.Find(index) < SpawnSectors.Size());	}
+//	{	return ((sizecheck && SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) != SpawnSectors.Size()));	}
 	
 	clearscope bool IsSectorBanned(int index) const
-	{
-		
-		return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) != BannedSectors.Size());
-	//	return (index < 0 || BannedSectors.Find(index) < BannedSectors.Size());		
-	}
+	{	return (index < 0 || BannedSectors.Find(index) < BannedSectors.Size());	}
+//	{	return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) >= BannedSectors.Size());	}
+
 	
 	clearscope bool IsRegionBanned(Vector3 pos)
 	{
+		// If in a blacklisted region, it's banned.
 		if (BannedRegions.Size() > 0)
 			foreach (reg : BannedRegions)
-				if (reg && !reg.ThreeD && reg.InRange(pos))
+				if (reg && reg.InRange(pos))
 					return true;
+					
+		// Not blacklisted, now make sure we're in a whitelist zone if any are present.
 		if (SpawnRegions.Size() > 0)
 		{
 			foreach (reg : SpawnRegions)
-			{
-				if (reg && !reg.ThreeD && reg.InRange(pos))
+			{	// Not banned.
+				if (reg && reg.InRange(pos))
 					return false;
 			}
 			return true;
@@ -234,13 +245,13 @@ extend class TM_Handler
 		return false;
 	}
 	
-	clearscope int CheckRegions(Vector3 pos, bool force3d = false) const
+	clearscope int CheckRegions(Vector3 pos) const
 	{
 		if (BannedRegions.Size() > 0)
 		{
 			foreach(reg : BannedRegions)
 			{
-				if (reg && reg.InRange(pos, force3d)) 
+				if (reg && reg.InRange(pos)) 
 					return TMF_BLACK;
 			}
 		}
@@ -251,7 +262,7 @@ extend class TM_Handler
 			
 			foreach(reg : SpawnRegions)
 			{
-				if (reg && reg.InRange(pos, force3d))
+				if (reg && reg.InRange(pos))
 					return TMF_WHITE;
 			}
 		}

@@ -230,12 +230,13 @@ extend class TM_Handler
 				
 				
 				Sector s = Level.PointInSector(next.XY);
-				if (!s || !CheckSector(s.Index()) || IsRegionBanned(next)) 
-					continue;
 				
 				// Don't spawn in sectors blocking player respawns.
 				// Don't allow spawning inside skyboxes.
 				if ((s.Flags & Sector.SECF_NORESPAWN) || s.GetUDMFInt("user_nospawn") > 0)
+					continue;
+				
+				if (!s || !CheckSector(s.Index())) 
 					continue;
 				
 				
@@ -251,13 +252,10 @@ extend class TM_Handler
 							tz = s.ceilingplane.ZAtPoint(next.XY), //s.HighestCeilingAt(next.XY);
 							cz = tz;
 					
-					
-					
-					
-					// Won't fit regardless of 3d floors, so skip it.
+					// Can't fit, skip it.
 					if (abs(tz - fz) < MoCue.Height)
 						continue;
-						
+					
 					TryZ.Push(fz);
 					
 					// Record swimmable floors. Those that are immune to drowning
@@ -292,14 +290,14 @@ extend class TM_Handler
 						
 						if (prevz ~== cz)	break;
 						
-						if (!CheckRegions((next.XY, cz)))
+						if (IsRegionBanned((next.XY, cz)))
 							continue;
 						
 						if (xf)	ss = xf.model;
 						
 						// This array only contains contents if the mob can take
 						// damage from drowning or sectors. Better than calling
-						// TryMove and SetZ a bunch of times. 
+						// TryMove and SetZ many times. 
 						for (int m = 0; m < XSwim.Size(); m++)
 						{
 							ss = XSwim[m].XSector;
@@ -330,19 +328,24 @@ extend class TM_Handler
 					
 					// Go through and remove all Z positions that are outside
 					// the range of ZMin and ZMax.
-					if (s.GetUDMFInt("user_TMLimitZ") > 0)
+					bool limitz = (s.GetUDMFInt("user_TMLimitZ") > 0);
+					double zmin, zmax;
+					if (limitz)
 					{
-						int zmin = s.GetUDMFInt("user_TMZMin");
-						int zmax = s.GetUDMFInt("user_TMZMax");
-						
-						int j = 0;
-						for (int i = 0; i < TryZ.Size(); i++)
+						zmin = s.GetUDMFFloat("user_TMZMin");
+						zmax = s.GetUDMFFloat("user_TMZMax");
+					}
+					for (int i = 0; i < TryZ.Size(); i++)
+					{
+						double trz = TryZ[i];
+						if ((limitz && (trz < zmin || trz > zmax)) || IsRegionBanned((next.XY, trz)))
 						{
-							double try = TryZ[i];
-							if (try >= zmin && try <= zmax)
-								TryZ[j++] = try;
+							TryZ.Delete(i--);
 						}
 					}
+					// No good Z spots so skip it.
+					if (TryZ.Size() < 1)
+						continue;
 					
 					TM_Global.SetPos(MoCue, next, false);
 					{
@@ -373,7 +376,7 @@ extend class TM_Handler
 				}
 				else
 				{
-					if (CheckSectorDamage(s))
+					if (CheckSectorDamage(s) || IsRegionBanned(next))
 						continue;
 					
 					// Outside of spawn range from players.

@@ -260,11 +260,8 @@ Class TM_Rect
 		LoV.Y = min(LoV.Y, lo.Y, hi.Y);
 		HiV.X = max(HiV.X, lo.X, hi.X);
 		HiV.Y = max(HiV.Y, lo.Y, hi.Y);
-		if (ThreeD)
-		{
-			LoV.Z = min(LoV.Z, lo.Z, hi.Z);
-			HiV.Z = max(HiV.Z, lo.Z, hi.Z);
-		}
+		LoV.Z = min(LoV.Z, lo.Z, hi.Z);
+		HiV.Z = max(HiV.Z, lo.Z, hi.Z);
 	}
 	
 	void Set(Vector3 lo, Vector3 hi)
@@ -273,24 +270,13 @@ Class TM_Rect
 		HiV.X = max(lo.X, hi.X);
 		LoV.Y = min(lo.Y, hi.Y);
 		HiV.Y = max(lo.Y, hi.Y);
-		if (ThreeD)
-		{			
-			LoV.Z = min(lo.Z, hi.Z);
-			HiV.Z = max(lo.Z, hi.Z);
-		}
-		else
-		{
-			LoV.Z = 0;
-			HiV.Z = 0;
-		}
+		LoV.Z = min(lo.Z, hi.Z);
+		HiV.Z = max(lo.Z, hi.Z);
 	}
 	
-	clearscope bool, bool, bool, double, double InRange(Vector3 p, bool force3d = false) const
+	clearscope bool InRange(Vector3 p) const
 	{
-		bool xy = InXY(p.XY);
-		bool z = InZ(p.Z, force3d);
-		bool tres = (xy && z);
-		return tres, InXY(p.XY), InZ(p.Z, force3d), LoV.Z, HiV.Z;
+		return InXY(p.XY) && InZ(p.Z);
 	}
 	
 	clearscope bool InXY(Vector2 p) const
@@ -302,10 +288,9 @@ Class TM_Rect
 			p.y <= HiV.y);
 	}
 	
-	clearscope int InZ(double z, bool force3d = false) const
+	clearscope bool InZ(double z) const
 	{
-		if (!ThreeD && !force3d)	return -1;
-		return (z >= LoV.Z && z <= HiV.Z);
+		return (!ThreeD || (z >= LoV.Z && z <= HiV.Z));
 	}
 	
 	clearscope Vector3, Vector3 GetAABB() const
