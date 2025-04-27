@@ -25,6 +25,25 @@ Class TM_Global play
 		
 		return ((exact) ? Count : ((lo == Count || (item < arr[lo])) ? lo : lo + 1));
 	}
+	
+	clearscope static void BubbleSort(out Array<int> arr)
+	{
+		if (arr.Size() < 2)	return;
+		
+		int i, j;
+		for (j = arr.Size() - 1; j > 0; j--)
+		{
+			for (i = 0; i < j; i++)
+			{
+				if (arr[i] > arr[i+1])
+				{
+					int t = arr[i];
+					arr[i] = arr[i+1];
+					arr[i+1] = t;
+				}
+			}
+		}
+	}
 
 	//==========================================================================
 	// Damage Functions

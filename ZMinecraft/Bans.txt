@@ -62,26 +62,9 @@ extend class TM_Handler
 	
 	private void SetSecNum(out Array<Int> arr, int id)
 	{
-		arr.Push(id);
-	}
-	/*
-	{
-		int index = TM_Global.BinarySearch(arr, id, true);
-		
-		if (index >= arr.Size())
-		{
-		//	Console.Printf("Pushed %d", id);
+		if (arr.Find(id) >= arr.Size())
 			arr.Push(id);
-		}
-		
-		if (arr[index] != id)
-		{
-			Console.Printf("Inserted %d at %d", id, index);
-			arr.Insert(index, id);
-		}
 	}
-	*/
-	
 	private void SetSecAABB(out Array<TM_Rect> arr, Sector s)
 	{
 		if (!s)	return;
@@ -210,18 +193,16 @@ extend class TM_Handler
 			return false;
 		if (SpawnSectors.Size() > 0)
 		{
-			return IsSectorAllowed(index, true);
+			return IsSectorAllowed(index);
 		}
 		return true;
 	}
 	
 	clearscope bool IsSectorAllowed(int index, bool sizecheck = true) const
-	{	return ((sizecheck && SpawnSectors.Size() < 1) || SpawnSectors.Find(index) < SpawnSectors.Size());	}
-//	{	return ((sizecheck && SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) != SpawnSectors.Size()));	}
+	{	return ((SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) < SpawnSectors.Size()));	}
 	
 	clearscope bool IsSectorBanned(int index) const
-	{	return (index < 0 || BannedSectors.Find(index) < BannedSectors.Size());	}
-//	{	return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) >= BannedSectors.Size());	}
+	{	return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) < BannedSectors.Size());	}
 
 	
 	clearscope bool IsRegionBanned(Vector3 pos)
@@ -393,7 +374,11 @@ extend class TM_Handler
 					
 	//	Ban3DFloorModels();
 		if (Checksum != '')
+		{
 			SetupSpawnBox();
+			TM_Global.BubbleSort(SpawnSectors);
+			TM_Global.BubbleSort(BannedSectors);
+		}
 	}
 	
 	// The spawn box is simply for fast XY checking inside of a whitelist.
