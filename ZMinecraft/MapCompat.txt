@@ -93,8 +93,9 @@ extend class TM_Handler
 			654, 579, 1617, 1616, 1006
 		};
 		double inf = double.max;
-		SpawnRegion(-8192, -2688, 6656, 8192);
-		BanRegion3D(512,5600,192, 1856,7360, inf);
+		SpawnRegion(-8192, -2688, 6656, 8192); // Main map area
+		SpawnRegion(-16512, 2496,-14272,4032); // Garage
+		BanRegion3D(512,5632,192, 1856,7360, inf);
 		BanRegion3D(512,-2176,224, 1856,7360, inf);
 		BanRegion3D(1328,-2176,224 ,2176,-1792,inf);
 		for (int i = 0; i < sec.Size(); i++)

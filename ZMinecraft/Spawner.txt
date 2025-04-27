@@ -194,10 +194,10 @@ extend class TM_Handler
 		bool drowndmg = MoCue.CanDrown();
 		bool secdmg = MoCue.CanSectorDamage();
 		
-		
-		
+	//	int selrng = random[rng](0,MAXPLAYERS);
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
+		//	int sr = (i + selrng) % MAXPLAYERS;
 			if (!playeringame[i] || !players[i].mo)	continue;
 			Actor plr = players[i].mo;
 			if (!plr)	
@@ -205,8 +205,6 @@ extend class TM_Handler
 				if (TMV_Debug == 24)	Console.Printf("-1");
 				continue;
 			}
-				
-			
 			double ang = irandom(0,_Div) * _AngleInc;
 			
 			int j = irandom(0,_AngleInc);
@@ -228,7 +226,6 @@ extend class TM_Handler
 					continue;
 				}
 				
-				
 				Sector s = Level.PointInSector(next.XY);
 				
 				// Don't spawn in sectors blocking player respawns.
@@ -247,7 +244,6 @@ extend class TM_Handler
 				if (xcount > 0)
 				{
 					Array<double> TryZ; TryZ.Clear();
-					
 					double	fz = s.floorplane.ZAtPoint(next.XY), //s.LowestFloorAt(next.XY),
 							tz = s.ceilingplane.ZAtPoint(next.XY), //s.HighestCeilingAt(next.XY);
 							cz = tz;
@@ -255,7 +251,8 @@ extend class TM_Handler
 					// Can't fit, skip it.
 					if (abs(tz - fz) < MoCue.Height)
 						continue;
-					
+						
+					TryZ.Push(next.Z);
 					TryZ.Push(fz);
 					
 					// Record swimmable floors. Those that are immune to drowning
@@ -283,15 +280,13 @@ extend class TM_Handler
 					bool liq = false;
 					do
 					{
+						liq = false;
 						prevz = cz;						
 						Sector ss; F3DFloor xf;
 						[cz, ss, xf] = s.NextLowestFloorAt(next.X, next.Y, cz - double.equal_epsilon, 
-							FFCF_NOPORTALS|FFCF_3DRESTRICT);
+							FFCF_3DRESTRICT);
 						
 						if (prevz ~== cz)	break;
-						
-						if (IsRegionBanned((next.XY, cz)))
-							continue;
 						
 						if (xf)	ss = xf.model;
 						
@@ -335,12 +330,12 @@ extend class TM_Handler
 						zmin = s.GetUDMFFloat("user_TMZMin");
 						zmax = s.GetUDMFFloat("user_TMZMax");
 					}
-					for (int i = 0; i < TryZ.Size(); i++)
+					for (int ii = 0; ii < TryZ.Size(); ii++)
 					{
-						double trz = TryZ[i];
-						if ((limitz && (trz < zmin || trz > zmax)) || IsRegionBanned((next.XY, trz)))
+						double trz = TryZ[ii];
+						if ((limitz && (trz < zmin || trz > zmax)) || IsRegionBanned((next.X, next.Y, trz)))
 						{
-							TryZ.Delete(i--);
+							TryZ.Delete(ii--);
 						}
 					}
 					// No good Z spots so skip it.
@@ -374,7 +369,7 @@ extend class TM_Handler
 					}
 					
 				}
-				else
+				else // No 3D floors present
 				{
 					if (CheckSectorDamage(s) || IsRegionBanned(next))
 						continue;

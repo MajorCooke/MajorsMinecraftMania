@@ -290,7 +290,8 @@ Class TM_Rect
 	
 	clearscope bool InZ(double z) const
 	{
-		return (!ThreeD || (z >= LoV.Z && z <= HiV.Z));
+		if (!ThreeD)	return true;
+		return (z >= LoV.Z && z <= HiV.Z);
 	}
 	
 	clearscope Vector3, Vector3 GetAABB() const
