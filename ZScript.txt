@@ -1,6 +1,6 @@
 //
 //...
-version "4.10"
+version "4.14"
 
 #include "ZMinecraft/Libraries/Include.txt"
 
@@ -43,3 +43,6 @@ version "4.10"
 
 // Blocks (including tile entities)
 #include "ZMinecraft/Blocks/Block.txt"
+
+// ZJSON parsing
+#include "ZMinecraft/Data/Include.zsc" 

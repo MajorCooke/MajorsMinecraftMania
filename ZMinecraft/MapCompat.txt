@@ -19,7 +19,14 @@ extend class TM_Handler
 		SpawnSectors.Clear();
 		SpawnBox = null;
 		WhiteList = false;
-
+		/*
+		if (!LoadBans())
+		{
+			checksum = '';
+			Console.Printf("No map found.");
+		}
+		*/
+		
 		Switch(Checksum)
 		{
 		//	Case '6D1D6927156FEE4B39AABA974CDE2866': // Winter's Fury 2023-12-07.pk3 map01:
@@ -47,6 +54,7 @@ extend class TM_Handler
 				break;
 			}
 		}
+		
 		PostSectorSetup();
 	}
 	
@@ -61,6 +69,7 @@ extend class TM_Handler
 	
 	private void DoBigCity()
 	{
+		
 		static const int sec[] =
 		{
 			1553, 1563, 1587, 1676, 1805, 1815, 1890, 1891, 1892, 1893, 1649, 
@@ -100,6 +109,7 @@ extend class TM_Handler
 		BanRegion3D(1328,-2176,224 ,2176,-1792,inf);
 		for (int i = 0; i < sec.Size(); i++)
 			BanSecNum(sec[i]);
+		
 	}
 	
 	private void DoWintersFuryMap01()
@@ -257,4 +267,5 @@ extend class TM_Handler
 		// Voodoo doll regions
 		BanRegion(-2528,-9216,-2464,-7808);
 	}
+	
 }

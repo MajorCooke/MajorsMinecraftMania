@@ -1,69 +1,33 @@
 // See MapCompat.txt for all current maps listed so far.
-extend class TM_Handler
+
+mixin Class TM_SpawnGoverning
 {
-	private Name			Checksum;
-	private bool 			MapEntry, VoidCheck, Whitelist, Blacklist;
-	private Array<Int> 		BannedSectors, SpawnSectors;
-	private Array<TM_Rect>	BannedRegions, SpawnRegions;
-	private Array<TM_Poly>	BannedPolys, SpawnPolys;
-	private TM_Rect			SpawnBox;
-	private TM_Poly			CurPoly;
-	private int				PolyCount; // easier tracking
+	internal readonly Array<TM_Rect> 	BannedRegions, SpawnRegions;
+	internal readonly Array<Int> 		BannedSectors, SpawnSectors;
 	
-	
-	enum ETMPoly
+	private void ClearAll()
 	{
-		TMPOLY_SPAWN = 1,
-		TMPOLY_BAN = 0,
-		
-		TMF_WHITE = TMPOLY_SPAWN,	// Can spawn in these areas
-		TMF_BLACK = TMPOLY_BAN,		// Cannot spawn
-		TMF_GREY = 	2				// Conditional spawning (Z height checks)
-	};
-	
-	private void PolyError(int type)
-	{
-		String err = "ERROR: ";
-		Switch(type)
-		{
-			Case 1:	err = err.."Must call FinishPoly() first!"; break;
-			Case 2:	err = err.."Must call MakePoly() first!"; break;
-			Case 3:	err = err.."FinishPoly must have an ETMPoly constant!"; break;
-		}
-		Console.Printf("(%d) %s", PolyCount, err);
-	}
-	
-	// Polygon creation
-	private void MakePoly()
-	{
-		if (CurPoly) {	PolyError(1);	return;	}
-		CurPoly = TM_Poly.Create();
-	}
-	
-	private void AddVert(int id)
-	{
-		if (!CurPoly) {	PolyError(2); return;	}
-		CurPoly.AddVert(id);
-	}
-	
-	private void FinishPoly(out Array<TM_Poly> arr)
-	{
-		if (!CurPoly)
-		{	PolyError(1); return;	}
-		arr.Push(CurPoly);
-		CurPoly = null;
-		PolyCount++;
+		BannedRegions.Clear();
+		BannedSectors.Clear();
+		SpawnRegions.Clear();
+		SpawnSectors.Clear();
 	}
 	
 	// Whitelisting limits where things can spawn and are checked first. Further
 	// restrictions can be added with Blacklisting to save time.
-	private void SetSector(out Array<Int> arr, Sector s)
-	{	if (s) SetSecNum(arr, s.Index());	}
+	private void SetSector(out Array<Int> arr, Sector s, bool add = true)
+	{	if (s) SetSecNum(arr, s.Index(), add);	}
 	
-	private void SetSecNum(out Array<Int> arr, int id)
+	private void SetSecNum(out Array<Int> arr, int id, bool add = true)
 	{
-		if (arr.Find(id) >= arr.Size())
-			arr.Push(id);
+		let pos = arr.Find(id);
+		if (add)
+		{
+			if (pos >= arr.Size())
+				arr.Push(id);
+		}
+		else if (pos < arr.Size())
+			arr.Delete(pos);
 	}
 	private void SetSecAABB(out Array<TM_Rect> arr, Sector s)
 	{
@@ -140,9 +104,9 @@ extend class TM_Handler
 	
 	private bool BanSecNum(int i)
 	{
+		SetSecNum(SpawnSectors, i, false); // remove from whitelist
 		if (IsSectorBanned(i))	return false;
-		Sector s = level.Sectors[i];
-		SetSecNum(BannedSectors, i);
+		SetSecNum(BannedSectors, i);		// add to blacklist
 		return true;
 	}
 	
@@ -156,32 +120,32 @@ extend class TM_Handler
 	private void SpawnRegionVec(Vector3 lo, Vector3 hi, bool _3d = false)
 	{	SetRegionVec(SpawnRegions, lo, hi, _3d);	}
 	
+	private bool SpawnSector(Sector s)
+	{
+		if (!s)		return false;
+		return SpawnSecNum(s.Index());
+	}
+	
+	private bool SpawnSecNum(int i)
+	{
+		SetSecNum(BannedSectors, i, false); // remove from blacklist
+		if (IsSectorAllowed(i))	return false;
+		SetSecNum(SpawnSectors, i);			// add to whitelist
+		return true;
+	}
+	
+	// clears the sector from both
+	private void ClearSecNum(int i)
+	{
+		SetSecNum(BannedSectors, i, false);
+		SetSecNum(SpawnSectors, i, false);
+	}
+	
 	//==========================================================================
 	// Getters
 	//==========================================================================
 	
-	clearscope bool CheckZ(Vector3 pos, Sector sec = null)
-	{
-		if (!sec) sec = level.PointInSector(pos.XY);
-		double fz = sec.floorplane.ZAtPoint(pos.XY);
-		double cz = sec.ceilingplane.ZAtPoint(pos.XY);
-		
-		if (Blacklist)
-			foreach(reg : BannedRegions)
-				if (reg && !reg.InRange(pos))
-					return false;
-		
-		if (Whitelist)
-		{
-			foreach(reg : SpawnRegions)
-			{
-				if (reg && reg.InRange(pos))
-					return true;
-			}
-			return false;
-		}
-		return true;
-	}
+	
 	
 	//==========================================================================
 	// Checkers
@@ -225,30 +189,66 @@ extend class TM_Handler
 		}
 		return false;
 	}
+}
+
+extend class TM_Handler
+{
+	mixin TM_SpawnGoverning;
+	private Name			Checksum;
+	private bool 			MapEntry, VoidCheck, Whitelist, Blacklist;
+	private Array<TM_Poly>	BannedPolys, SpawnPolys;
+	private TM_Rect			SpawnBox;
+	private TM_Poly			CurPoly;
+	private int				PolyCount; // easier tracking
 	
-	clearscope int CheckRegions(Vector3 pos) const
+	
+	enum ETMPoly
 	{
-		if (BannedRegions.Size() > 0)
+		TMPOLY_SPAWN = 1,
+		TMPOLY_BAN = 0,
+		
+		TMF_WHITE = TMPOLY_SPAWN,	// Can spawn in these areas
+		TMF_BLACK = TMPOLY_BAN,		// Cannot spawn
+		TMF_GREY = 	2				// Conditional spawning (Z height checks)
+	};
+	
+	private void PolyError(int type)
+	{
+		String err = "ERROR: ";
+		Switch(type)
 		{
-			foreach(reg : BannedRegions)
-			{
-				if (reg && reg.InRange(pos)) 
-					return TMF_BLACK;
-			}
+			Case 1:	err = err.."Must call FinishPoly() first!"; break;
+			Case 2:	err = err.."Must call MakePoly() first!"; break;
+			Case 3:	err = err.."FinishPoly must have an ETMPoly constant!"; break;
 		}
-		if (SpawnRegions.Size() > 0)
-		{
-			if (SpawnBox && !SpawnBox.InRange(pos))
-				return TMF_BLACK; // Outside whitelist, banned
-			
-			foreach(reg : SpawnRegions)
-			{
-				if (reg && reg.InRange(pos))
-					return TMF_WHITE;
-			}
-		}
-		return TMF_GREY;
+		Console.Printf("(%d) %s", PolyCount, err);
 	}
+	
+	// Polygon creation
+	private void MakePoly()
+	{
+		if (CurPoly) {	PolyError(1);	return;	}
+		CurPoly = TM_Poly.Create();
+	}
+	
+	private void AddVert(int id)
+	{
+		if (!CurPoly) {	PolyError(2); return;	}
+		CurPoly.AddVert(id);
+	}
+	
+	private void FinishPoly(out Array<TM_Poly> arr)
+	{
+		if (!CurPoly)
+		{	PolyError(1); return;	}
+		arr.Push(CurPoly);
+		CurPoly = null;
+		PolyCount++;
+	}
+	
+	
+	
+	
 	
 	
 	clearscope int CheckPoly(Vector3 pos) const
@@ -375,7 +375,7 @@ extend class TM_Handler
 	//	Ban3DFloorModels();
 		if (Checksum != '')
 		{
-			SetupSpawnBox();
+	//		SetupSpawnBox();
 			TM_Global.BubbleSort(SpawnSectors);
 			TM_Global.BubbleSort(BannedSectors);
 		}

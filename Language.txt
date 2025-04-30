@@ -1,7 +1,7 @@
 [enu default]
 
-TMM_RELEASE_VERSION = 	"Alpha 0.3";
-TMM_RELEASE_DATE = 		"May 6, 2022";
+TMM_RELEASE_VERSION = 	"Alpha 0.32";
+TMM_RELEASE_DATE = 		"August 4, 2023";
 
 TMM_OPTIONS_TITLE = "Triple M Options";
 

@@ -112,7 +112,7 @@ server bool TMV_NoSkillFactor = true;
 // Creeper
 //------------------------------------------------------------------------------
 
-// Creepers always explode on death
+// Creepers always explode on death (void damage never does)
 server bool TMV_CreeperAlwaysBoom = false;
 
 // Creepers explode when killed while charging.

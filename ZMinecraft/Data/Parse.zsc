@@ -2,36 +2,34 @@
 
 // This is where all the primary parsing takes place. This reads in and processes
 // all data, and then sends it off for other areas to handle them.
-
+/*
 extend Class TM_EventStatic
 {
+
 //	ExampleOptions example_data;
-	private TM_Data JData;
-	override void OnRegister() //ParseJSON()
+	private TM_Data JData;	
+	
+	private void ParseData()
 	{
+		
 		if (JData)	JData.Destroy();
 		JData = null;
 		
-		String lname = "/TRIPLEM.json");
-		int lump = Wads.CheckNumForFullName(lname);
-		if (lump == -1)
-		{
-			Console.Printf("\cg%s not found! \ciUsing internal values instead.", lname);
-			return;
-		}
-		
-		uint errcount = 0;
-		
+		String lname = "/TRIPLEM.json";
 		Array<TM_Data> datas;
-		while (lump > -1)
+		int lump = 0;
+		while (true)
 		{
+			lump = Wads.FindLump(lname, lump);
+			if (lump == -1)	break;
+			
 			TM_JsonElementOrError data = TM_Json.Parse(Wads.ReadLump(lump++),false);
 			if (data is "TM_JsonError")
 			{
-				Console.Printf(lname..": "..TM_JsonError(data).what);
-				errcount++;
+				ThrowAbortException(""..WADs.GetLumpFullPath(lump)..": "..TM_JsonError(data).what);
+				return;
 			}
-			else if (errcount < 1 && data is "TM_JsonElement") 
+			else if (data is "TM_JsonElement") 
 			{
 				let dat = TM_Data.Deserialize(TM_JsonElement(data));
 				if (dat)
@@ -44,12 +42,7 @@ extend Class TM_EventStatic
 					else datas.Push(dat);
 				}
 			}
-		}
-		
-		if (errcount)
-		{ 
-			ThrowAbortException(""..errcount.." errors while parsing "..lname);
-			return;
+			lump++;
 		}
 		
 		if (datas.Size() < 1)
@@ -58,8 +51,7 @@ extend Class TM_EventStatic
 		Array<Name> IDs;
 		foreach (data : datas)
 		{
-			if (data.ModID == '' || data.ModID == ' ' || data.ModID == 'None' ||				
-				IDs.Find(data.ModID) != IDs.Size())
+			if (data.ModID == '' || data.ModID == ' ' || IDs.Find(data.ModID) != IDs.Size())
 				ThrowAbortException(""..data.ModID..": mod_id must be present, unique and not conflicting with other mod_ids");
 			IDs.Push(data.ModID);
 			
@@ -68,11 +60,69 @@ extend Class TM_EventStatic
 				
 			HandleAddon(data);
 		}
+		
 	}
 	
 	private void HandleAddon(TM_Data data)
 	{
 		if (!data)	return;
 		
+	}
+	
+}
+*/
+//------------------------------------------------------------------------------
+// Map black/whitelisting spawns is handled in local handlers since the info is
+// only relevant to that specific map.
+
+extend Class TM_Handler
+{
+	private bool LoadBans()
+	{
+		if (!level || checksum == '' || checksum == ' ')
+			return false;
+		
+		String lname = "TM_BANS.json";
+		int lump = 0;
+		bool found = false;
+		while (true)
+		{
+			lump = Wads.FindLumpFullName(lname, lump);
+			if (lump == -1)
+			{
+			//	if (!found)	Console.Printf("\cg"..lname.." not found!");
+			//	else		Console.Printf("\crEnd of search.");
+				break;
+			}
+			
+			TM_JsonElementOrError data = TM_Json.Parse(Wads.ReadLump(lump),false);
+			if (data is "TM_JsonError")
+			{
+				ThrowAbortException(""..WADs.GetLumpFullPath(lump)..": "..TM_JsonError(data).what);
+				return false;
+			}
+			else if (data is "TM_JsonElement") 
+			{
+				let arr = TM_JsonArray(data);				
+				if (!arr)	ThrowAbortException("TM_Bans: Expected first element as array of objects, got "..data.GetClassName());
+				
+				Console.Printf(level.GetChecksum());
+				for (uint i = 0; i < arr.Size(); i++)
+				{
+					let ob = TM_BanData.Deserialize(TM_JsonElement(arr.Get(i)));
+					if (ob)	
+					{
+						BannedRegions.Move(ob.BannedRegions);
+						BannedSectors.Move(ob.BannedSectors);
+						SpawnRegions.Move(ob.SpawnRegions);
+						SpawnSectors.Move(ob.SpawnSectors);
+						found = true;
+						break;
+					}
+				}
+			}
+			lump++;
+		}
+		return found;
 	}
 }

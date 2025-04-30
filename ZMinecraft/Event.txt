@@ -10,7 +10,7 @@ Class TM_EventStatic : StaticEventHandler
 	/*
 	override void OnRegister()
 	{
-		ReadData();
+		ParseJSON();
 	}
 	*/
 	static TM_EventStatic Fetch()
@@ -187,19 +187,7 @@ Class TM_Handler : EventHandler
 	
 	override void WorldLoaded(WorldEvent e)
 	{
-		SEvent = TM_EventStatic.Fetch();
-		if (e.IsReopen)	
-			return;
-		
-		SetupServices();
-		SetupBans();
-		MountList.Clear();
-		Monsters = TM_AArray.Create();
-		Blocks = TM_AArray.Create();
-		StatusEffects = TM_AArray.Create();
-		CreateSpawnList();
-		Timer[S_Spawn] = Second;
-		TMV_AIDifficulty_Prev = TMV_AIDifficulty;
+		DoSetup();
 	}
 		
 	override void WorldThingSpawned(WorldEvent e)
@@ -375,6 +363,21 @@ Class TM_Handler : EventHandler
 		return true;
 	}
 	
+	private void DoSetup()
+	{		
+		SEvent = TM_EventStatic.Fetch();
+		SetupAmmoService();
+		SetupServices();
+		SetupBans();
+		MountList.Clear();
+		Monsters = TM_AArray.Create();
+		Blocks = TM_AArray.Create();
+		StatusEffects = TM_AArray.Create();
+		CreateSpawnList();
+		Timer[S_Spawn] = Second;
+		TMV_AIDifficulty_Prev = TMV_AIDifficulty;	
+	}
+	
 	private int TMV_AIDifficulty_Prev;
 	private bool once;
 	override void WorldTick()
@@ -388,7 +391,7 @@ Class TM_Handler : EventHandler
 		if (!once)
 		{
 			once = true;
-			SEvent = TM_EventStatic.Fetch();
+		//	DoSetup();
 			for (int i = 0; i < MAXPLAYERS; i++)
 			{
 				if (playeringame[i] && players[i].mo)
@@ -401,10 +404,7 @@ Class TM_Handler : EventHandler
 					}
 				}
 			}
-			
-			SetupAmmoService();
 		}
-		
 		if (SEvent)
 			SEvent.WorldTick();
 		else

@@ -1,0 +1,144 @@
+Class TM_BanData
+{
+	mixin TM_SpawnGoverning;
+	static TM_BanData Deserialize(TM_JsonElement elem)
+	{
+		if (!elem)	ThrowAbortException("TM_Bans: Expected object, got null");
+		let obj = TM_JsonObject(elem);
+		if (!obj)	ThrowAbortException("TM_Bans: Expected object, got "..elem.GetClassName());
+		return new('TM_BanData').Process(obj);
+	}
+	
+	private TM_BanData Process(TM_JsonObject obj)
+	{
+		ClearAll();
+		TM_JsonElement elem;
+		
+		elem = obj.Get("checksum");
+		if (!elem)	ThrowAbortException("TM_Ban: checksum is missing");
+		let cs = TM_JsonString(elem);
+		if (!cs)	ThrowAbortException("TM_Ban: Expected 'checksum' as string, got "..elem.GetClassName());
+		
+		// You gotta love it when GZDoom's "mapchecksum" gives you all caps but
+		// level.GetChecksum() gives you all lower cases! Thankfully, name comparisons
+		// cancel those out.
+		Name c1 = cs.s;
+		Name c2 = level.GetChecksum();
+		if (c1 != c2)
+		{
+	//		Console.Printf("\cr"..cs.s);
+			return null;
+		}
+	//	Console.Printf("\cd"..cs.s);
+		
+		elem = obj.Get("ban.sectors");
+		if (elem)
+		{
+			let arr = TM_JsonArray(elem);
+			if (!arr)	ThrowAbortException("TM_Ban: Expected 'ban.sectors' as JsonArray<int>, got "..elem.GetClassName());
+			ProcessSectors(arr, true);
+		}// else Console.Printf("No sector bans detected.");
+		
+		elem = obj.Get("ban.regions");
+		if (elem)
+		{
+			let arr = TM_JsonArray(elem);
+			if (!arr)	ThrowAbortException("TM_Ban: Expected JsonObject, got "..elem.GetClassName());
+			ProcessRegions(arr, true);
+		}// else Console.Printf("No region bans detected.");
+		
+		elem = TM_JsonElement(obj.Get("spawn.sectors"));
+		if (elem)
+		{
+			let arr = TM_JsonArray(elem);
+			if (!arr)	ThrowAbortException("TM_Ban: Expected JsonObject, got "..elem.GetClassName());
+			ProcessSectors(arr, false);
+		}// else Console.Printf("No spawns detected.");
+		
+		elem = TM_JsonElement(obj.Get("spawn.regions"));
+		if (elem)
+		{
+			let arr = TM_JsonArray(elem);
+			if (!arr)	ThrowAbortException("TM_Ban: Expected JsonObject, got "..elem.GetClassName());
+			ProcessRegions(arr, false);
+		}// else Console.Printf("No spawns detected.");
+		
+		return self;
+	}
+	
+	private void ProcessSectors(TM_JsonArray arr, bool ban = false)
+	{
+	//	Console.Printf("Sorting sectors...");
+		int count = 0;
+		for (uint i = 0; i < arr.Size(); i++)
+		{
+			let num = TM_JsonInt(arr.Get(i));
+			if (!num)	ThrowAbortException("TM_Ban: Only integers allowed in '.sectors' arrays");
+			
+			int numb = num.AsInt();
+			if (ban)	BanSecNum(numb);
+			else		SpawnSecNum(numb);
+			count++;
+		}
+	//	if (ban)	Console.Printf("%d sectors blacklisted.", count);
+	//	else		Console.Printf("%d sectors whitelisted.", count);
+	}
+	
+	private void ProcessRegions(TM_JsonArray arr, bool ban = false)
+	{
+		TM_JsonElement elem;
+		
+	//	Console.Printf("Sorting regions...");
+		int count = 0;
+		for (uint i = 0; i < arr.Size(); i++)
+		{
+			let ar2 = TM_JsonArray(arr.Get(i));
+			if (!ar2)	ThrowAbortException("TM_Ban: Expected JsonArray<JsonArray<int>>");
+			int size = ar2.Size();
+			if (size != 4 && size != 6)
+				ThrowAbortException("TM_Ban: 'regions' arrays must have 4 or 6 variables");
+			
+			count++;
+			
+			double v[6] = {0,0,0,0,0,0};
+			for (uint j = 0; j < ar2.Size(); j++)
+			{
+				let el = TM_JsonElement(ar2.Get(j));
+				if (!el)	ThrowAbortException("TM_Ban: expected array elements int, float, 'min' or 'max', got null");
+				
+				let ni = TM_JsonInt(el);
+				if (ni)		{	v[j] = ni.AsDouble();	continue;	}
+				let nd = TM_JsonDouble(el);
+				if (nd)		{	v[j] = nd.AsDouble();	continue;	}
+				
+				let ns = TM_JsonString(el);
+				if (ns)
+				{
+					if (size < 6)
+						ThrowAbortException("TM_Ban: strings only allowed in arrays of size 6 (3D regions)");
+					Name s = ns.s;
+					if (s == 'min')
+					{	v[j] = double(int.min+1);	continue;	}
+					else if (s == 'max')
+					{	v[j] = double(int.max-1);	continue;	}
+					else	ThrowAbortException("TM_Ban: Only 'min' and 'max' allowed for strings");
+				}
+			}
+			if (ban)
+			{
+		//		Console.Printf("Banned region %d %d %d %d %d %d", v[0], v[1], v[2], v[3], v[4], v[5]);
+				if (size < 6)	BanRegion(v[0],v[1],v[2],v[3]);
+				else			BanRegion3D(v[0],v[1],v[2],v[3],v[4],v[5]);
+			}
+			else
+			{
+		//		Console.Printf("Permitted region %d %d %d %d %d %d", v[0], v[1], v[2], v[3], v[4], v[5]);
+				if (size < 6)	SpawnRegion(v[0],v[1],v[2],v[3]);
+				else			SpawnRegion3D(v[0],v[1],v[2],v[3],v[4],v[5]);
+			}
+		}
+	//	if (ban)	Console.Printf("%d regions banned", count);
+	//	else		Console.Printf("%d regions permitted", count);
+		
+	}
+}
