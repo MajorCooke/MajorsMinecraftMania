@@ -1,0 +1,13 @@
+Installing and using these scripts for Ultimate Doom builder is easy.
+
+1. Copy/paste the UDBScript folder intto your Ultimate Doom Builder directory. 
+
+2. Open up a map and select a sector. At least one sector is needed to operate the sector version of the script, ditto for the vertex script.
+
+3. On the right is a bar with a tab labelled "Scripts". Mouse over it to expand, and click it.
+
+4. Expand Examples -> Information folders. 
+
+5. Select "Log sector selection IDs" and click Run button.
+
+This will bring up a window that prints out the AABB of the selection, as well as every single selected sector/vertex for easy copy/pasting into the ban/spawn areas within the JSON file.
