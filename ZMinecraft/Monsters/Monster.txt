@@ -152,7 +152,7 @@ Class TM_Monster : TM_Entity abstract
 		return !(bBOSS || bBOSSSPAWNED || bCOUNTKILL);
 	}
 	
-	virtual bool DespawnRange() const
+	virtual bool DespawnRange()
 	{
 	
 		if (--DespawnTimer > 0)	

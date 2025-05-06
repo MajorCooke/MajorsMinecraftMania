@@ -285,7 +285,7 @@ extend class TM_Monster
 	// look at others properly. Bear in mind that if more than one head is present,
 	// the one earliest on the list will be the one returned.
 	private int HeadIndex;
-	TM_BodyPartHead GetHead() const
+	TM_BodyPartHead GetHead()
 	{
 		// Quicker lookup. 
 		if (HeadIndex > -1 && HeadIndex < Limb.Size() &&
