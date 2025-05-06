@@ -1,7 +1,7 @@
 
-#include "ZMinecraft/Blocks/TNT.txt"
-#include "ZMinecraft/Blocks/Fire.txt"
-#include "ZMinecraft/Blocks/Spawner.txt"
+#include "./TNT.txt"
+#include "./Fire.txt"
+#include "./Spawner.txt"
 
 
 extend class TM_Handler
@@ -18,7 +18,7 @@ extend class TM_Handler
 				// Intentionally -1 to avoid getting neighbors.
 				Vector2 size = (BlockRadius - 1, BlockHeight - 1);
 				if (pos ~== bl.pos ||
-					TM_S7_Math.TestAABB(pos, size, bl.pos, size))
+					TM_Map.CheckAABB(pos, bl.pos, size, size))
 					return bl;
 			}
 		}
@@ -553,6 +553,16 @@ Class TM_Block : TM_Entity abstract
 	}
 }
 
+// For blocks that have specific touch requirements. Fire block, for example, need
+// a special behavior added to all things so actors that normally would pass through
+// them akin to having NOCLIP or THRUACTORS will be ignited. These make special use
+// of the Touch() virtual.
+Class TM_Block_Touch : TM_Block abstract
+{
+}
+
+
+//------------------------------------------------------------------------------
 Class TM_BlockHitList
 {
 	TM_Block mo;

@@ -69,7 +69,7 @@ Class TM_Handler : EventHandler
 		S_Max
 	};
 	
-	TM_AArray 	Monsters, Blocks,	Bridges;
+	TM_AArray 	Monsters, Blocks, Bridges, Touchers;
 	private TM_EventStatic SEvent;
 	private int MobCount, EndermanCount, BlockCount, FireCount;
 	private double DespawnDist;
@@ -216,8 +216,11 @@ Class TM_Handler : EventHandler
 			bl.SEvent = SEvent;
 			Blocks.Push(bl);
 			BlockCount++;
-			if (bl is 'TM_Block_Fire')
-				FireCount++;
+			if (bl is 'TM_Block_Touch')
+			{
+				if (bl is 'TM_Block_Fire')
+					FireCount++;
+			}
 			return;
 		}
 		else if (mo is 'SkyViewpoint')	
@@ -373,6 +376,7 @@ Class TM_Handler : EventHandler
 		Monsters = TM_AArray.Create();
 		Blocks = TM_AArray.Create();
 		StatusEffects = TM_AArray.Create();
+		Touchers = TM_AArray.Create();
 		CreateSpawnList();
 		Timer[S_Spawn] = Second;
 		TMV_AIDifficulty_Prev = TMV_AIDifficulty;	

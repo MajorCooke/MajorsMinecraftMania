@@ -61,9 +61,6 @@ extend class TM_Handler
 		double bz = s.NextLowestFloorAt(pos.x, pos.y, pos.z + 1);
 		double tz = s.NextHighestCeilingAt(pos.x, pos.y, pos.z + 1, pos.z + 2);
 		
-		
-		
-		
 		let defs = GetDefaultByType('TM_Block_Fire');
 		// Too small to fit in, or too high off the ground.
 		if (tz - bz < defs.Height || abs(pos.z - bz) >= BlockHeight)	
@@ -79,7 +76,7 @@ extend class TM_Handler
 		if (ter && ter.IsLiquid)	return false;
 		
 		
-		let flame = TM_Block_Fire(Actor.Spawn('TM_Block_Fire', (pos)));
+		let flame = TM_Block_Fire(Actor.Spawn('TM_Block_Fire', pos));
 		if (flame)	
 		{
 			flame.ZAdjust = false; // Let the spawner handle the Z position.
@@ -95,7 +92,7 @@ extend class TM_Handler
 	}
 }
 
-Class TM_Block_Fire : TM_Block
+Class TM_Block_Fire : TM_Block_Touch
 {
 	bool SpawnedByOther;
 	Vector3 NextPos;
@@ -326,44 +323,18 @@ Class TM_Block_Fire : TM_Block
 		
 		
 		GetEvent();
+		GetTouchers();
 		// Attempt to damage anything coming into contact with this block.
+		
 		if (ToFlame.Size() > 0)
 		{
-			bool good = false;
-			for (int i = 0; i < ToFlame.Size(); i++)
+			foreach(mo : ToFlame)
 			{
-				let mo = ToFlame[i];
-				if (mo && (mo.bSHOOTABLE || mo.bVULNERABLE))
-				{
-					
-					if (!TM_Global.IsImmune(mo, DamageType) &&
-						TM_S7_Math.TestAABB(pos, (radius-1, 16), mo.pos, (mo.radius, mo.height)))
-					{
-						good = true;
-						// INSTANT DEATH
-						if (Type == FIRE_Hell)
-						{
-							bEXTREMEDEATH = true;
-							Actor giver = target;
-							if (!giver)	giver = self;
-							mo.DamageMobj(self, giver, clamp(mo.health, 2000, TELEFRAG_DAMAGE - 1), 'HellFire', DMG_FOILINVUL|DMG_FOILBUDDHA|DMG_NO_ARMOR|DMG_THRUSTLESS);
-							
-						}
-						else
-						{
-							bEXTREMEDEATH = false;
-							Actor giver = target;
-							if (!giver)	giver = self;
-							Event.GiveStatus(mo, giver, 'TM_OnFireEffect', Second * 10, Type);
-							if (TMV_Debug == 23)
-								Console.Printf("Giving fire type %d", type);
-						}
-					}
-				}
-				else ToFlame[i] = null;
+				if (mo && (mo.bSHOOTABLE || mo.bVULNERABLE) &&
+					!TM_Global.IsImmune(mo, DamageType))
+					Touch(mo);
 			}
-			if (!good)
-				ToFlame.Clear();
+			ToFlame.Clear();
 		}
 		
 		// Effects
@@ -399,6 +370,52 @@ Class TM_Block_Fire : TM_Block
 		}
 	}
 	
+	override void Touch(Actor mo)
+	{
+		if (!mo || mo == self)
+			return;
+		// INSTANT DEATH
+		if (Type == FIRE_Hell)
+		{
+			bEXTREMEDEATH = true;
+			Actor giver = target;
+			if (!giver)	giver = self;
+			mo.DamageMobj(self, giver, clamp(mo.health, 2000, TELEFRAG_DAMAGE - 1), 'HellFire', DMG_NO_ARMOR|DMG_THRUSTLESS);
+			
+		}
+		else
+		{
+			bEXTREMEDEATH = false;
+			Actor giver = target;
+			if (!giver)	giver = self;
+			Event.GiveStatus(mo, giver, 'TM_OnFireEffect', Second * 10, Type);
+			if (TMV_Debug == 23)
+				Console.Printf("Giving fire type %d", type);
+		}
+	}
+	
+	private void GetTouchers()
+	{
+		if (bKILLED)	return;
+		let it = TM_Map.MakeBTIPos(pos, (Radius, Height));
+		Actor mo;
+		while (it.Next())
+		{
+			mo = it.thing;
+			if (!CanInteractWith(mo))
+				continue;
+			
+			if (ToFlame.Find(mo) < ToFlame.Size())
+				continue;
+			
+			if (!TM_Map.CheckAABB(pos, mo.pos, (radius-1, 16), (mo.radius, mo.height)))
+				continue;
+			
+			
+			ToFlame.Push(mo);
+		}
+	}
+	
 	private bool UseKill;
 	override bool Used(Actor user)
 	{
@@ -408,13 +425,19 @@ Class TM_Block_Fire : TM_Block
 			{
 				bEXTREMEDEATH = true;
 				UseKill = true;
-				user.DamageMobj(self, self, clamp(user.health, 2000, TELEFRAG_DAMAGE - 1), DamageType, DMG_NO_ARMOR|DMG_FOILINVUL|DMG_FOILBUDDHA|DMG_THRUSTLESS);
+				user.DamageMobj(self, self, clamp(user.health, 2000, TELEFRAG_DAMAGE - 1), DamageType, DMG_NO_ARMOR|DMG_THRUSTLESS);
 				return true;
 			}
 			DamageMobj(user, user, health, 'Use', DMG_FORCED);
 			return true;
 		}
 		return false;
+	}
+	
+	private bool CanInteractWith(Actor other) const
+	{
+		return other && !(other is 'TM_Block') && !other.bKILLED && 
+			(other.bSHOOTABLE || other.bVULNERABLE);
 	}
 	
 	override bool CanCollideWith(Actor other, bool passive)
@@ -425,13 +448,10 @@ Class TM_Block_Fire : TM_Block
 		if (other && !(other is 'TM_Block') && !other.bKILLED && 
 			(other.bSHOOTABLE || other.bVULNERABLE) &&
 			ToFlame.Find(other) >= ToFlame.Size())
-			{
-				ToFlame.Push(other);
-			}
+			ToFlame.Push(other);
 			
 		return false;
 	}
-	
 	override void Die(Actor s, Actor i, int flags, name mod)
 	{
 		if (bKILLEd)	return;
@@ -556,150 +576,3 @@ Class TM_ActorFlame : TM_Entity
 		Loop;
 	}
 }
-/*
-Class TM_FireTick : Thinker
-{
-	private Array<Actor> Flames, Fires;
-	Actor Target, LastFire;
-	int Delay, Damage, Flags;
-	private int Timer, FireDelay;
-	protected bool SoulFire;
-	
-	static TM_FireTick Create(Actor target, Actor block, bool soul = false, 
-		int damage = 10, int flags = 0,	int duration = Second * 10, int delay = Second)
-	{
-		if (!target || duration < 1)
-			return null;
-	
-		let th = new('TM_FireTick');
-		th.Target = target;
-		th.Damage = damage;
-		th.Flags = flags;
-		th.Delay = delay;
-		th.SetTimer(duration);
-		th.AddFire(block);
-		th.SetSoulFire(soul, true);
-		
-		return th;
-	}
-	
-	override void PostBeginPlay()
-	{
-		ChangeStatNum(STAT_USER + 3);
-		Super.PostBeginPlay();
-		Flames.Clear();
-		Fires.Clear();
-		
-		if (!Target)	{	Destroy();	return;	}
-		if (Target.Radius > 0 && Target.Height > 0)
-		{
-			Vector2 Scale = ( // Based on image dimensions.
-				TM_GlobalMaths.RemapRange(1, 0, 16, 0, Target.Radius),
-				TM_GlobalMaths.RemapRange(1, 0, 16, 0, Target.Height));
-			
-			let mo = Actor.Spawn('TM_ActorFlame', Target.Pos, ALLOW_REPLACE);
-			Flames.Push(mo);
-		}
-	}
-	
-	override void OnDestroy()
-	{
-		for (int i = 0; i < Flames.Size(); i++)
-			if (Flames[i])	Flames[i].Destroy();
-		Super.OnDestroy();
-	}
-	
-	bool IsSoulFire() { return SoulFire; }
-	
-	void SetSoulFire(bool on, bool force = false)
-	{
-		StateLabel next = "Spawn";
-		if (on)
-		{
-			next = "Soul";
-			Flags |= DMG_NO_ARMOR;
-		}
-		else	Flags &= ~DMG_NO_ARMOR;
-		
-		if (force || SoulFire != on)
-		{
-			for (int i = 0; i < Flames.Size(); i++)
-				if (Flames[i]) Flames[i].SetStateLabel(next);
-		}
-		
-		SoulFire = on;
-	}
-	
-	bool StandingInFire()
-	{
-		bool intersect = false;
-		for (int i = 0; i < Fires.Size(); i++)
-		{
-			let mo = Fires[i];
-			if (mo && TM_S7_Math.TestAABB(
-					Target.Pos, (Target.Radius, Target.Height), 
-					mo.Pos, (mo.Radius, mo.Height)))
-				intersect = true;
-			else Fires[i] = null;
-		}
-		return intersect;
-	}
-	
-	override void Tick()
-	{
-		if (bDESTROYED)	return;
-		if (!Target || Target.bKILLED)	{	Destroy();	return;		}
-		else if (Target.IsFrozen())	return;
-		
-		if (--Timer < 1)	{	Destroy();	return;	}
-		
-		if (StandingInFire())
-		{
-			if (Target is "PlayerPawn")	FireDelay = 0; // The custom protection will make them immune.
-			else if (FireDelay > 18)	FireDelay = 18; // Enemies will rapidly take damage.
-		}
-		
-		if (FireDelay < 1 || --FireDelay < 1)
-		{
-			if (Target.DamageMobj(LastFire, LastFire, Damage, (SoulFire ? 'SoulFire' : 'Fire'), Flags|DMG_THRUSTLESS) > 0)
-				FireDelay = Delay;
-		}
-		
-		bool invis = (Target.Player && Target == players[consoleplayer].camera && (!Target.player.cheats & CF_CHASECAM));
-		
-		for (int i = 0; i < Flames.Size(); i++)
-		{
-			let mo = Flames[i];
-			if (!mo)	continue;
-			mo.SetOrigin(Target.pos, true);
-			mo.Prev = Target.Prev;
-		}
-	}
-	
-	void SetTimer(int amt)	{ Timer = amt;	}
-	
-	void AddFire(Actor mo)
-	{
-		if (!mo)	return;
-		
-		// Ensure the fire block isn't recorded already.
-		if (Fires.Find(mo) < Fires.Size())
-		{
-			LastFire = mo;
-			return;
-		}
-		
-		// Look for an empty space.
-		for (int i = 0; i < Fires.Size(); i++)
-		{
-			if (!Fires[i])	
-			{	
-				Fires[i] = LastFire = mo;
-				return;	
-			}
-		}
-		// None found so push a new slot.
-		Fires.Push(mo);
-	}
-}
-*/

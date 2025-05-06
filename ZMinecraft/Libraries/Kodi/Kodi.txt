@@ -1,6 +1,6 @@
 // Code by Kodi
 
-#include "ZMinecraft/Libraries/Kodi/KodiShape.txt"
+#include "./KodiShape.txt"
 
 class TM_kSpring
 {

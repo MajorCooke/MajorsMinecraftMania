@@ -1,5 +1,17 @@
 // For the sake of identification and inheritance.
 
+/*
+// To get all the bone names:
+
+Array<Name> boneNames;
+int n = GetBoneCount();
+boneNames.Resize(n);
+for(int i = 0; i < n; i++)
+{
+    boneNames[i] = GetBoneName(i);
+}
+*/
+
 Class TM_Entity : Actor abstract
 {
 	mixin TM_FastRNG;
@@ -254,3 +266,4 @@ Class TM_PlayerProtection : PowerProtection
 		return damage;
 	}
 }
+

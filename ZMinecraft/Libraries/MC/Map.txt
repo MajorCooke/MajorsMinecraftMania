@@ -38,13 +38,25 @@ Class TM_Map play
 		return lvl.Vec3Offset(pos, off);
 	}
 
-	
-	
-	// Code by PhantomBeta.
-	static Vector2, Vector2 SectorBounds (Sector sec) 
+	static bool CheckAABB(Vector3 p1, Vector3 p2, Vector2 s1, Vector2 s2, bool ThreeD = true)
 	{
-		Vector2 posMin = ( double.Infinity,  double.Infinity);
-		Vector2 posMax = (-double.Infinity, -double.Infinity);
+		if (p1 == p2)	return true;
+		
+		Vector3 dif = level.Vec3Diff(p1, p2);
+		
+		if (ThreeD)
+		{
+			if (p1.z > p2.z + s2.y ||
+				p2.z > p1.z + s1.y)
+				return false;
+		}
+		double dist = s1.x + s2.x;
+		return (abs(dif.x) <= dist && abs(dif.y) <= dist);
+	}
+	static Vector2, Vector2 SectorBounds(Sector sec) 
+	{
+		Vector2 posMin = ( double.max,  double.max);
+		Vector2 posMax = (-double.max, -double.max);
 
 		for (int i = 0; i < sec.lines.Size (); i++) 
 		{
@@ -59,9 +71,6 @@ Class TM_Map play
 		}
 		return posMin, posMax;
 	}
-	
-//	static TM_MapContainer GetBlockingLines(Actor mo)	{		return null;	}
-	
 }
 
 Class TM_MapContainer
