@@ -136,7 +136,7 @@ Class TM_Block_Fire : TM_Block
 		{
 			if (UseKill)
 				return "%o farted on Hellfire. The Hellfire farted back, far harder.";
-			return "%o was instantly vaporized by the abyssal darkness flame from Hell.";
+			return "%o was instantly vaporized by the abyssal flame from Hell.";
 		}
 		else if (DamageType == 'VoidFire')
 			return "%o was iced over by Void Fire.";

@@ -117,7 +117,7 @@ Class TM_StatusEffectInterval : TM_StatusEffect
 	
 	protected bool ShouldStartTrigger(int trig)
 	{
-		return (trig > 0 || (trig == -1 && StartTrigger));
+		return (trig > 0 || (trig < 0 && StartTrigger));
 	}
 	// Timer ticks down, Delay is what timer becomes after hitting 0.
 	void SetDelay(int time, int trig = -1)
@@ -425,6 +425,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 	private int PrevPot;
 	override void Modified()
 	{
+		bool doTrig = (PrevPot != Potency);
 		Potency = Max(PrevPot, Potency);
 		
 		if (TMV_Debug == 23)
@@ -437,21 +438,21 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 				DamageType = "Fire";
 				Dmg = 10;
 				if (Flame) Flame.SetState(Flame.ResolveState("Normal"));
-				SetDelay(35); break;
+				SetDelay(35, doTrig); break;
 			}
 			Case FIRE_Void:
 			{
 				DamageType = "Ice";
 				Dmg = 2;
 				if (Flame) Flame.SetState(Flame.ResolveState("Void"));
-				SetDelay(18); break;
+				SetDelay(18, doTrig); break;
 			}
 			Case FIRE_Soul: 
 			{
 				DamageType = "Soul";
 				Dmg = 10;
 				if (Flame) Flame.SetState(Flame.ResolveState("Soul"));
-				SetDelay(18); break;
+				SetDelay(18, doTrig); break;
 			}
 			Case FIRE_Hell: // Deals no damage, it's just the block that does so.
 			{
@@ -461,7 +462,7 @@ Class TM_OnFireEffect : TM_StatusEffectInterval
 			}
 		}
 		if (GetTimer() > 18)
-			SetTimer(18, false);
+			SetTimer(18, 1);
 	}
 	
 	
