@@ -333,13 +333,21 @@ Class TM_Global play
 		mo.FindFloorCeiling();
 	}
 	
+	static double, double GetAnglesToVector(Vector3 v1, Vector3 v2)
+	{
+		Vector3 diff = level.Vec3Diff(v1, v2);
+		double angle = VectorAngle(diff.X, diff.Y);
+        double pitch = -VectorAngle(diff.XY.Length(), diff.Z);
+		return angle, pitch;
+	}
+	
 	// Based on code from PhantomBeta.
 	static void FaceVector(Actor mo, Vector3 other)
 	{
 		if (!mo)	return;
-        Vector3 diff = level.Vec3Diff(mo.pos + mo.WorldOffset, other);
-        mo.angle = VectorAngle(diff.X, diff.Y);
-        mo.pitch = -VectorAngle(diff.XY.Length(), diff.Z);
+		let [ang, pit] = GetAnglesToVector((mo.pos + mo.WorldOffset), other);
+        mo.angle = ang;
+        mo.pitch = pit;
     }
 	
 	//--------------------------------------------------------------------------
