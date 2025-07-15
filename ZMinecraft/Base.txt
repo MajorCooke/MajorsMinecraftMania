@@ -183,6 +183,11 @@ Class TM_PlayerProtection : PowerProtection
 		DamageFactor "Ghast", 0.20;
 		DamageFactor "Creeper", 0.10;
 		DamageFactor "TNT", 0.10;
+		+INVENTORY.UNDROPPABLE
+		+INVENTORY.UNTOSSABLE
+		+INVENTORY.UNCLEARABLE
+		+INVENTORY.PERSISTENTPOWER
+		+INVENTORY.HUBPOWER
 	}
 	
 	override void InitEffect()
