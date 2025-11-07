@@ -19,9 +19,9 @@ Class TM_DamageTypeData
 	}
 }
 
-// Used for specifying how much damage a particular ghoul can do to a particular
+// Used for specifying how much damage a particular entity can do to a particular
 // enemy, and how much others can do to it. Includes damage types as well.
-/*
+
 Class TM_DamageData
 {
 	Name Thing;		// The thing to affect the damage around.
@@ -50,4 +50,3 @@ Class TM_DamageData
 		return self;
 	}
 }
-*/

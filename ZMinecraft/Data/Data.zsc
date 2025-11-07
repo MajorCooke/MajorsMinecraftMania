@@ -11,7 +11,7 @@ The file structure is as such:
 Class TM_Data
 {
 	Name ModID;
-	Map<Name, TM_UpgradeData>	UpgradeData;
+//	Map<Name, TM_UpgradeData>	UpgradeData;
 	Map<Name, TM_ActorData>		ActorData;
 	
 	static TM_Data Deserialize(TM_JsonElement elem)
@@ -27,7 +27,7 @@ Class TM_Data
 	private TM_Data ProcessObject(TM_JsonObject obj)
 	{
 		// First make sure there is a ModID present.
-		JsonElement eModID = obj.Get("mod_id");
+		TM_JsonElement eModID = obj.Get("mod_id");
 		if (!eModID)	ThrowAbortException("mod_id is missing. Add it with a unique name to fix.");
 		else
 		{
@@ -35,8 +35,6 @@ Class TM_Data
 			if (!tModID)	ThrowAbortException("mod_id: Expected a TM_JsonString, got "..eModID.getClassName());
 			ModID = tModID.s;
 		}
-		
-		// "Upgrades" array
 		
 		// "Actors" array
 		TM_JsonElement eActors = obj.Get("actors");
@@ -52,6 +50,10 @@ Class TM_Data
 				if (ad)				ActorData.Insert(ad.ID, ad);
 			}
 		}
+		
+		// "Upgrades" array
+		
+		
 		return self;
 	}
 }
@@ -72,7 +74,6 @@ Class TM_ActorData
 	
 	private TM_ActorData ProcessObject(TM_JsonObject obj)
 	{
-		TM_JsonElement elem = obj.Get
 		return self;
 	}
 }

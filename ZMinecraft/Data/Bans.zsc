@@ -1,6 +1,7 @@
 Class TM_BanData
 {
 	mixin TM_SpawnGoverning;
+	internal readonly int NoSpawn;
 	static TM_BanData Deserialize(TM_JsonElement elem)
 	{
 		if (!elem)	ThrowAbortException("TM_Bans: Expected object, got null");
@@ -13,23 +14,37 @@ Class TM_BanData
 	{
 		ClearAll();
 		TM_JsonElement elem;
-		
 		elem = obj.Get("checksum");
 		if (!elem)	ThrowAbortException("TM_Ban: checksum is missing");
 		let cs = TM_JsonString(elem);
 		if (!cs)	ThrowAbortException("TM_Ban: Expected 'checksum' as string, got "..elem.GetClassName());
 		
-		// You gotta love it when GZDoom's "mapchecksum" gives you all caps but
-		// level.GetChecksum() gives you all lower cases! Thankfully, name comparisons
-		// cancel those out.
+		// Level.GetChecksum() returns lower case and "mapchecksum" ccmd gives
+		// all upper case. Use names to compare, which don't care about casings.
 		Name c1 = cs.s;
 		Name c2 = level.GetChecksum();
 		if (c1 != c2)
 		{
-	//		Console.Printf("\cr"..cs.s);
+		//	Console.Printf("\cr"..cs.s);
 			return null;
 		}
-	//	Console.Printf("\cd"..cs.s);
+		Console.Printf("\cd"..cs.s);
+		
+		elem = obj.Get("nospawn");
+		if (elem)
+		{
+			let b = TM_JsonBool(elem);
+			let i = TM_JsonInt(elem);
+			if (b || i)
+			{
+				if (b) NoSpawn = b.b; 
+				else if (i) NoSpawn = ((i.AsInt() > 0) ? 1 : 0);
+				// Return immediately, we don't need to care for anything else.
+				if (NoSpawn) return self; 
+			}
+			else	ThrowAbortException("TM_Ban: Expected 'nospawn' as bool or int, got "..elem.GetClassname());
+		}
+		else NoSpawn = -1;
 		
 		elem = obj.Get("ban.sectors");
 		if (elem)
@@ -47,7 +62,7 @@ Class TM_BanData
 			ProcessRegions(arr, true);
 		}// else Console.Printf("No region bans detected.");
 		
-		elem = TM_JsonElement(obj.Get("spawn.sectors"));
+		elem = obj.Get("spawn.sectors");
 		if (elem)
 		{
 			let arr = TM_JsonArray(elem);
@@ -55,7 +70,7 @@ Class TM_BanData
 			ProcessSectors(arr, false);
 		}// else Console.Printf("No spawns detected.");
 		
-		elem = TM_JsonElement(obj.Get("spawn.regions"));
+		elem = obj.Get("spawn.regions");
 		if (elem)
 		{
 			let arr = TM_JsonArray(elem);
@@ -115,7 +130,7 @@ Class TM_BanData
 				if (ns)
 				{
 					if (size < 6)
-						ThrowAbortException("TM_Ban: strings only allowed in arrays of size 6 (3D regions)");
+						ThrowAbortException("TM_Ban: strings only allowed in arrays of size 6 with Z parameters (3D regions)");
 					Name s = ns.s;
 					if (s == 'min')
 					{	v[j] = double(int.min+1);	continue;	}
@@ -139,6 +154,5 @@ Class TM_BanData
 		}
 	//	if (ban)	Console.Printf("%d regions banned", count);
 	//	else		Console.Printf("%d regions permitted", count);
-		
 	}
 }

@@ -1,6 +1,7 @@
 //
 //...
-version "4.14"
+// Note to self: gl_ssao_debug 4 can be used to check normals of models.
+version "4.15.1"
 
 #include "ZMinecraft/Libraries/Include.txt"
 
@@ -16,6 +17,10 @@ version "4.14"
 #include "ZMinecraft/Spawner.txt"
 #include "ZMinecraft/Service.txt"
 #include "ZMinecraft/Status.txt"
+
+#include "ZMinecraft/Menu/MinecraftMenu.txt"
+
+// Monster systems
 #include "ZMinecraft/Monsters/Monster.txt"
 #include "ZMinecraft/Monsters/General.txt"
 #include "ZMinecraft/Monsters/Damage.txt"
@@ -25,9 +30,7 @@ version "4.14"
 #include "ZMinecraft/Monsters/Interactions.txt"
 #include "ZMinecraft/Monsters/Limbs.txt"
 #include "ZMinecraft/Monsters/Attachments.txt"
-//#include "ZMinecraft/Sounds.txt"
 
-#include "ZMinecraft/Menu/MinecraftMenu.txt"
 
 
 // Monsters
@@ -40,6 +43,8 @@ version "4.14"
 #include "ZMinecraft/Monsters/Regular/Blaze.txt"
 #include "ZMinecraft/Monsters/Regular/Ziglin.txt"
 
+// Bosses
+//#include "ZMinecraft/Monsters/Boss/Wither.zsc"
 
 // Blocks (including tile entities)
 #include "ZMinecraft/Blocks/Block.txt"

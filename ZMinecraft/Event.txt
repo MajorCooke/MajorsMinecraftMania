@@ -68,7 +68,6 @@ Class TM_Handler : EventHandler
 		S_Despawn,
 		S_Max
 	};
-	
 	TM_AArray 	Monsters, Blocks, Bridges, Touchers;
 	private TM_EventStatic SEvent;
 	private int MobCount, EndermanCount, BlockCount, FireCount;
@@ -167,7 +166,7 @@ Class TM_Handler : EventHandler
 				let fire = TM_Block_Fire(Blocks.Actors[i]);
 				if (fire && fire.GetType() == type)
 				{
-					fire.Destroy();
+					fire.Die(null, null);
 					count++;
 				}
 			}
@@ -183,6 +182,8 @@ Class TM_Handler : EventHandler
 			Console.Printf("%d %s fire blocks destroyed", count, typename);
 			return;
 		}
+		else if (e.Name == "TM_Enable")
+			NoSpawn = false;
 	}
 	
 	override void WorldLoaded(WorldEvent e)
@@ -386,7 +387,8 @@ Class TM_Handler : EventHandler
 	private bool once;
 	override void WorldTick()
 	{
-		if (gamestate == GS_TITLELEVEL || 
+		if (NoSpawn ||
+			gamestate == GS_TITLELEVEL || 
 			level.LevelName == 'TitleMap' || // in case someone goes "map titlemap" in console
 			level.MapName == 'TitleMap' || 
 			level.IsFrozen())
@@ -452,7 +454,8 @@ Class TM_Handler : EventHandler
 
 // Map specific event handlers. These do several things based on maps.
 // 1. Shrinks the player radius if between [16, 20] to 15.
-// 2. Teleports players to the nearest 
+// 2. Teleports players to the nearest telespot for lava falls and damages them.
+//	Does not apply to falling into the void.
 Class TM_MapEvent : EventHandler
 {
 	private Array<Inventory> Items;
@@ -482,7 +485,7 @@ Class TM_MapEvent : EventHandler
 		if (mo is 'TeleportFog' || mo.GetReplacee(mo.GetClass()) is 'TeleportFog')
 		{
 			let plr = mo.Target;
-			if (plr is "PlayerPawn" && !plr.bTHRUACTORS)
+			if ((plr is "PlayerPawn" || plr.bISMONSTER) && !plr.bTHRUACTORS)
 			{
 				let it = BlockThingsIterator.Create(plr);
 				while (it.Next())
@@ -492,9 +495,12 @@ Class TM_MapEvent : EventHandler
 						targ.bTHRUACTORS ||	(targ.bTHRUSPECIES && targ.species == plr.species))
 						continue;
 						
-					if (TM_S7_Math.TestAABB(
+					if (targ is 'TM_Monster' &&
+						TM_S7_Math.TestAABB(
 						plr.pos, (plr.radius, plr.height),
-						targ.pos, (targ.radius, targ.height)))
+						targ.pos, (targ.radius, targ.height)) &&
+						!targ.bNOTELEFRAG)
+						// Handle case where monster collision with players is disabled.
 						targ.DamageMobj(plr, plr, Actor.TELEFRAG_DAMAGE, "Telefrag", DMG_THRUSTLESS);
 				}
 			}

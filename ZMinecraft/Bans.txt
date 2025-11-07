@@ -7,10 +7,13 @@ mixin Class TM_SpawnGoverning
 	
 	private void ClearAll()
 	{
+		NoSpawn = false;
 		BannedRegions.Clear();
 		BannedSectors.Clear();
 		SpawnRegions.Clear();
 		SpawnSectors.Clear();
+	//	SpawnPolys.Clear();
+	//	BannedPolys.Clear();
 	}
 	
 	// Whitelisting limits where things can spawn and are checked first. Further
@@ -22,10 +25,9 @@ mixin Class TM_SpawnGoverning
 	{
 		let pos = arr.Find(id);
 		if (add)
-		{
 			if (pos >= arr.Size())
 				arr.Push(id);
-		}
+		
 		else if (pos < arr.Size())
 			arr.Delete(pos);
 	}
@@ -129,7 +131,7 @@ mixin Class TM_SpawnGoverning
 	private bool SpawnSecNum(int i)
 	{
 		SetSecNum(BannedSectors, i, false); // remove from blacklist
-		if (IsSectorAllowed(i))	return false;
+		if (IsSectorAllowed(i, false))	return false; // disable size check, force examination of the list
 		SetSecNum(SpawnSectors, i);			// add to whitelist
 		return true;
 	}
@@ -153,17 +155,15 @@ mixin Class TM_SpawnGoverning
 	
 	clearscope bool CheckSector(int index)
 	{	
+		// Blacklisted sectors have highest priority.
 		if (BannedSectors.Size() > 0 && IsSectorBanned(index))
 			return false;
-		if (SpawnSectors.Size() > 0)
-		{
-			return IsSectorAllowed(index);
-		}
-		return true;
+		// If whitelist, check if in there. Otherwise, it's allowed.
+		return IsSectorAllowed(index);
 	}
-	
+	// disable sizecheck to enforce array search
 	clearscope bool IsSectorAllowed(int index, bool sizecheck = true) const
-	{	return ((SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) < SpawnSectors.Size()));	}
+	{	return ((sizecheck && SpawnSectors.Size() < 1) || (TM_Global.BinarySearch(SpawnSectors, index, true) < SpawnSectors.Size()));	}
 	
 	clearscope bool IsSectorBanned(int index) const
 	{	return (index < 0 || TM_Global.BinarySearch(BannedSectors, index, true) < BannedSectors.Size());	}
@@ -194,10 +194,12 @@ mixin Class TM_SpawnGoverning
 extend class TM_Handler
 {
 	mixin TM_SpawnGoverning;
+	internal readonly bool	NoSpawn;
 	private Name			Checksum;
 	private bool 			MapEntry, VoidCheck, Whitelist, Blacklist;
-	private Array<TM_Poly>	BannedPolys, SpawnPolys;
 	private TM_Rect			SpawnBox;
+	/*
+	private Array<TM_Poly>	BannedPolys, SpawnPolys;
 	private TM_Poly			CurPoly;
 	private int				PolyCount; // easier tracking
 	
@@ -246,11 +248,6 @@ extend class TM_Handler
 		PolyCount++;
 	}
 	
-	
-	
-	
-	
-	
 	clearscope int CheckPoly(Vector3 pos) const
 	{
 		int bsize = BannedPolys.Size(),
@@ -269,7 +266,7 @@ extend class TM_Handler
 		
 		return ret;
 	}
-	
+	*/
 	private void Ban3DFloorModels()
 	{
 		foreach (sec : level.Sectors)
@@ -307,7 +304,7 @@ extend class TM_Handler
 			plrs.Push(plr);
 		}
 		
-		int Failsafe = 3000;
+		int Failsafe = 8000;
 		while (Process.Size() > 0 && --Failsafe > 0)
 		{
 			// Get the last sector index for processing and remove it from the list.
@@ -338,6 +335,9 @@ extend class TM_Handler
 				// into via the sky viewpoints. If it does, simply undo it by 
 				// moving the copied temp array back and abort.
 				
+				// This is likely to happen if the spawn sector is considered
+				// the same as skybox sector (a subsector).
+				
 				foreach (plr : plrs)
 				{
 					if (plr && (
@@ -364,18 +364,18 @@ extend class TM_Handler
 	private void PostSectorSetup()
 	{
 		Whitelist = (
-					SpawnSectors.Size() > 0 ||
-					SpawnRegions.Size() > 0 ||
-					SpawnPolys.Size() > 0);
+						SpawnSectors.Size() > 0
+					||	SpawnRegions.Size() > 0 
+				//	||	SpawnPolys.Size() > 0
+					);
 		Blacklist = (
-					BannedSectors.Size() > 0 ||
-					BannedRegions.Size() > 0 ||
-					BannedPolys.Size() > 0);
+						BannedSectors.Size() > 0 
+					||	BannedRegions.Size() > 0
+				//	||	BannedPolys.Size() > 0
+					);
 					
-	//	Ban3DFloorModels();
 		if (Checksum != '')
 		{
-	//		SetupSpawnBox();
 			TM_Global.BubbleSort(SpawnSectors);
 			TM_Global.BubbleSort(BannedSectors);
 		}
@@ -396,7 +396,7 @@ extend class TM_Handler
 			else 		Box.Expand(lr, hr);
 			
 		}
-		
+		/*
 		foreach (p : SpawnPolys)
 		{
 			if (!p)		continue;
@@ -407,10 +407,12 @@ extend class TM_Handler
 				Box.Expand(lr, hr);
 			}
 		}
+		*/
 		SpawnBox = Box;
 	}
 	private bool CanSpawnBox()
-	{	return (!SpawnBox && (SpawnRegions.Size() > 0 || SpawnPolys.Size() > 0));	}
+//	{	return (!SpawnBox && (SpawnRegions.Size() > 0 || SpawnPolys.Size() > 0));	}
+	{	return (!SpawnBox && (SpawnRegions.Size() > 0));	}
 }
 
 /*

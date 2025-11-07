@@ -106,12 +106,13 @@ extend Class TM_Handler
 				let arr = TM_JsonArray(data);				
 				if (!arr)	ThrowAbortException("TM_Bans: Expected first element as array of objects, got "..data.GetClassName());
 				
-				Console.Printf(level.GetChecksum());
+			//	Console.Printf(level.GetChecksum());
 				for (uint i = 0; i < arr.Size(); i++)
 				{
 					let ob = TM_BanData.Deserialize(TM_JsonElement(arr.Get(i)));
 					if (ob)	
 					{
+						if (ob.NoSpawn > -1)	NoSpawn = (ob.NoSpawn > 0);
 						BannedRegions.Move(ob.BannedRegions);
 						BannedSectors.Move(ob.BannedSectors);
 						SpawnRegions.Move(ob.SpawnRegions);

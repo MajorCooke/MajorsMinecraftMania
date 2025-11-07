@@ -446,7 +446,7 @@ Minecraft/Ghast/Scream5			"Sounds/Minecraft/mob/Ghast/tmscream5.ogg"
 
 $random Minecraft/Ghast/Moan
 {
-	Minecraft/Ghas/tMoan1
+	Minecraft/Ghast/Moan1
 	Minecraft/Ghast/Moan2
 	Minecraft/Ghast/Moan3
 	Minecraft/Ghast/Moan4

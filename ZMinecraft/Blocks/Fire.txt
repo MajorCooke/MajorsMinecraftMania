@@ -16,6 +16,7 @@ Purple fire that eats through armor.
 Black fire. (Near) Instant Death. Only Herobrine is resistant.
 ==============================================================================*/
 
+// TO DO: Fix fire blocks not spawning on *some* heights.
 extend class TM_Handler
 {
 	bool SpawnFireBlock(Actor Owner, Actor Missile, Vector3 pos, 

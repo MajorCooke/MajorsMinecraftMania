@@ -1194,6 +1194,7 @@ Class TM_BodyPartLeg : TM_BodyPart
 // comedic effect =P).
 //==============================================================================
 
+// TO DO: Move with scrolling sectors and be affected by wind.
 Class TM_BodyPartGib : TM_Entity abstract
 {
 	const FadeTime = 1.0 / 35.0;

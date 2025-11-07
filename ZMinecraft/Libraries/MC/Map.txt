@@ -267,9 +267,9 @@ Class TM_Rect
 	{
 		LoV.X = min(LoV.X, lo.X, hi.X);
 		LoV.Y = min(LoV.Y, lo.Y, hi.Y);
+		LoV.Z = min(LoV.Z, lo.Z, hi.Z);
 		HiV.X = max(HiV.X, lo.X, hi.X);
 		HiV.Y = max(HiV.Y, lo.Y, hi.Y);
-		LoV.Z = min(LoV.Z, lo.Z, hi.Z);
 		HiV.Z = max(HiV.Z, lo.Z, hi.Z);
 	}
 	

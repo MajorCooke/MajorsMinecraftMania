@@ -9,52 +9,51 @@ extend class TM_Handler
 	private bool dodebug;
 	private void SetupBans()
 	{
+		NoSpawn = false;
 		VoidCheck = true;
 		Checksum = level.GetChecksum();
 		BannedRegions.Clear();
 		BannedSectors.Clear();
-		BannedPolys.Clear();
-		SpawnPolys.Clear();
+	//	BannedPolys.Clear();
+	//	SpawnPolys.Clear();
 		SpawnRegions.Clear();
 		SpawnSectors.Clear();
 		SpawnBox = null;
 		WhiteList = false;
-		/*
+		
 		if (!LoadBans())
 		{
+			Console.Printf("No map found");
 			checksum = '';
-			Console.Printf("No map found.");
 		}
-		*/
 		
+		/*
 		Switch(Checksum)
 		{
-		//	Case '6D1D6927156FEE4B39AABA974CDE2866': // Winter's Fury 2023-12-07.pk3 map01:
+		//	Case '6D1D6927156FEE4B39AABA974CDE2866': // Winter's Fury 2023-12-07.pk3 map01
 			Case '3B33E6C222E0744CF19AEBBCE2A06FBE': // Winter's Fury 2024-09-10.pk3 map01
 				DoWintersFuryMap01(); 			break;
-		//	Case 'BCB22028F59A0E6D44D882D0CF963FA0': // Winter's Fury 2023-12-07.pk3 map02
-		//		break;
 			Case '084425F180C22EF59FB6DC6DA59D7766': // Winter's Fury 2023-12-07.pk3 map03
 			Case 'A5A2974819AE0BABDB4F0974790C4B2B': // Winter's Fury 2024-09-10.pk3 map03
 				DoWintersFuryMap03();			break;
-		//	Case 'A6E9611CD608151A3046198496B6BD3E': // Winter's Fury 2023-12-07.pk3 map04b
-		//		break;
-			Case 'C2CE57A0158D9975638844EFF6921403': // Winter's Fury 2023-12-07.pk3 map08
 			Case '37E107856CC281F4FE967F8E47E0D7D3': // Winter's Fury 2024-09-10.pk3 map08
 				DoWintersFuryMap08();			break;
 			Case 'C23AC4564765BB0834325735AFC7CA1D': // Profane Promiseland beta
 				DoProfanePromiselandBeta();		break;
 			Case '686AB81A51C09BC9126FE313B84AC085': // gz_bigcity.pk3 opencity
 				DoBigCity();					break;
-			
+		
+			// Disable spawning on these maps entirely.
+			Case 'B2954FBC46DA2294CD9AF585338A7535': // RAMP2024.pk3 HUBMAP
+			Case 'D59F75A8B44A90F23CBA7B2F480683FF': // RAMP2025.pk3 HUBMAP
+			Case '78E69EEB7369D73F0431F5FCDBD78E3B': // RAMP2025.pk3 INTERMAP
+				NoSpawn = true;
+	
 			// Enable standard banning.
 			Default: 
-			{
 				Checksum = '';
-				break;
-			}
 		}
-		
+		*/
 		PostSectorSetup();
 	}
 	
