@@ -20,14 +20,14 @@ extend class TM_Handler
 		SpawnSectors.Clear();
 		SpawnBox = null;
 		WhiteList = false;
-		
+		/*
 		if (!LoadBans())
 		{
-			Console.Printf("No map found");
+		//	Console.Printf("No map found");
 			checksum = '';
 		}
+		*/
 		
-		/*
 		Switch(Checksum)
 		{
 		//	Case '6D1D6927156FEE4B39AABA974CDE2866': // Winter's Fury 2023-12-07.pk3 map01
@@ -53,7 +53,7 @@ extend class TM_Handler
 			Default: 
 				Checksum = '';
 		}
-		*/
+		
 		PostSectorSetup();
 	}
 	
