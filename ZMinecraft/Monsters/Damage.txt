@@ -102,7 +102,7 @@ extend class TM_Monster
 			if (s && Damagers.Find(s) >= Damagers.Size())
 				Damagers.Push(s);
 				
-			if (s && s.player)
+			if (s && s != self)
 				PlayerDamaged = true;
 			
 			if (!GodMode && (!bNODAMAGE || (flags & DMG_FORCED)))
