@@ -23,7 +23,7 @@ Class TM_BanData
 		// all upper case. Use names to compare, which don't care about casings.
 		Name c1 = cs.s;
 		Name c2 = level.GetChecksum();
-		if (c1 != c2)
+		if (c1 != c2) // No matching checksum, so skip it.
 		{
 		//	Console.Printf("\cr"..cs.s);
 			return null;

@@ -259,7 +259,8 @@ Class TM_PearlHealth : TM_FlyingItem
 
 	override bool GiveItems(Actor mo)
 	{
-		int mx = (SEvent) ? SEvent.GetMaxHealth() : mo.GetMaxHealth(true);
+		
+		int mx = (SEvent) ? SEvent.GetMaxHealth(mo) : mo.GetMaxHealth(true);
 		if (!mo.bKILLED && (bALWAYSPICKUP || mo.Health < mx))
 		{
 			if (mo.Health < mx)
@@ -300,7 +301,7 @@ Class TM_PearlArmor : TM_FlyingItem
 			if (armor)
 			{
 				bool good = bALWAYSPICKUP;
-				int mx = (SEvent) ? SEvent.GetMaxArmor() : armor.MaxAmount;
+				int mx = (SEvent) ? SEvent.GetMaxArmor(mo) : armor.MaxAmount;
 			//	armor.MaxAmount = mx;
 				if (armor.Amount < mx)
 				{

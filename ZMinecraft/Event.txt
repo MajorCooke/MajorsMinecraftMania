@@ -4,51 +4,142 @@ Triple M Static Event Handler
 Responsible for tracking certain things across maps.
 ==============================================================================*/
 
-Class TM_EventStatic : StaticEventHandler
+Class TM_PlayerTracker
 {
-	private int MaxHealth, MaxArmor;
-	/*
-	override void OnRegister()
+	BasicArmor ArmorInv[MAXPLAYERS];
+	int Armors[MAXPLAYERS];
+	int Healths[MAXPLAYERS];
+	
+	
+	
+	void Reset(int num)
 	{
-		ParseJSON();
+		ArmorInv[num] = null;
+		Armors[num] = Healths[num] = 200;
 	}
-	*/
-	static TM_EventStatic Fetch()
-	{	return TM_EventStatic(Find('TM_EventStatic'));	}	
 	
-	override void NewGame()
-	{	MaxHealth = MaxArmor = 200;	}
-	
-	clearscope int GetMaxHealth() const { return Max(200, MaxHealth); }
-	clearscope int GetMaxArmor() const { return Max(200, MaxArmor); }
-	
-	private BasicArmor Armors[MAXPLAYERS];
-	override void WorldTick()
+	void Update()
 	{
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!playeringame[i] || !players[i].mo)	continue;
-			let p = players[i];
-			if (!p)	continue;
-			let plr = players[i].mo;
-			
-			if (!plr.alternative)
+			if (!playeringame[i])
 			{
-				if (TMV_Debug == 25)
-				{
-					if (plr.health > MaxHealth)
-						Console.Printf("Updated health: %d -> %d", MaxHealth, plr.health);
-				}
-				MaxHealth = Max(200, MaxHealth, plr.health);
+				Reset(i);
+				continue;
 			}
-			if (!Armors[i]) 
-				Armors[i] = BasicArmor(plr.FindInventory('BasicArmor'));
+			let plr = players[i].mo;
+			if (!plr || plr.alternative)
+				continue;
+			
+			{
+				int hp = GetMaxHealth(i);
+				if (TMV_Debug == 25 && plr.health > hp)
+					Console.Printf("Updated health: %d -> %d", hp, plr.health);
+				Healths[i] = Max(plr.health, hp);
+			}
+			
+			BasicArmor arm = ArmorInv[i];
+			if (!arm)
+			{
+				arm = BasicArmor(plr.FindInventory("BasicArmor", true));
+				if (arm)	
+				{
+					ArmorInv[i] = arm;
+					Armors[i] = Max(Armors[i], arm.Amount);
+				}
+			}
 			else
-				MaxArmor = Max(MaxArmor, Armors[i].Amount);
+				Armors[i] = Max(Armors[i], arm.Amount);
+		}
+		
+	}
+	
+	clearscope bool CheckAlive(int pnum) const
+	{
+		return (playeringame[pnum] && players[pnum].mo && !players[pnum].mo.bKILLED);
+	}
+	
+	clearscope int GetMaxHealth(int pnum) const
+	{
+		return (CheckAlive(pnum)) ? Max(200,  Healths[pnum]) : 0;
+	}
+	
+	clearscope int GetMaxArmor(int pnum) const
+	{
+		return (CheckAlive(pnum)) ? Max(200, Armors[pnum]) : 0;
+	}
+}
+
+Class TM_EventStatic : StaticEventHandler
+{
+	internal readonly TM_PlayerTracker PTracker;
+	private TM_Handler Event;
+	
+	static TM_EventStatic Fetch()
+	{	return TM_EventStatic(Find('TM_EventStatic'));	}
+	
+	override void NewGame()
+	{	
+		SetupTracker();
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		Event = TM_Handler.Fetch();
+		if (e.IsSaveGame)
+		{
+			
+			if (Event && Event.PTracker) 
+			{
+				PTracker = Event.PTracker;
+				Console.Printf("Rec. Health: %d", PTracker.GetMaxHealth(0));
+				Console.Printf("Rec. Armor: %d", PTracker.GetMaxArmor(0));
+			}
+			else 
+			{
+				if (Event)	Console.Printf("WARNING! Prior PTracker not found!");
+				else		Console.Printf("WARNING! TM_Handler not found!");
+			}
+		}
+		else
+		{
+			SetupTracker();
 		}
 	}
-
+	/*
+	override void PlayerDisconnected(PlayerEvent e)
+	{
+		SetupTracker();
+		PTracker.PlayerDisconnected(e.PlayerNumber);
+	}
+	*/
+	private void SetupTracker(bool force = false) 
+	{	
+		if (!PTracker || force)	PTracker = new('TM_PlayerTracker');	
+		Event = TM_Handler.Fetch();
+		if (Event && PTracker)	
+		{
+			if (force || !Event.PTracker)
+				Event.PTracker = PTracker;
+		}
+	}
 	
+	clearscope int GetMaxHealth(Actor mo) const 
+	{
+		if (!mo || !mo.player)	return 0;
+		return PTracker.GetMaxHealth(mo.PlayerNumber());
+	}
+	clearscope int GetMaxArmor(Actor mo) const 
+	{
+		if (!mo || !mo.player)	return 0;
+		return PTracker.GetMaxArmor(mo.PlayerNumber());
+	}
+	
+	override void WorldTick()
+	{
+		if (PTracker)
+			PTracker.Update();
+	}
 }
 
 
@@ -69,6 +160,7 @@ Class TM_Handler : EventHandler
 		S_Max
 	};
 	TM_AArray 	Monsters, Blocks, Bridges, Touchers;
+	internal readonly TM_PlayerTracker PTracker;
 	private TM_EventStatic SEvent;
 	private int MobCount, EndermanCount, BlockCount, FireCount;
 	private double DespawnDist;
@@ -173,10 +265,10 @@ Class TM_Handler : EventHandler
 			String typename = "Undefined";
 			Switch(type)
 			{
-				Case FIRE_Normal:	typename = "normal"; break;
-				Case FIRE_Void:		typename = "void"; break;
-				Case FIRE_Soul:		typename = "soul"; break;
-				Case FIRE_Hell:		typename = "hell"; break;
+				Case FIRE_Normal:	typename = "Normal"; break;
+				Case FIRE_Void:		typename = "Void"; break;
+				Case FIRE_Soul:		typename = "Soul"; break;
+				Case FIRE_Hell:		typename = "Hell"; break;
 			}
 			
 			Console.Printf("%d %s fire blocks destroyed", count, typename);
@@ -411,10 +503,9 @@ Class TM_Handler : EventHandler
 				}
 			}
 		}
-		if (SEvent)
-			SEvent.WorldTick();
-		else
-			SEvent = TM_EventStatic.Fetch();
+		
+		if (SEvent)	SEvent.WorldTick();
+		else		SEvent = TM_EventStatic.Fetch();
 		
 		// If there's enderman around, check player LOS and trigger them if
 		// staring at their heads.

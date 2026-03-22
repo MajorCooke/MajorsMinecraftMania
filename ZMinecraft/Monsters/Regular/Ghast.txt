@@ -406,7 +406,7 @@ Class TM_GhastFireball : TM_Projectile
 		if (other is 'TM_GhastFireball' || other is 'TM_GhastFireballReflect')	
 			return true;
 		
-		return (!passive);
+		return (!passive && !(other is 'TM_Block_Fire'));
 	}
 	
 	override int SpecialMissileHit(Actor victim)

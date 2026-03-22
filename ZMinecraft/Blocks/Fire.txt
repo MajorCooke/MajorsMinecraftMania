@@ -97,7 +97,7 @@ Class TM_Block_Fire : TM_Block_Touch
 {
 	bool SpawnedByOther;
 	Vector3 NextPos;
-	const _Height = BlockHeight / 4;
+	const _Height = BlockHeight * 0.25;
 	const Light = "FireLight";
 	const HellFireHP = 10000; // It'll take a very powerful damaging attack to eliminate.
 	Default
@@ -375,7 +375,7 @@ Class TM_Block_Fire : TM_Block_Touch
 	{
 		if (!mo || mo == self)
 			return;
-		// INSTANT DEATH
+		// INSTANT DEATH unless fire resist potion 3, handled there.
 		if (Type == FIRE_Hell)
 		{
 			bEXTREMEDEATH = true;
@@ -444,9 +444,12 @@ Class TM_Block_Fire : TM_Block_Touch
 	override bool CanCollideWith(Actor other, bool passive)
 	{
 		if (bKILLED)	return false;
-		if (other && other.bMISSILE)	return true;
+		if (!other || other.bMISSILE || other.Default.bMISSILE) 
+		{
+			return true;
+		}
 	
-		if (other && !(other is 'TM_Block') && !other.bKILLED && 
+		if (!(other is 'TM_Block') && !other.bKILLED && 
 			(other.bSHOOTABLE || other.bVULNERABLE) &&
 			ToFlame.Find(other) >= ToFlame.Size())
 			ToFlame.Push(other);

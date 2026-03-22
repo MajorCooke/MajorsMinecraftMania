@@ -413,7 +413,6 @@ Class TM_FireCharge : TM_Projectile
 			SetState(ResolveState("Death"));
 	}
 	
-	
 	States
 	{
 	Spawn:

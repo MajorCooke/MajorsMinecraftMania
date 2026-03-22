@@ -344,6 +344,11 @@ Class TM_ArrowProjectile : TM_Projectile
 		}
 	}
 	
+	override bool CanCollideWith(Actor other, bool passive)
+	{
+		return (!(other is 'TM_Block_Fire'));
+	}
+	
 	override void Tick()
 	{
 		if (bKILLED)	Vel = (0,0,0);
