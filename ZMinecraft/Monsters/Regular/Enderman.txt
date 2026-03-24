@@ -87,7 +87,7 @@ Class TM_Enderman : TM_Monster
 		DeathSound "Minecraft/Enderman/Death";
 		
 		Tag "Enderman";
-		Obituary "%o blinked. Then an Enderman ate %p eyes.";
+		Obituary "%o blinked. Then an Enderman ate their eyes.";
 		
 		MaxTargetRange EndermanTargetDistance;
 	}
