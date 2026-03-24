@@ -400,7 +400,7 @@ Class TM_Handler : EventHandler
 		
 		Array<Actor> drops;	drops.Clear();
 		bool good = false;
-		if (TMV_CombineItems || Amount < 1)
+		if (Amount < 1)
 		{
 			Actor check = null;
 			check = mo.A_DropItem(Cls, -1, Chance);
@@ -452,10 +452,11 @@ Class TM_Handler : EventHandler
 			if (Item && !Item.bBIGPOWERUP && !(Item is 'Weapon'))
 			{
 				let DropTimer = TM_DropTimer.Create(Item);
-				if (TMV_CombineItems && Amount > 0)
+				if (Amount > 0)
 					Item.Amount *= Amount;
 			}
 		}
+		
 		return true;
 	}
 	
